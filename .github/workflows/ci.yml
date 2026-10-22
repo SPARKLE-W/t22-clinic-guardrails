@@ -1,0 +1,74 @@
+name: T22 regression
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: t22-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4.13
+        env:
+          MYSQL_ROOT_PASSWORD: ephemeral-ci-root-only
+          MYSQL_ROOT_HOST: '%'
+          MYSQL_DATABASE: t22_app
+          MYSQL_USER: t22_app
+          MYSQL_PASSWORD: ephemeral-ci-app-only
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    defaults:
+      run:
+        working-directory: 05_系统代码
+    env:
+      T22_APP_CONFIG: ${{ runner.temp }}/t22-ci-app.json
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends pkg-config default-libmysqlclient-dev
+          python -m pip install -r requirements.lock
+      - name: Configure isolated CI databases
+        run: |
+          python - <<'PY'
+          import json, os, secrets
+          from pathlib import Path
+          import MySQLdb
+          connection = MySQLdb.connect(host='127.0.0.1', user='root', passwd='ephemeral-ci-root-only')
+          with connection.cursor() as cursor:
+              cursor.execute("GRANT ALL PRIVILEGES ON t22_app_test.* TO 't22_app'@'%'")
+          connection.close()
+          Path(os.environ['T22_APP_CONFIG']).write_text(json.dumps({
+              'secret_key': secrets.token_urlsafe(48),
+              'database': {'HOST': '127.0.0.1', 'PORT': 3306, 'NAME': 't22_app',
+                           'USER': 't22_app', 'PASSWORD': 'ephemeral-ci-app-only'}
+          }), encoding='utf-8')
+          PY
+      - name: Framework and migration checks
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Full regression on MySQL
+        run: python manage.py test tests governance clinic --noinput -v 2
