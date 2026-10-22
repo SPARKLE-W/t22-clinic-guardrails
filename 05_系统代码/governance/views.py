@@ -41,7 +41,11 @@ def protected(permission, methods):
                 try:
                     if not exc.audit_recorded:
                         target = kwargs.get('candidate_id') or kwargs.get('encounter_id')
-                        if kwargs.get('encounter_id') and request.user.is_authenticated:
+                        alert_ref = kwargs.get('alert_id') or (request.GET.get('alert_ref') if permission == 'clinical.alert.handle' else None)
+                        if alert_ref and request.user.is_authenticated:
+                            from clinic.writes import alert_refusal
+                            alert_refusal(request.user.pk, exc, str(alert_ref))
+                        elif kwargs.get('encounter_id') and request.user.is_authenticated:
                             from clinic.services import _refusal
                             _refusal(request.user.pk, permission, exc, str(kwargs['encounter_id']))
                         else:
