@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "ui": {
+    "width": 1366,
+    "height": 768,
+    "scrollWidth": 1351,
+    "pending": "有 1 条未处理告警",
+    "diagnosis": "浏览器提交的合成初诊说明，非真实诊疗",
+    "canCorrect": true,
+    "contextButtons": 3,
+    "hasClinicEditor": true
+  },
+  "console": [
+    "Emulating viewport: {\"deviceScaleFactor\":1,\"isMobile\":false,\"hasTouch\":false,\"isLandscape\":false,\"width\":1366,\"height\":768}\n## Console messages\nShowing 1-1 of 1 (Page 1 of 1).\nmsgid=3 [error] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) (0 args)"
+  ],
+  "console_note": "One expected HTTP 422 from deliberately blank diagnosis; no uncaught JavaScript exception reported.",
+  "actions": "Synthetic browser reception, guard block, alert-to-encounter navigation and first diagnosis save. Earlier synthetic browser correction and alert resolution also executed."
+}

@@ -12,7 +12,7 @@ from .models import AuditTarget, ClinicalRecord, ClinicalRevision, Encounter, Pe
 from .services import auxiliary, mutate, read
 
 
-class ClinicTests(TransactionTestCase):
+class ClinicFixture(TransactionTestCase):
     def setUp(self):
         self.a, self.b = Store.objects.create(name='A'), Store.objects.create(name='B')
         self.manager = Account.objects.create_user(username='m', store=self.a, role='manager')
@@ -25,10 +25,12 @@ class ClinicTests(TransactionTestCase):
         PolicyHead.objects.create(store=self.a, candidate=self.template, generation=1)
         PolicyHead.objects.create(store=self.b)
 
-    def template_fixture(self, version='template-0.2'):
+    def template_fixture(self, version='template-0.2', additional_rules=None):
         definition = json.loads((Path(__file__).parents[1] / 'examples/01_完整定义需求_v0.2.json').read_text(encoding='utf-8'))
         definition['scope']['store_id'] = str(self.a.pk)
         definition['templates']['version'] = version
+        if additional_rules is not None:
+            definition['additional_rules'] = additional_rules
         result = compile_demand(definition)
         self.assertTrue(result['ok'])
         demand = Demand.objects.create(store=self.a, actor=self.manager, reason='合成测试夹具', input_digest=result['candidate']['input_digest'], definition=definition, report={'ok': True})
@@ -50,6 +52,7 @@ class ClinicTests(TransactionTestCase):
         ClinicalRevision.objects.create(record=record, version=1, diagnosis='仅医生可见的合成诊断', examination='合成检查', actor=self.doctor)
         return record
 
+class ClinicTests(ClinicFixture):
     def test_creation_is_snapshot_with_server_owned_fixed_identity(self):
         result = self.create()
         row = Encounter.objects.get(pk=result['encounter_ref'])

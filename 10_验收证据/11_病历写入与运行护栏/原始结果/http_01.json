@@ -1,0 +1,83 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "check": "真实HTTP前台创建合成接诊",
+      "passed": true
+    },
+    {
+      "check": "缺诊断实际SR02拦截且不写正式病历",
+      "passed": true
+    },
+    {
+      "check": "阻断告警及待发同事务持久",
+      "passed": true
+    },
+    {
+      "check": "真实同次请求重试不新增告警",
+      "passed": true
+    },
+    {
+      "check": "独立提交分别保留告警",
+      "passed": true
+    },
+    {
+      "check": "接诊医生真实写入正式病历",
+      "passed": true
+    },
+    {
+      "check": "成功重试不新增病历版本",
+      "passed": true
+    },
+    {
+      "check": "前台管理和跨店医生直接API写入拒绝",
+      "passed": true
+    },
+    {
+      "check": "跨店写拒绝只归请求账号门店",
+      "passed": true
+    },
+    {
+      "check": "格式错误不冒充临床告警",
+      "passed": true
+    },
+    {
+      "check": "真实更正保留原值与实际医生",
+      "passed": true
+    },
+    {
+      "check": "旧版本重复更正拒绝",
+      "passed": true
+    },
+    {
+      "check": "医生工作台告警未处理且无伪造处理人",
+      "passed": true
+    },
+    {
+      "check": "跨店告警列表不泄漏本店事件",
+      "passed": true
+    },
+    {
+      "check": "管理及跨店目标告警读取拒绝",
+      "passed": true
+    },
+    {
+      "check": "原接诊标记误建后不再新增诊疗",
+      "passed": true
+    },
+    {
+      "check": "误建原告警仍可由原医生处理",
+      "passed": true
+    },
+    {
+      "check": "业务处理不伪造消息已投递",
+      "passed": true
+    },
+    {
+      "check": "每笔校验保留原模板和当前规则依据",
+      "passed": true
+    }
+  ],
+  "encounter_ref": "85ece5d7-c597-42a0-a25a-89f8131248bd",
+  "scope": "synthetic_loopback_http_not_real_clinical_or_performance_acceptance"
+}

@@ -1,0 +1,56 @@
+Creating test database for alias 'default' ('t22_app_test')...
+Found 2 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: rest_framework
+  Apply all migrations: auth, clinic, contenttypes, governance, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying governance.0001_initial... OK
+  Applying clinic.0001_initial... OK
+  Applying clinic.0002_alert_alertoutbox_clinicalcheck_guardhit_alert_hit... OK
+  Applying clinic.0003_clinicalcheck_original_version_and_more... OK
+  Applying sessions.0001_initial...test_record_filtered_alert_refusal_keeps_real_parent_and_record_index (clinic.test_writes.ClinicalWriteTests.test_record_filtered_alert_refusal_keeps_real_parent_and_record_index) ... FAIL
+test_alert_opens_its_actual_encounter_even_before_first_record (clinic.test_writes.ClinicalWriteTests.test_alert_opens_its_actual_encounter_even_before_first_record) ... FAIL
+
+======================================================================
+FAIL: test_record_filtered_alert_refusal_keeps_real_parent_and_record_index (clinic.test_writes.ClinicalWriteTests.test_record_filtered_alert_refusal_keeps_real_parent_and_record_index)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_writes.py", line 280, in test_record_filtered_alert_refusal_keeps_real_parent_and_record_index
+    self.assertEqual(str(ref), str(event.target))
+AssertionError: 'f00c6a3b-fcef-4741-80ce-6c471aaa343c' != 'None'
+- f00c6a3b-fcef-4741-80ce-6c471aaa343c
++ None
+
+
+======================================================================
+FAIL: test_alert_opens_its_actual_encounter_even_before_first_record (clinic.test_writes.ClinicalWriteTests.test_alert_opens_its_actual_encounter_even_before_first_record)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_writes.py", line 293, in test_alert_opens_its_actual_encounter_even_before_first_record
+    self.assertEqual(200, response.status_code)
+AssertionError: 200 != 404
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.236s
+
+FAILED (failures=2)
+Destroying test database for alias 'default' ('t22_app_test')...
+ OK
+System check identified no issues (0 silenced).

@@ -1,0 +1,193 @@
+"""Atomic clinical writes, guard refusals and doctor alert handling."""
+from django.db import transaction
+from django.utils import timezone
+from governance.models import Operation, PolicyHead
+from governance.services import DomainError, _check_candidate, _uuid, require, write_audit
+from vetcontrols.compiler import _digest, _normalize
+from .guards import evaluate
+from .models import Alert, AlertOutbox, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, GuardHit
+from .services import _clinical, _object, _own, _refusal, _template, _text, read
+
+WRITE = 'clinical.diagnosis.write'
+ALERT = 'clinical.alert.handle'
+
+
+def _validated(candidate, store_id):
+    try:
+        _check_candidate(candidate)
+        return _template(candidate, store_id)
+    except (DomainError, AttributeError, KeyError, TypeError, ValueError):
+        raise DomainError('POLICY_UNAVAILABLE', 503) from None
+
+
+def _audit(actor, permission, row, result, reason, record=None):
+    event = write_audit(actor, permission, result, reason, row.pk, actor.store_id)
+    AuditTarget.objects.create(event=event, target=row.pk, kind='encounter')
+    if record:
+        AuditTarget.objects.create(event=event, target=record.pk, kind='record')
+    return event
+
+
+def diagnosis(actor_id, mode, key, payload, ref):
+    try:
+        with transaction.atomic():
+            actor = require(actor_id, WRITE, lock=True)
+            operation_key = _uuid(key)
+            head = PolicyHead.objects.select_for_update().filter(store=actor.store).first()
+            row = _own(actor, ref, clinical=True, lock=True)
+            allowed = ['diagnosis', 'examination']
+            if mode == 'correct':
+                allowed += ['original_content_ref', 'original_version_ref', 'reason']
+            _object(payload, allowed, ['original_content_ref', 'original_version_ref', 'reason'] if mode == 'correct' else [])
+            for field in ['diagnosis', 'examination']:
+                if field in payload:
+                    _text(payload[field], 10000, False)
+            digest = _digest(_normalize({'mode': mode, 'target': ref, 'payload': payload, 'store': str(actor.store_id)}))
+            previous = Operation.objects.filter(actor=actor, permission=WRITE, key=operation_key).first()
+            if previous:
+                if previous.digest != digest:
+                    raise DomainError('OPERATION_CONTENT_CONFLICT')
+                return previous.result
+            record = ClinicalRecord.objects.filter(encounter=row).first()
+            current = None
+            if mode == 'record':
+                if row.error_mark or record:
+                    raise DomainError('STATE_CONFLICT')
+                values = {'diagnosis': payload.get('diagnosis', ''), 'examination': payload.get('examination', '')}
+            else:
+                if not record:
+                    raise DomainError('STATE_CONFLICT')
+                _text(payload['reason'], 2000)
+                current = ClinicalRevision.objects.filter(record=record, version=record.current_version).first()
+                if not current:
+                    raise DomainError('RECORD_UNAVAILABLE', 503)
+                if _uuid(payload['original_content_ref']) != record.pk or _uuid(payload['original_version_ref']) != current.pk:
+                    raise DomainError('STATE_OR_VERSION_CONFLICT')
+                if not set(payload) & {'diagnosis', 'examination'}:
+                    raise DomainError('INPUT_FIELDS_INVALID', 422)
+                values = {field: payload.get(field, getattr(current, field)) for field in ['diagnosis', 'examination']}
+            if not head or not head.candidate:
+                raise DomainError('POLICY_UNAVAILABLE', 503)
+            template_candidate = record.template if record else row.template
+            template = _validated(template_candidate, actor.store_id)
+            _validated(head.candidate, actor.store_id)
+            if template['clinical']['extra_fields']:
+                raise DomainError('RULE_EXECUTION_UNAVAILABLE', 503)
+            checks, hits = evaluate(head.candidate.envelope['payload']['demand'], template, values, mode)
+            check = ClinicalCheck.objects.create(encounter=row, record=record, original_version=current, actor=actor, mode=mode,
+                         template=template_candidate, policy=head.candidate, policy_digest=head.candidate.digest,
+                         status='blocked' if hits else 'passed', checks=checks)
+            if hits:
+                for item in hits:
+                    hit = GuardHit.objects.create(evaluation=check, **item)
+                    alert = Alert.objects.create(hit=hit)
+                    AlertOutbox.objects.create(alert=alert)
+                _audit(actor, WRITE, row, 'refused', 'GUARD_BLOCKED', record)
+                result = {'ok': False, 'error': {'code': 'GUARD_BLOCKED'}, 'event_ref': str(check.pk)}
+            else:
+                if not record:
+                    record = ClinicalRecord.objects.create(encounter=row, template=template_candidate)
+                else:
+                    record.current_version += 1
+                    record.save(update_fields=['current_version'])
+                version = ClinicalRevision.objects.create(record=record, version=record.current_version, actor=actor,
+                                                          reason=payload.get('reason', ''), **values)
+                check.record = record
+                check.result_version = version
+                check.save(update_fields=['record', 'result_version'])
+                _audit(actor, WRITE, row, 'success', 'COMPLETED', record)
+                # Load through the same explicit, doctor-only serializer as reads.
+                row = type(row).objects.get(pk=row.pk)
+                result = _clinical(row, {})
+            Operation.objects.create(actor=actor, permission=WRITE, key=operation_key, digest=digest, result=result)
+            return result
+    except DomainError as error:
+        _refusal(actor_id, WRITE, error, ref)
+        raise
+
+
+def _alert_item(alert):
+    check = alert.hit.evaluation
+    return {'alert_ref': str(alert.pk), 'event_ref': str(check.pk),
+            'record_ref': str(check.record_id) if check.record_id else None,
+            'rule_ref': alert.hit.rule_ref, 'hit_field': alert.hit.field,
+            'handling_state': 'handled' if alert.handled_at else 'unhandled',
+            'handler_ref': alert.handler_id, 'handling_result': alert.handling_result,
+            'handled_at': alert.handled_at.isoformat() if alert.handled_at else None}
+
+
+def alert_refusal(actor_id, error, ref=None, permission=ALERT, record_ref=None):
+    try:
+        alert = Alert.objects.select_related('hit__evaluation').filter(pk=_uuid(ref)).first() if ref else None
+        record = ClinicalRecord.objects.filter(pk=_uuid(record_ref)).first() if record_ref else None
+    except DomainError:
+        alert, record = None, None
+    with transaction.atomic():
+        encounter_ref = str(alert.hit.evaluation.encounter_id) if alert else str(record.encounter_id) if record else None
+        event = _refusal(actor_id, permission, error, encounter_ref)
+        if alert:
+            AuditTarget.objects.create(event=event, target=alert.pk, kind='alert')
+
+
+def alert_encounter(actor_id, ref):
+    alert = Alert.objects.select_related('hit__evaluation').filter(pk=_uuid(ref)).first()
+    if not alert:
+        raise DomainError('TARGET_UNAVAILABLE', 403)
+    return read(actor_id, clinical=True, ref=str(alert.hit.evaluation.encounter_id))
+
+
+def alerts(actor_id, query):
+    with transaction.atomic():
+        actor = require(actor_id, ALERT, lock=True)
+        _object(query, ['alert_ref', 'handling_state', 'record_ref', 'rule_ref'])
+        rows = Alert.objects.filter(hit__evaluation__encounter__store_id=actor.store_id,
+                                    hit__evaluation__encounter__doctor_id=actor.pk)
+        if 'alert_ref' in query:
+            rows = rows.filter(pk=_uuid(query['alert_ref']))
+            if not rows.exists():
+                raise DomainError('TARGET_UNAVAILABLE', 403)
+        if 'record_ref' in query:
+            record = ClinicalRecord.objects.filter(pk=_uuid(query['record_ref'])).first()
+            if not record:
+                raise DomainError('TARGET_UNAVAILABLE', 403)
+            _own(actor, str(record.encounter_id), clinical=True, lock=True)
+            rows = rows.filter(hit__evaluation__encounter_id=record.encounter_id)
+        if 'rule_ref' in query:
+            rows = rows.filter(hit__rule_ref=_text(query['rule_ref'], 100))
+        if 'handling_state' in query:
+            if query['handling_state'] not in ['handled', 'unhandled']:
+                raise DomainError('INPUT_INVALID', 422)
+            rows = rows.filter(handled_at__isnull=query['handling_state'] == 'unhandled')
+        items = list(rows.select_for_update().select_related('hit__evaluation').order_by('hit__evaluation__created_at', 'id'))
+        for alert in items:
+            _audit(actor, ALERT, alert.hit.evaluation.encounter, 'success', 'COMPLETED', alert.hit.evaluation.record)
+        return {'items': [_alert_item(alert) for alert in items]}
+
+
+def resolve(actor_id, key, payload, ref):
+    with transaction.atomic():
+        actor = require(actor_id, ALERT, lock=True)
+        operation_key = _uuid(key)
+        _object(payload, ['alert_ref', 'handling_result'], ['alert_ref', 'handling_result'])
+        if _uuid(payload['alert_ref']) != _uuid(ref):
+            raise DomainError('TARGET_UNAVAILABLE', 403)
+        _text(payload['handling_result'], 2000)
+        alert = Alert.objects.select_related('hit__evaluation').filter(pk=_uuid(ref)).first()
+        if not alert:
+            raise DomainError('TARGET_UNAVAILABLE', 403)
+        row = _own(actor, str(alert.hit.evaluation.encounter_id), clinical=True, lock=True)
+        alert = Alert.objects.select_for_update().select_related('hit__evaluation').get(pk=alert.pk)
+        digest = _digest({'target': ref, 'payload': payload, 'store': str(actor.store_id)})
+        previous = Operation.objects.filter(actor=actor, permission=ALERT, key=operation_key).first()
+        if previous:
+            if previous.digest != digest:
+                raise DomainError('OPERATION_CONTENT_CONFLICT')
+            return previous.result
+        if alert.handled_at:
+            raise DomainError('STATE_CONFLICT')
+        alert.handler, alert.handled_at, alert.handling_result = actor, timezone.now(), payload['handling_result']
+        alert.save(update_fields=['handler', 'handled_at', 'handling_result'])
+        _audit(actor, ALERT, row, 'success', 'COMPLETED', alert.hit.evaluation.record)
+        result = _alert_item(alert)
+        Operation.objects.create(actor=actor, permission=ALERT, key=operation_key, digest=digest, result=result)
+        return result

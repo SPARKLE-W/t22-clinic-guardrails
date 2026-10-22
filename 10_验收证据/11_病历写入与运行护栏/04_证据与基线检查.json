@@ -1,0 +1,116 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "check": "冻结/原件指纹 03_需求规格说明书.md",
+      "passed": true
+    },
+    {
+      "check": "冻结/原件指纹 03_需求规格说明书.docx",
+      "passed": true
+    },
+    {
+      "check": "冻结/原件指纹 T22_门诊护栏规则_学生版任务书.docx",
+      "passed": true
+    },
+    {
+      "check": "冻结/原件指纹 10_验收证据/05_需求基线与首轮设计/02_需规v1.0_基线快照.md",
+      "passed": true
+    },
+    {
+      "check": "完整78项MySQL回归",
+      "passed": true
+    },
+    {
+      "check": "两项审查缺陷先失败",
+      "passed": true
+    },
+    {
+      "check": "修复后19项相关回归",
+      "passed": true
+    },
+    {
+      "check": "19项实际HTTP检查",
+      "passed": true
+    },
+    {
+      "check": "1366x768实际页面及诊断告警",
+      "passed": true
+    },
+    {
+      "check": "回归后被测源码未再变更",
+      "passed": true
+    },
+    {
+      "check": "Python源码及检查脚本语法",
+      "passed": true
+    },
+    {
+      "check": "页面脚本语法 home.html",
+      "passed": true
+    },
+    {
+      "check": "页面脚本语法 workbench_script.html",
+      "passed": true
+    },
+    {
+      "check": "页面脚本语法 clinical_write_script.html",
+      "passed": true
+    },
+    {
+      "check": "当前入口链接",
+      "passed": true
+    }
+  ],
+  "broken_links": [],
+  "subagent_calls": 1,
+  "scope": "diagnosis_and_durable_alert_slice_not_MQ_or_full_acceptance",
+  "source_sha256": {
+    "05_系统代码\\manage.py": "02DCFAF9AFF20F432B519BDFD69B5769BA415E415C5CEC8C08D00D2705123963",
+    "05_系统代码\\requirements.in": "7FA431B101C4D01E231C4DF27785A56B2CE4343D78E19266674D7329B0767152",
+    "05_系统代码\\requirements.lock": "68A7839AA7B2AAFB8C07ACA9945FEEC69A80997A71EBCC2F492A8F0D5287E128",
+    "05_系统代码\\clinic\\guards.py": "2B968D1DCE41C937AD4280DB27D5EB9AD2CE4618348FA5D4BCBC1C6665375FD6",
+    "05_系统代码\\clinic\\models.py": "C43C6C27C5A1FEA0993A0EDBC997EE42A9E7F2DDEDB331156CB5E62A77CD2421",
+    "05_系统代码\\clinic\\services.py": "FA86483B5915ECFED38E153CB9A0B623907B76ABC5EFEFB7BA58902DF16E6CCB",
+    "05_系统代码\\clinic\\tests.py": "ED74F3A7FA8A7CC24F952E7730E24E181265BEAD05351070EE9664DCD65C8AAF",
+    "05_系统代码\\clinic\\test_writes.py": "FA624EF813021FB51B7825CFC4BDE28D168F2F2DB0917CAFEB5049B9117A085D",
+    "05_系统代码\\clinic\\views.py": "B9D75FBFBDC3CC308349063836F9F2DA334D2081F70CAB14BABD94D147EE2E53",
+    "05_系统代码\\clinic\\writes.py": "A1A8541F133EF52A8DC4862061EAAF291F5B229F9F8ADCC686D9030B86217308",
+    "05_系统代码\\clinic\\__init__.py": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "05_系统代码\\examples\\01_完整定义需求_v0.2.json": "3CA960C588AEEADC22D6A8389B26C977442320DA9200A0E95EB1168B448FD9D2",
+    "05_系统代码\\governance\\apps.py": "E4481D82DCD5735AD56E79EB57E3BA66FA2E756770D73EC70ADD3B462A3D264F",
+    "05_系统代码\\governance\\entry.py": "96386A676FD858A09B081633ADEE0EE66EEEAD7E56485EC55528BACA7B24C8E4",
+    "05_系统代码\\governance\\models.py": "9A0415246DB2F8AEEFD049D0A39A0EF581641E829DBBF8ED8B1CD8A790E2AAC8",
+    "05_系统代码\\governance\\services.py": "D81053E1A6BD59BA2724F6DF9CDE47F2224C7D005CD90FF27E50112D33F856E6",
+    "05_系统代码\\governance\\tests.py": "7F6B2D1436AE96946223FBD346881C6097E45047B23724D439566B574BE8EA04",
+    "05_系统代码\\governance\\views.py": "5BFA8CDE83A9D8A3152B1326D804F9B37E31A7DEF4F99156B764EEB0CF23BC6B",
+    "05_系统代码\\governance\\__init__.py": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "05_系统代码\\tests\\test_cli.py": "865D619F6671DBC636A463D24888C34CAE4D1E320A7AB79A26747C01CAAEE472",
+    "05_系统代码\\tests\\test_controls.py": "FA9929F923505997CF522AFEEA6165FB68815E03C25481E9D88FF2A37D0345B5",
+    "05_系统代码\\tests\\__init__.py": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "05_系统代码\\vetapp\\settings.py": "73DEDAA6A0EDA4D601D9D1F7F269CB313C200A623A94FB9570A83EAAEA4B4AD5",
+    "05_系统代码\\vetapp\\urls.py": "88CA0DDAABB44644B8A89B01D485C0C29F988AB30CA92AC364082C39F82E7B7F",
+    "05_系统代码\\vetapp\\wsgi.py": "6ECFCBE45D84BB394D5C9A6937919D478700CF551D743926368EC29F77355225",
+    "05_系统代码\\vetapp\\__init__.py": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "05_系统代码\\vetcontrols\\compiler.py": "1F5129C0F4113D4EC00E8CBB6F09D1760552E8ED269367D0392BFF682E05805B",
+    "05_系统代码\\vetcontrols\\__init__.py": "B0315AD3A51EED48704D13204BBA8F6B866A68CA9BED906BCDB5E7FC734A0083",
+    "05_系统代码\\vetcontrols\\__main__.py": "E88C82629DA842694F3CA2A6C50B2F1B4BD93E04CD14E9898D098BC3CAF58CCF",
+    "05_系统代码\\clinic\\migrations\\0001_initial.py": "E699E7D073B2AF5B3ACE186F39D130AC3B709A6EBB1F33C34DC35996DD1ACC2C",
+    "05_系统代码\\clinic\\migrations\\0002_alert_alertoutbox_clinicalcheck_guardhit_alert_hit.py": "231A92B67556A496A95B7956D3658D88DD5CFDDF30288E6A29C3650E43396AEF",
+    "05_系统代码\\clinic\\migrations\\0003_clinicalcheck_original_version_and_more.py": "F581321B147C22D821A6F602AB7E12F5FCEB16A16DA07D075B248DC40E73C54E",
+    "05_系统代码\\clinic\\migrations\\__init__.py": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "05_系统代码\\clinic\\templates\\clinic\\clinical_write_script.html": "5DF25FB85DF2C85BD462E297C0D4A7CCD8147B80631544C2BA1ACB34C15389A9",
+    "05_系统代码\\clinic\\templates\\clinic\\workbench.html": "5808602033062B9107214E8E494ACE548F56D202FB3979BF86E0EF2E38A7CAB3",
+    "05_系统代码\\clinic\\templates\\clinic\\workbench_script.html": "1271D317172CC66A9DB7B4B45E2EB66DC1F3D6CA50A9954659EC5D0460886939",
+    "05_系统代码\\governance\\management\\__init__.py": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "05_系统代码\\governance\\migrations\\0001_initial.py": "F32469730A71AF2DBC1A34112F7ED6CB1CBA45548808A60695D9183F698AF9F3",
+    "05_系统代码\\governance\\migrations\\__init__.py": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "05_系统代码\\governance\\management\\commands\\seed_demo.py": "A6C3FF06F476ABD8B7ADD1505CE296B585AAF0233DB46C1F6581D099CB07DFAA",
+    "05_系统代码\\governance\\management\\commands\\__init__.py": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "05_系统代码\\governance\\templates\\governance\\home.html": "3CE6F98FDF348B0A41ECCA031734CA7C1F27808E24D9075BBAF098DC03CF6C1E",
+    "05_系统代码\\vetcontrols\\data\\base_floor.json": "082142820B3C36014E646089CFD9F83F0D09FE3F10470885C4D4DB6FFF66C15B",
+    "05_系统代码\\vetcontrols\\data\\demand.schema.json": "FA270326FA201B908FD180FE79BBCCA1CCE4D5F762D7ADF997D8E8F72F8F1678",
+    "05_系统代码\\vetcontrols\\data\\permission_floor.json": "9B637C7DA0E057ABAF233BF4D6FAA4575C021B66C5F2D82DBFB40D33A5134955",
+    "05_系统代码\\vetcontrols\\data\\registry.json": "7DCE0F9A5F2738D72E1533FF96681EB54B405DA3946254B206EC59DC704281A6"
+  }
+}

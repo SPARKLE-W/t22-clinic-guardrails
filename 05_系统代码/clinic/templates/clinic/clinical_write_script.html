@@ -1,0 +1,56 @@
+<script>
+function doctorEditor(parent,result){
+  const row=result.reception, clinical=result.clinical;
+  if(!clinical&&row.error_mark){parent.append(node('p','误建单不能新增诊疗，原资料与告警保留。'));return;}
+  const form=node('form');form.append(node('h3',clinical?'更正已有诊疗内容':'填写正式病历'));
+  for(const [id,label,value,required,max] of [
+    ['clinical-diagnosis','诊断说明（必填）',clinical?.diagnosis||'',true,10000],
+    ['clinical-examination','检查说明（可选）',clinical?.examination||'',false,10000],
+    ...(clinical?[['clinical-reason','更正理由（必填）','',true,2000]]:[])]){
+    const labelNode=node('label',label);labelNode.htmlFor=id;
+    const input=node('textarea');input.id=id;input.value=value;input.required=required;input.maxLength=max;
+    form.append(labelNode,input);
+  }
+  const save=node('button',clinical?'保存更正并保留原版本':'提交正式病历');form.append(save);
+  form.onsubmit=async event=>{
+    event.preventDefault();save.disabled=true;
+    try{
+      const values={diagnosis:$('clinical-diagnosis').value,examination:$('clinical-examination').value};
+      if(clinical){values.original_content_ref=clinical.record_ref;values.original_version_ref=clinical.clinical_versions[clinical.clinical_versions.length-1].version_ref;values.reason=$('clinical-reason').value;}
+      await api('/api/clinical/encounters/'+row.encounter_ref+'/diagnosis'+(clinical?'/corrections':''),values);
+      notice(clinical?'更正已保存，原版本保留。':'正式病历已保存。');
+      await clinicOpen(row.encounter_ref);await clinicRefresh();await doctorAlertsRefresh();
+    }catch(error){notice(error.message,true);await doctorAlertsRefresh().catch(()=>{});}
+    finally{save.disabled=false;}
+  };
+  parent.append(form);
+}
+
+async function doctorAlertsRefresh(){
+  const result=await api('/api/clinical/alerts'), target=$('doctor-alerts');target.replaceChildren();
+  const pendingCount=result.items.filter(item=>item.handling_state==='unhandled').length;
+  $('alert-count').textContent=pendingCount?'有 '+pendingCount+' 条未处理告警':'暂无未处理告警';
+  for(const item of result.items){
+    const panel=node('div');panel.className='history-entry';
+    const fieldName=({diagnosis:'诊断说明',examination:'检查说明'})[item.hit_field]||item.hit_field;
+    panel.append(node('p',item.rule_ref+' · 命中字段：'+fieldName+'\n'+(item.handling_state==='handled'?'已处理':'待处理')));
+    const open=node('button','查看对应接诊');open.className='secondary';open.onclick=async()=>{
+      open.disabled=true;
+      try{const context=await api('/api/clinical/alerts/'+item.alert_ref+'/encounter');clinicRender(context);open.textContent='接诊：'+(context.reception.pet_name||context.reception.species);$('clinic-detail').scrollIntoView({block:'start'});}
+      catch(error){notice(error.message,true);}finally{open.disabled=false;}
+    };panel.append(open);
+    if(item.handling_state==='handled')panel.append(node('p',item.handling_result+' · 处理账号 '+item.handler_ref));
+    else{
+      const input=node('textarea');input.maxLength=2000;input.setAttribute('aria-label','实际处理结果');input.placeholder='填写核对及实际处理结果';
+      const save=node('button','登记处理结果');save.onclick=async()=>{
+        save.disabled=true;
+        try{await api('/api/clinical/alerts/'+item.alert_ref+'/resolution',{alert_ref:item.alert_ref,handling_result:input.value});notice('已登记实际处理结果，告警记录保留。');await doctorAlertsRefresh();}
+        catch(error){notice(error.message,true);}finally{save.disabled=false;}
+      };panel.append(input,save);
+    }
+    target.append(panel);
+  }
+}
+button('alert-refresh',doctorAlertsRefresh);
+doctorAlertsRefresh().catch(error=>notice(error.message,true));
+</script>

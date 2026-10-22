@@ -85,6 +85,7 @@ def _refusal(actor_id, permission, error, ref=None):
                 links.append(AuditTarget(event=event, target=record_ref, kind='record'))
             AuditTarget.objects.bulk_create(links)
     error.audit_recorded = True
+    return event
 
 
 def mutate(actor_id, mode, key, payload, encounter_ref=None):

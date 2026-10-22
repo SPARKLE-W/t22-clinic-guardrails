@@ -15,4 +15,8 @@ urlpatterns = [
     path('api/encounters/<uuid:encounter_id>/misregistration', clinic.change('mark')),
     path('api/encounters/create-options/doctors', clinic.doctors), path('api/encounters/create-options/pet-reference-check', clinic.pet_check),
     path('api/clinical/encounters', clinic.clinicals), path('api/clinical/encounters/<uuid:encounter_id>', clinic.clinical),
+    path('api/clinical/encounters/<uuid:encounter_id>/diagnosis', clinic.diagnosis('record')),
+    path('api/clinical/encounters/<uuid:encounter_id>/diagnosis/corrections', clinic.diagnosis('correct')),
+    path('api/clinical/alerts', clinic.alerts), path('api/clinical/alerts/<uuid:alert_id>/resolution', clinic.resolve),
+    path('api/clinical/alerts/<uuid:alert_id>/encounter', clinic.alert_encounter),
 ]

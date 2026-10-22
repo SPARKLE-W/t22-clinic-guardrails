@@ -1,0 +1,14 @@
+{
+  "command": [
+    "C:\\Users\\29512\\.cache\\t22-runtime\\controls-venv\\Scripts\\python.exe",
+    "manage.py",
+    "test",
+    "clinic.test_writes.ClinicalWriteTests.test_record_filtered_alert_refusal_keeps_real_parent_and_record_index",
+    "clinic.test_writes.ClinicalWriteTests.test_alert_opens_its_actual_encounter_even_before_first_record",
+    "--noinput",
+    "-v",
+    "2"
+  ],
+  "exit_code": 1,
+  "wall_seconds": 3.809
+}

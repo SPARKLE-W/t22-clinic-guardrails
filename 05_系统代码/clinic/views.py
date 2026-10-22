@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from governance.services import DomainError
 from governance.views import _body, protected
 from .services import auxiliary, mutate, read
+from . import writes
 
 
 def query(request):
@@ -64,3 +65,28 @@ def doctors(request):
 @protected('encounter.create', ['POST'])
 def pet_check(request):
     return JsonResponse(auxiliary(request.user.pk, 'verify_pet_ref', _body(request)))
+
+
+def diagnosis(mode):
+    @protected(writes.WRITE, ['POST'])
+    def view(request, encounter_id):
+        result = writes.diagnosis(request.user.pk, mode, request.headers.get('Idempotency-Key'), _body(request), str(encounter_id))
+        return JsonResponse(result, status=422 if result.get('ok') is False else 200)
+    return view
+
+
+@protected(writes.ALERT, ['GET'])
+def alerts(request):
+    return JsonResponse(writes.alerts(request.user.pk, query(request)))
+
+
+@protected(writes.ALERT, ['POST'])
+def resolve(request, alert_id):
+    return JsonResponse(writes.resolve(request.user.pk, request.headers.get('Idempotency-Key'), _body(request), str(alert_id)))
+
+
+@protected('clinical.read', ['GET'])
+def alert_encounter(request, alert_id):
+    if request.GET:
+        raise DomainError('INPUT_FIELDS_INVALID', 422)
+    return JsonResponse(writes.alert_encounter(request.user.pk, str(alert_id)))

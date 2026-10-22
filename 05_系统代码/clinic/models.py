@@ -73,3 +73,43 @@ class AuditTarget(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['event', 'target', 'kind'], name='one_event_target')]
+
+
+class ClinicalCheck(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    encounter = models.ForeignKey(Encounter, on_delete=models.PROTECT)
+    record = models.ForeignKey(ClinicalRecord, on_delete=models.PROTECT, null=True)
+    original_version = models.ForeignKey(ClinicalRevision, on_delete=models.PROTECT, null=True, related_name='+')
+    result_version = models.ForeignKey(ClinicalRevision, on_delete=models.PROTECT, null=True, related_name='+')
+    actor = models.ForeignKey(Account, on_delete=models.PROTECT)
+    mode = models.CharField(max_length=20)
+    template = models.ForeignKey(Candidate, on_delete=models.PROTECT, related_name='+')
+    policy = models.ForeignKey(Candidate, on_delete=models.PROTECT, related_name='+')
+    policy_digest = models.CharField(max_length=64)
+    status = models.CharField(max_length=12)
+    checks = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class GuardHit(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    evaluation = models.ForeignKey(ClinicalCheck, on_delete=models.PROTECT)
+    rule_ref = models.CharField(max_length=100)
+    rule_version = models.CharField(max_length=100)
+    field = models.CharField(max_length=100)
+    value = models.JSONField(null=True)
+
+
+class Alert(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    hit = models.OneToOneField(GuardHit, on_delete=models.PROTECT)
+    handler = models.ForeignKey(Account, on_delete=models.PROTECT, null=True)
+    handled_at = models.DateTimeField(null=True)
+    handling_result = models.TextField(blank=True)
+
+
+class AlertOutbox(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    alert = models.OneToOneField(Alert, on_delete=models.PROTECT)
+    state = models.CharField(max_length=16, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
