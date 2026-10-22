@@ -38,7 +38,7 @@ jobs:
       run:
         working-directory: 05_系统代码
     env:
-      T22_APP_CONFIG: ${{ runner.temp }}/t22-ci-app.json
+      T22_APP_CONFIG: /tmp/t22-ci-${{ github.run_id }}-${{ github.run_attempt }}.json
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
