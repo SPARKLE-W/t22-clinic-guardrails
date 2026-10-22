@@ -1,0 +1,7 @@
+gh: Invalid request.
+
+No subschema in "anyOf" matched.
+More than one subschema in "oneOf" matched.
+Not all subschemas of "allOf" matched.
+For 'anyOf/1', {"strict" => true, "contexts" => [], "checks" => [{"context" => "regression", "app_id" => 15368}]} is not a null. (HTTP 422)
+{"message":"Invalid request.\n\nNo subschema in \"anyOf\" matched.\nMore than one subschema in \"oneOf\" matched.\nNot all subschemas of \"allOf\" matched.\nFor 'anyOf/1', {\"strict\" => true, \"contexts\" => [], \"checks\" => [{\"context\" => \"regression\", \"app_id\" => 15368}]} is not a null.","documentation_url":"https://docs.github.com/rest/branches/branch-protection#update-branch-protection","status":"422"}
