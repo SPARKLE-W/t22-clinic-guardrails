@@ -1,5 +1,5 @@
 # Preserve existing evidence and frozen baseline bytes, including line endings.
-* -text
+* -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 .github/** text eol=lf
 *.docx binary
 *.pdf binary

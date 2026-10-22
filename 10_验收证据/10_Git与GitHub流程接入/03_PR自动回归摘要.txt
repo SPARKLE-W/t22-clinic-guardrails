@@ -1,0 +1,78 @@
+regression	Full regression on MySQL	2026-10-22T07:43:33.0448382Z   Applying contenttypes.0001_initial... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.0702441Z   Applying contenttypes.0002_remove_content_type_name... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.1501029Z   Applying auth.0001_initial... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.1703614Z   Applying auth.0002_alter_permission_name_max_length... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.1777125Z   Applying auth.0003_alter_user_email_max_length... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.1807721Z   Applying auth.0004_alter_user_username_opts... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.1902372Z   Applying auth.0005_alter_user_last_login_null... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.1919197Z   Applying auth.0006_require_contenttypes_0002... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.1954157Z   Applying auth.0007_alter_validators_add_error_messages... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.1994918Z   Applying auth.0008_alter_user_username_max_length... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.2061310Z   Applying auth.0009_alter_user_last_name_max_length... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.2108163Z   Applying auth.0010_alter_group_name_max_length... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.2155455Z   Applying auth.0011_update_proxy_permissions... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.2197400Z   Applying auth.0012_alter_user_first_name_max_length... OK
+regression	Full regression on MySQL	2026-10-22T07:43:33.6954910Z   Applying governance.0001_initial... OK
+regression	Full regression on MySQL	2026-10-22T07:43:34.2201761Z   Applying clinic.0001_initial... OK
+regression	Full regression on MySQL	2026-10-22T07:43:35.6862807Z test_activation_fault_keeps_previous_head_and_history (governance.tests.GovernanceTests.test_activation_fault_keeps_previous_head_and_history) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:37.0168307Z test_audit_failure_rolls_back_candidate_and_operation (governance.tests.GovernanceTests.test_audit_failure_rolls_back_candidate_and_operation) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:38.3014546Z test_failed_compile_records_safe_report_and_no_candidate (governance.tests.GovernanceTests.test_failed_compile_records_safe_report_and_no_candidate) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:39.5484191Z test_framework_superuser_never_bypasses_business_roles (governance.tests.GovernanceTests.test_framework_superuser_never_bypasses_business_roles) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:41.0243302Z test_http_lifecycle_and_strict_body_route_and_csrf_boundaries (governance.tests.GovernanceTests.test_http_lifecycle_and_strict_body_route_and_csrf_boundaries) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:42.3791413Z test_known_own_store_refusal_keeps_target_and_local_audit_scope (governance.tests.GovernanceTests.test_known_own_store_refusal_keeps_target_and_local_audit_scope) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:43.7472296Z test_lifecycle_requires_explicit_submit_review_and_manual_activation (governance.tests.GovernanceTests.test_lifecycle_requires_explicit_submit_review_and_manual_activation) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:45.0469493Z test_metadata_audit_never_returns_free_text_and_stays_in_store (governance.tests.GovernanceTests.test_metadata_audit_never_returns_free_text_and_stays_in_store) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:46.2983422Z test_missing_permission_entry_is_denied_before_view_runs (governance.tests.GovernanceTests.test_missing_permission_entry_is_denied_before_view_runs) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:47.5461382Z test_mysql_is_real_innodb_and_row_lock_backend (governance.tests.GovernanceTests.test_mysql_is_real_innodb_and_row_lock_backend) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:49.9138317Z test_real_mysql_head_lock_blocks_then_retry_succeeds (governance.tests.GovernanceTests.test_real_mysql_head_lock_blocks_then_retry_succeeds) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:51.2450757Z test_retry_returns_original_result_and_changed_content_conflicts (governance.tests.GovernanceTests.test_retry_returns_original_result_and_changed_content_conflicts) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:52.5849034Z test_review_state_reason_and_digest_are_required (governance.tests.GovernanceTests.test_review_state_reason_and_digest_are_required) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:53.8840581Z test_roles_scope_and_current_account_are_checked_on_every_call (governance.tests.GovernanceTests.test_roles_scope_and_current_account_are_checked_on_every_call) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:55.3281601Z test_stale_generation_is_rejected_without_overwriting_policy (governance.tests.GovernanceTests.test_stale_generation_is_rejected_without_overwriting_policy) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:57.0864964Z test_two_managers_racing_one_generation_have_one_winner (governance.tests.GovernanceTests.test_two_managers_racing_one_generation_have_one_winner) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:58.5408034Z test_unapproved_rejected_and_modified_candidate_cannot_activate (governance.tests.GovernanceTests.test_unapproved_rejected_and_modified_candidate_cannot_activate) ... ok
+regression	Full regression on MySQL	2026-10-22T07:43:59.8268865Z test_unknown_fields_spoofed_actor_and_cross_store_definition_rejected (governance.tests.GovernanceTests.test_unknown_fields_spoofed_actor_and_cross_store_definition_rejected) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:01.3084386Z test_valid_rehashed_replacement_cannot_reuse_old_approval (governance.tests.GovernanceTests.test_valid_rehashed_replacement_cannot_reuse_old_approval) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:02.8679162Z test_web_login_csrf_and_direct_api_permissions (governance.tests.GovernanceTests.test_web_login_csrf_and_direct_api_permissions) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:03.0205514Z test_correct_keeps_history_and_cannot_change_ownership (clinic.tests.ClinicTests.test_correct_keeps_history_and_cannot_change_ownership) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:03.1370245Z test_creation_is_snapshot_with_server_owned_fixed_identity (clinic.tests.ClinicTests.test_creation_is_snapshot_with_server_owned_fixed_identity) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:03.3022550Z test_creation_rejects_spoofing_wrong_doctor_unknown_fields_and_invalid_template (clinic.tests.ClinicTests.test_creation_rejects_spoofing_wrong_doctor_unknown_fields_and_invalid_template) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:03.4576528Z test_cross_store_refusal_can_be_found_by_record_without_body_access (clinic.tests.ClinicTests.test_cross_store_refusal_can_be_found_by_record_without_body_access) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:03.6235697Z test_doctor_reads_only_assigned_context_and_original_record_template (clinic.tests.ClinicTests.test_doctor_reads_only_assigned_context_and_original_record_template) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:03.8087159Z test_empty_references_bad_time_ranges_and_lost_template_fail_explicitly (clinic.tests.ClinicTests.test_empty_references_bad_time_ranges_and_lost_template_fail_explicitly) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:03.9639037Z test_error_mark_preserves_record_and_still_allows_reads_and_correction (clinic.tests.ClinicTests.test_error_mark_preserves_record_and_still_allows_reads_and_correction) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:04.1067759Z test_frontdesk_lists_only_own_receptions_and_never_nested_clinical (clinic.tests.ClinicTests.test_frontdesk_lists_only_own_receptions_and_never_nested_clinical) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:04.2723081Z test_http_unknown_fields_invalid_ids_and_no_formal_record_are_explicit (clinic.tests.ClinicTests.test_http_unknown_fields_invalid_ids_and_no_formal_record_are_explicit) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:04.4244359Z test_list_target_links_and_record_operator_audit_query_are_scoped (clinic.tests.ClinicTests.test_list_target_links_and_record_operator_audit_query_are_scoped) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:04.5658011Z test_minimal_auxiliary_has_no_profile_or_history (clinic.tests.ClinicTests.test_minimal_auxiliary_has_no_profile_or_history) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:04.6965000Z test_retry_and_conflict_recheck_current_permissions (clinic.tests.ClinicTests.test_retry_and_conflict_recheck_current_permissions) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:04.8430951Z test_scope_and_role_denials_include_c11_without_clinical_values (clinic.tests.ClinicTests.test_scope_and_role_denials_include_c11_without_clinical_values) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:04.9952319Z test_stable_pages_cover_scope_and_audit_every_returned_target (clinic.tests.ClinicTests.test_stable_pages_cover_scope_and_audit_every_returned_target) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:05.1572258Z test_write_and_read_audit_faults_do_not_commit_or_release_clinical (clinic.tests.ClinicTests.test_write_and_read_audit_faults_do_not_commit_or_release_clinical) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:05.7914131Z test_compile_verify_and_refuse_overwrite (tests.test_cli.CliTests.test_compile_verify_and_refuse_overwrite) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:05.9877915Z test_failed_compile_has_report_and_no_candidate_or_raw_values (tests.test_cli.CliTests.test_failed_compile_has_report_and_no_candidate_or_raw_values) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.3583233Z test_unreadable_file_and_duplicate_keys_are_controlled (tests.test_cli.CliTests.test_unreadable_file_and_duplicate_keys_are_controlled) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.3708004Z test_after_commit_facts_and_cross_phase_facts_cannot_be_preconditions (tests.test_controls.CompilerTests.test_after_commit_facts_and_cross_phase_facts_cannot_be_preconditions) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.4381209Z test_all_ten_redlines_and_three_sections_are_required (tests.test_controls.CompilerTests.test_all_ten_redlines_and_three_sections_are_required) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.4445423Z test_bool_is_not_numeric_target_and_nan_is_never_json_number (tests.test_controls.CompilerTests.test_bool_is_not_numeric_target_and_nan_is_never_json_number) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.4506579Z test_coding_obligations_cannot_be_replaced_by_same_ids (tests.test_controls.CompilerTests.test_coding_obligations_cannot_be_replaced_by_same_ids) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.4739456Z test_complete_input_produces_unapproved_static_candidate (tests.test_controls.CompilerTests.test_complete_input_produces_unapproved_static_candidate) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.5065801Z test_conditions_reject_unknown_facts_operators_wrong_types_and_extra_keys (tests.test_controls.CompilerTests.test_conditions_reject_unknown_facts_operators_wrong_types_and_extra_keys) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.5386913Z test_diagnosis_medication_and_human_adoption_floor (tests.test_controls.CompilerTests.test_diagnosis_medication_and_human_adoption_floor) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.5591673Z test_extensions_use_registered_types_without_new_roles (tests.test_controls.CompilerTests.test_extensions_use_registered_types_without_new_roles) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.6354367Z test_generated_candidate_always_fits_its_verifier_limits (tests.test_controls.CompilerTests.test_generated_candidate_always_fits_its_verifier_limits) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.6521979Z test_graph_cycles_missing_references_and_duplicate_ids_fail (tests.test_controls.CompilerTests.test_graph_cycles_missing_references_and_duplicate_ids_fail) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.6578445Z test_mandatory_checker_cannot_be_replaced_even_when_self_claims_safe (tests.test_controls.CompilerTests.test_mandatory_checker_cannot_be_replaced_even_when_self_claims_safe) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.6630856Z test_missing_quality_is_located_and_never_filled (tests.test_controls.CompilerTests.test_missing_quality_is_located_and_never_filled) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.6720692Z test_nonclinical_write_phases_keep_audit_contract_without_clinical_rules (tests.test_controls.CompilerTests.test_nonclinical_write_phases_keep_audit_contract_without_clinical_rules) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.6898316Z test_order_determinism_and_no_input_mutation (tests.test_controls.CompilerTests.test_order_determinism_and_no_input_mutation) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.7431879Z test_quality_limits_and_targets_identity_are_enforced (tests.test_controls.CompilerTests.test_quality_limits_and_targets_identity_are_enforced) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.7521876Z test_registered_extra_rule_is_separate_from_unconditional_floor (tests.test_controls.CompilerTests.test_registered_extra_rule_is_separate_from_unconditional_floor) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.7737566Z test_removing_phase_changing_failure_or_wrapping_floor_fails (tests.test_controls.CompilerTests.test_removing_phase_changing_failure_or_wrapping_floor_fails) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.7866613Z test_strict_json_duplicates_executable_payloads_and_input_limits (tests.test_controls.CompilerTests.test_strict_json_duplicates_executable_payloads_and_input_limits) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.8001349Z test_stronger_targets_and_smaller_supported_screen_are_allowed (tests.test_controls.CompilerTests.test_stronger_targets_and_smaller_supported_screen_are_allowed) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.8302073Z test_tamper_rehashed_candidate_and_fake_approval_are_not_trusted (tests.test_controls.CompilerTests.test_tamper_rehashed_candidate_and_fake_approval_are_not_trusted) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.8598821Z test_twenty_permissions_and_manager_projection_cannot_widen (tests.test_controls.CompilerTests.test_twenty_permissions_and_manager_projection_cannot_widen) ... ok
+regression	Full regression on MySQL	2026-10-22T07:44:06.8604145Z Ran 59 tests in 32.535s
+regression	Full regression on MySQL	2026-10-22T07:44:06.8605820Z OK
+regression	Full regression on MySQL	2026-10-22T07:44:06.9867733Z   Applying sessions.0001_initial... OK
