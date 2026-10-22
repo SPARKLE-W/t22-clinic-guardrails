@@ -1,0 +1,10 @@
+stateDiagram-v2
+    accTitle: AI建议的两条处理分支
+    accDescr: 医生可采纳或不采纳；只有责任登记和病历写入成功才是已采纳入病历，失败保留建议。
+    state "待决定" as Pending
+    state "已采纳入病历" as Adopted
+    state "未采纳并留存" as Declined
+    [*] --> Pending
+    Pending --> Adopted: 实际医生与理由齐全且写入成功
+    Pending --> Declined: 记录不采纳决定
+    Pending --> Pending: 校验或持久化失败

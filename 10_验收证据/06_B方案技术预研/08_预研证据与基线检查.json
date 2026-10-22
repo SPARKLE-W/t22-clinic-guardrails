@@ -1,0 +1,484 @@
+{
+  "checked_utc": "2026-10-21T06:51:09.953157+00:00",
+  "kind": "evidence_check_not_product_acceptance",
+  "passed": true,
+  "checks": [
+    {
+      "check": "冻结基线指纹: 03_需求规格说明书.md",
+      "passed": true,
+      "details": {
+        "sha256": "FE95C5BF2495B763EA2C7075C46CBE5D367F7F82401E2E1818EF81BF9243DAE8"
+      }
+    },
+    {
+      "check": "冻结基线指纹: 03_需求规格说明书.docx",
+      "passed": true,
+      "details": {
+        "sha256": "844778341B7EB43907FF43CB08AD6B76DB6A9ACE2C77D9B02A028C895958B011"
+      }
+    },
+    {
+      "check": "冻结基线指纹: 10_验收证据/05_需求基线与首轮设计/02_需规v1.0_基线快照.md",
+      "passed": true,
+      "details": {
+        "sha256": "FE95C5BF2495B763EA2C7075C46CBE5D367F7F82401E2E1818EF81BF9243DAE8"
+      }
+    },
+    {
+      "check": "本阶段JSON可解析",
+      "passed": true,
+      "details": {
+        "files": 41,
+        "invalid": []
+      }
+    },
+    {
+      "check": "逐样本复算: baseline_10_summary",
+      "passed": true,
+      "details": {
+        "summary": "baseline_10_summary.json",
+        "samples": 2855,
+        "failures": 0,
+        "workers_with_samples": 10,
+        "peak_client_inflight": 10,
+        "successful_per_minute": 11398.602467478157,
+        "groups": {
+          "reception": {
+            "samples": 602,
+            "p95_all_ms": 67.45589998899959
+          },
+          "query": {
+            "samples": 580,
+            "p95_all_ms": 70.14049999997951
+          },
+          "guarded_diagnosis": {
+            "samples": 505,
+            "p95_all_ms": 77.31339999008924
+          },
+          "medication_write": {
+            "samples": 482,
+            "p95_all_ms": 82.2766000055708
+          },
+          "export": {
+            "samples": 686,
+            "p95_all_ms": 57.820999994874
+          }
+        }
+      }
+    },
+    {
+      "check": "逐样本复算: baseline_360_summary",
+      "passed": true,
+      "details": {
+        "summary": "baseline_360_summary.json",
+        "samples": 3796,
+        "failures": 870,
+        "workers_with_samples": 360,
+        "peak_client_inflight": 360,
+        "successful_per_minute": 10535.578181237992,
+        "groups": {
+          "reception": {
+            "samples": 312,
+            "p95_all_ms": 15168.63800000283
+          },
+          "query": {
+            "samples": 318,
+            "p95_all_ms": 14630.751599994255
+          },
+          "guarded_diagnosis": {
+            "samples": 321,
+            "p95_all_ms": 15141.806199972052
+          },
+          "medication_write": {
+            "samples": 346,
+            "p95_all_ms": 13132.342700002482
+          },
+          "export": {
+            "samples": 2499,
+            "p95_all_ms": 452.6997999928426
+          }
+        }
+      }
+    },
+    {
+      "check": "逐样本复算: baseline_60_summary",
+      "passed": true,
+      "details": {
+        "summary": "baseline_60_summary.json",
+        "samples": 2802,
+        "failures": 0,
+        "workers_with_samples": 60,
+        "peak_client_inflight": 60,
+        "successful_per_minute": 11018.019665770918,
+        "groups": {
+          "reception": {
+            "samples": 254,
+            "p95_all_ms": 841.3055000128224
+          },
+          "query": {
+            "samples": 252,
+            "p95_all_ms": 850.276200013468
+          },
+          "guarded_diagnosis": {
+            "samples": 244,
+            "p95_all_ms": 873.0925999989267
+          },
+          "medication_write": {
+            "samples": 245,
+            "p95_all_ms": 863.7712000054307
+          },
+          "export": {
+            "samples": 1807,
+            "p95_all_ms": 134.05749999219552
+          }
+        }
+      }
+    },
+    {
+      "check": "逐样本复算: connection_diagnostic_360_summary",
+      "passed": true,
+      "details": {
+        "summary": "connection_diagnostic_360_summary.json",
+        "samples": 1452,
+        "failures": 251,
+        "workers_with_samples": 360,
+        "peak_client_inflight": 360,
+        "successful_per_minute": 10607.7846978442,
+        "groups": {
+          "reception": {
+            "samples": 148,
+            "p95_all_ms": 5475.94730000128
+          },
+          "query": {
+            "samples": 173,
+            "p95_all_ms": 5531.428399990546
+          },
+          "guarded_diagnosis": {
+            "samples": 169,
+            "p95_all_ms": 5516.89740002621
+          },
+          "medication_write": {
+            "samples": 180,
+            "p95_all_ms": 5463.780999998562
+          },
+          "export": {
+            "samples": 782,
+            "p95_all_ms": 2111.8872000079136
+          }
+        }
+      }
+    },
+    {
+      "check": "逐样本复算: corrected_10_summary",
+      "passed": true,
+      "details": {
+        "summary": "corrected_10_summary.json",
+        "samples": 2864,
+        "failures": 0,
+        "workers_with_samples": 10,
+        "peak_client_inflight": 10,
+        "successful_per_minute": 11434.073943587291,
+        "groups": {
+          "reception": {
+            "samples": 670,
+            "p95_all_ms": 59.8347999912221
+          },
+          "query": {
+            "samples": 637,
+            "p95_all_ms": 61.76669997512363
+          },
+          "guarded_diagnosis": {
+            "samples": 514,
+            "p95_all_ms": 75.47490001888946
+          },
+          "medication_write": {
+            "samples": 499,
+            "p95_all_ms": 78.87080000364222
+          },
+          "export": {
+            "samples": 544,
+            "p95_all_ms": 70.99159999052063
+          }
+        }
+      }
+    },
+    {
+      "check": "逐样本复算: corrected_360_summary",
+      "passed": true,
+      "details": {
+        "summary": "corrected_360_summary.json",
+        "samples": 3133,
+        "failures": 0,
+        "workers_with_samples": 360,
+        "peak_client_inflight": 360,
+        "successful_per_minute": 11139.259828831302,
+        "groups": {
+          "reception": {
+            "samples": 633,
+            "p95_all_ms": 2110.866699978942
+          },
+          "query": {
+            "samples": 639,
+            "p95_all_ms": 1996.2243000045419
+          },
+          "guarded_diagnosis": {
+            "samples": 620,
+            "p95_all_ms": 3299.8165999888442
+          },
+          "medication_write": {
+            "samples": 620,
+            "p95_all_ms": 3430.0243000034243
+          },
+          "export": {
+            "samples": 621,
+            "p95_all_ms": 2703.3640000154264
+          }
+        }
+      }
+    },
+    {
+      "check": "逐样本复算: corrected_60_summary",
+      "passed": true,
+      "details": {
+        "summary": "corrected_60_summary.json",
+        "samples": 2850,
+        "failures": 0,
+        "workers_with_samples": 60,
+        "peak_client_inflight": 60,
+        "successful_per_minute": 11217.830435780617,
+        "groups": {
+          "reception": {
+            "samples": 618,
+            "p95_all_ms": 453.32129998132586
+          },
+          "query": {
+            "samples": 598,
+            "p95_all_ms": 461.35379999759607
+          },
+          "guarded_diagnosis": {
+            "samples": 546,
+            "p95_all_ms": 492.11240001022816
+          },
+          "medication_write": {
+            "samples": 538,
+            "p95_all_ms": 493.23579997872
+          },
+          "export": {
+            "samples": 550,
+            "p95_all_ms": 474.4518999941647
+          }
+        }
+      }
+    },
+    {
+      "check": "逐样本复算: resource_diag_360_summary",
+      "passed": true,
+      "details": {
+        "summary": "resource_diag_360_summary.json",
+        "samples": 2116,
+        "failures": 0,
+        "workers_with_samples": 360,
+        "peak_client_inflight": 360,
+        "successful_per_minute": 10538.854030431074,
+        "groups": {
+          "reception": {
+            "samples": 424,
+            "p95_all_ms": 3072.4603999988176
+          },
+          "query": {
+            "samples": 429,
+            "p95_all_ms": 3288.8119999843184
+          },
+          "guarded_diagnosis": {
+            "samples": 422,
+            "p95_all_ms": 2937.9579999949783
+          },
+          "medication_write": {
+            "samples": 420,
+            "p95_all_ms": 3225.2714000060223
+          },
+          "export": {
+            "samples": 421,
+            "p95_all_ms": 2996.6846000170335
+          }
+        }
+      }
+    },
+    {
+      "check": "最后完整实验测试原始记录",
+      "passed": true,
+      "details": "归档37项通过；本检查不重新执行数据库测试"
+    },
+    {
+      "check": "MQ完整及后续跳过分开记录",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "真实HTTP已提交响应丢失归档",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "正常数据库重启前后逐表对账",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "实验Python源语法",
+      "passed": true,
+      "details": {
+        "source_files": 22,
+        "syntax_errors": []
+      }
+    },
+    {
+      "check": "实际venv版本匹配依赖锁",
+      "passed": true,
+      "details": {
+        "asgiref": "3.12.1",
+        "certifi": "2026.10.19",
+        "charset-normalizer": "3.5.2",
+        "django": "5.2.18",
+        "djangorestframework": "3.16.1",
+        "idna": "3.20",
+        "mysqlclient": "2.3.0",
+        "pika": "1.4.4",
+        "requests": "2.34.2",
+        "sqlparse": "0.6.0",
+        "tzdata": "2026.5",
+        "urllib3": "2.8.0",
+        "waitress": "3.0.2"
+      }
+    },
+    {
+      "check": "公开产物未含实际连接密码及Django密钥精确值",
+      "passed": true,
+      "details": {
+        "files": 136,
+        "matching_files": [],
+        "scope": "known values only; values never emitted"
+      }
+    },
+    {
+      "check": "当前导航和报告本地链接可达",
+      "passed": true,
+      "details": {
+        "files": 20,
+        "broken": []
+      }
+    },
+    {
+      "check": "最终任务端口现场复核",
+      "passed": true,
+      "details": {
+        "ports": [
+          18722,
+          13322,
+          15672,
+          25692,
+          14369
+        ],
+        "listeners": [],
+        "query_exit": 0
+      }
+    },
+    {
+      "check": "运行环境最终进程关闭归档",
+      "passed": true,
+      "details": null
+    }
+  ],
+  "source_inventory": [
+    {
+      "path": "实验代码\\diagnose_http.py",
+      "sha256": "A8A1924D106AF9CA5CE033AACCED431EE5E013AD9E3E4E13B51730B719E14CD2"
+    },
+    {
+      "path": "实验代码\\http_response_loss.py",
+      "sha256": "8985F2BE1E783FD3324F36F5ECF7857B2A970EB3455133BF5CB309188986072C"
+    },
+    {
+      "path": "实验代码\\load_probe.py",
+      "sha256": "E610D557CF7EEA37D12D07B424CB2C9ED350698924EFF9FF88713188F0CC8350"
+    },
+    {
+      "path": "实验代码\\manage.py",
+      "sha256": "FF4E6D98A2C3750A9F5C129073D347CD5AFD1A925D2B0F9FFBE1270647D5281C"
+    },
+    {
+      "path": "实验代码\\mq_probe.py",
+      "sha256": "4DB387D16CC0320640A30E5E1B76BEA472AD3EB8EC3A7674321CD9C955BA372F"
+    },
+    {
+      "path": "实验代码\\prepare_schema.py",
+      "sha256": "CCEABEB3491A26A9B1F078FD03F6E00B1965A1421FEB7378BF15B377FD811702"
+    },
+    {
+      "path": "实验代码\\probe\\__init__.py",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "实验代码\\probe\\fixtures.py",
+      "sha256": "3772BABBFCD2BC8FB0E792C6FE16764D520A2067B37E8A3A63692BC093E66046"
+    },
+    {
+      "path": "实验代码\\probe\\migrations\\0001_initial.py",
+      "sha256": "D6E203B695579D351F160F8D58E83B2688F017E5D6018CD8ABA7E38D179D174F"
+    },
+    {
+      "path": "实验代码\\probe\\migrations\\__init__.py",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "实验代码\\probe\\models.py",
+      "sha256": "84B7848A214B1BCE285826628CED60A0A20E80EED96BDF254366E02583DD5BDC"
+    },
+    {
+      "path": "实验代码\\probe\\services.py",
+      "sha256": "865863539AF0A8BA6EB4ADA1BD4FAB62D860336CED08EACFA5BE233EA06FC2F9"
+    },
+    {
+      "path": "实验代码\\probe\\test_http.py",
+      "sha256": "9B3B24DC6678A241712A6F6233819B8C1E6BCC50655373C44F72FF38849EAB01"
+    },
+    {
+      "path": "实验代码\\probe\\tests.py",
+      "sha256": "9FBFB9CE17816AE5EBD02F1D3A62973BFBEC470352BC19FB07A5DF79F01501B2"
+    },
+    {
+      "path": "实验代码\\probe\\views.py",
+      "sha256": "C828125FB51A936AE082B3D5488AB73073E1551D6DA7EFC9EE5CE309ABE8DBBB"
+    },
+    {
+      "path": "实验代码\\requirements.in",
+      "sha256": "C2DD2887C227971BAD03B0EC92288A1BAD665E07CB2EBC40ECFDDC6C1DF64444"
+    },
+    {
+      "path": "实验代码\\requirements.lock",
+      "sha256": "5A15030F1FC3D91F42C3DD152B1D73F624F02CB87C13E2E308261516743423CF"
+    },
+    {
+      "path": "实验代码\\run_tests.py",
+      "sha256": "A46F9BA6A7A2030F8A403F06E8A354E65E373F61E3CD9895851F73B9C3E8BA2C"
+    },
+    {
+      "path": "实验代码\\serve.py",
+      "sha256": "832186CFFF565ED3B9DDCAAB1984899C3D7D3DCF00FA2D90B7830CDA07A1F654"
+    },
+    {
+      "path": "实验代码\\settings.py",
+      "sha256": "5FF0601F0C02DF13656A177CC6901D3E01A822BDEB16C5D01C80247D3C972528"
+    },
+    {
+      "path": "实验代码\\snapshot_state.py",
+      "sha256": "661E2899521DC1D4F98084EE23F3D9F7CBC7A1A9ACE32A213C9A89247D5E915C"
+    },
+    {
+      "path": "实验代码\\urls.py",
+      "sha256": "220C5E4D8CB8A7B3B8CEC758087E8D5ABF836C571547C4A4F3507ECB8165A73E"
+    }
+  ],
+  "performance_requirement_met": false,
+  "formal_AC06_executed": false
+}

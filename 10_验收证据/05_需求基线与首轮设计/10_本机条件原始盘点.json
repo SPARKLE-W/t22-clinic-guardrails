@@ -1,0 +1,152 @@
+{
+  "collected_at": "2026-10-21T08:38:02.0249628+08:00",
+  "action": "read_only_inventory",
+  "os": {
+    "Caption": "Microsoft Windows 11 家庭版 中文版",
+    "Version": "10.0.26200",
+    "OSArchitecture": "64 位",
+    "TotalVisibleMemorySize": 33255288,
+    "FreePhysicalMemory": 5892344
+  },
+  "cpu": [
+    {
+      "Name": "Intel(R) Core(TM) i7-14700HX",
+      "NumberOfCores": 20,
+      "NumberOfLogicalProcessors": 28
+    }
+  ],
+  "disks": [
+    {
+      "DeviceID": "C:",
+      "Size": 322123591680,
+      "FreeSpace": 48699535360
+    },
+    {
+      "DeviceID": "D:",
+      "Size": 699697983488,
+      "FreeSpace": 283044691968
+    }
+  ],
+  "commands": [
+    {
+      "name": "python",
+      "found": true,
+      "paths": [
+        "C:\\Python314\\python.exe",
+        "D:\\ProgramData\\anaconda3\\python.exe",
+        "C:\\Users\\29512\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe",
+        "D:\\ESP32\\Espressif\\python_env\\idf5.3_py3.11_env\\Scripts\\python.exe"
+      ]
+    },
+    {
+      "name": "py",
+      "found": true,
+      "paths": [
+        "C:\\Windows\\py.exe",
+        "C:\\Users\\29512\\AppData\\Local\\Microsoft\\WindowsApps\\py.exe"
+      ]
+    },
+    {
+      "name": "node",
+      "found": true,
+      "paths": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\29512\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe"
+      ]
+    },
+    {
+      "name": "npm",
+      "found": true,
+      "paths": [
+        "C:\\Program Files\\nodejs\\npm.cmd",
+        "C:\\Program Files\\nodejs\\npm"
+      ]
+    },
+    {
+      "name": "mysql",
+      "found": false,
+      "paths": []
+    },
+    {
+      "name": "psql",
+      "found": false,
+      "paths": []
+    },
+    {
+      "name": "docker",
+      "found": false,
+      "paths": []
+    },
+    {
+      "name": "erl",
+      "found": false,
+      "paths": []
+    },
+    {
+      "name": "rabbitmq-server",
+      "found": false,
+      "paths": []
+    },
+    {
+      "name": "rabbitmqctl",
+      "found": false,
+      "paths": []
+    }
+  ],
+  "matching_services": [],
+  "matching_registered_apps": [
+    {
+      "DisplayName": "Anaconda3 2024.10-1 (Python 3.12.7 64-bit)",
+      "DisplayVersion": "2024.10-1"
+    },
+    {
+      "DisplayName": "Node.js",
+      "DisplayVersion": "24.14.1"
+    },
+    {
+      "DisplayName": "Python 3.14.3 Standard Library (64-bit)",
+      "DisplayVersion": "3.14.3150.0"
+    },
+    {
+      "DisplayName": "Python 3.14.3 Core Interpreter (64-bit)",
+      "DisplayVersion": "3.14.3150.0"
+    },
+    {
+      "DisplayName": "Python 3.14.3 Tcl/Tk Support (64-bit)",
+      "DisplayVersion": "3.14.3150.0"
+    },
+    {
+      "DisplayName": "Python 3.14.3 Documentation (64-bit)",
+      "DisplayVersion": "3.14.3150.0"
+    },
+    {
+      "DisplayName": "Python 3.14.3 Development Libraries (64-bit)",
+      "DisplayVersion": "3.14.3150.0"
+    },
+    {
+      "DisplayName": "Python 3.14.3 Test Suite (64-bit)",
+      "DisplayVersion": "3.14.3150.0"
+    },
+    {
+      "DisplayName": "Python 3.14.3 Executables (64-bit)",
+      "DisplayVersion": "3.14.3150.0"
+    },
+    {
+      "DisplayName": "Python 3.14.3 pip Bootstrap (64-bit)",
+      "DisplayVersion": "3.14.3150.0"
+    },
+    {
+      "DisplayName": "Python 3.14.3 Add to Path (64-bit)",
+      "DisplayVersion": "3.14.3150.0"
+    },
+    {
+      "DisplayName": "Python 3.14.3 (64-bit)",
+      "DisplayVersion": "3.14.3150.0"
+    }
+  ],
+  "candidate_port_listeners": [],
+  "limits": [
+    "PATH/registry/service/listener checks cannot prove a component is absent or ready.",
+    "No database login, Docker daemon query, package installation, service modification or workload was run."
+  ]
+}

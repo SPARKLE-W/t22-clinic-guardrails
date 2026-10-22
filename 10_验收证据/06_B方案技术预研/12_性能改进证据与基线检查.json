@@ -1,0 +1,691 @@
+{
+  "checked_utc": "2026-10-21T14:14:41.064844+00:00",
+  "kind": "increment_evidence_check_not_acceptance",
+  "passed": true,
+  "checks": [
+    {
+      "check": "冻结基线: 03_需求规格说明书.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "冻结基线: 03_需求规格说明书.docx",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "冻结基线: 10_验收证据/05_需求基线与首轮设计/02_需规v1.0_基线快照.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "实际测试记录: export_scope_query_budget_red",
+      "passed": true,
+      "details": {
+        "methods": 1,
+        "exit_code": 1,
+        "wall_seconds": 11.325
+      }
+    },
+    {
+      "check": "实际测试记录: export_scope_batch_green",
+      "passed": true,
+      "details": {
+        "methods": 3,
+        "exit_code": 0,
+        "wall_seconds": 21.58
+      }
+    },
+    {
+      "check": "实际测试记录: batch_export_full_regression",
+      "passed": true,
+      "details": {
+        "methods": 40,
+        "exit_code": 0,
+        "wall_seconds": 102.743
+      }
+    },
+    {
+      "check": "大集合N+1红绿证据",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "修改前业务源保留",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "逐请求及并发复算: boundaries_client6_server1_360_summary",
+      "passed": true,
+      "details": {
+        "tag": "boundaries_client6_server1_360_summary",
+        "samples": 1945,
+        "failures": 0,
+        "global_workers": 360,
+        "peak_client_inflight": 360,
+        "successful_per_minute": 9572.322885822035,
+        "groups": {
+          "reception": {
+            "samples": 392,
+            "p95_complete_ms": 2420.3288000135217,
+            "timing_coverage": 392,
+            "p95_before_app_ms": 2294.7159000032116,
+            "p95_after_app_ms": 13.3108000154607
+          },
+          "query": {
+            "samples": 390,
+            "p95_complete_ms": 3555.7155999995302,
+            "timing_coverage": 390,
+            "p95_before_app_ms": 3501.8494999967515,
+            "p95_after_app_ms": 15.531100012594834
+          },
+          "guarded_diagnosis": {
+            "samples": 387,
+            "p95_complete_ms": 3528.5792000067886,
+            "timing_coverage": 387,
+            "p95_before_app_ms": 3366.2332000094466,
+            "p95_after_app_ms": 15.249700023559853
+          },
+          "medication_write": {
+            "samples": 388,
+            "p95_complete_ms": 3605.271200009156,
+            "timing_coverage": 388,
+            "p95_before_app_ms": 3530.661400000099,
+            "p95_after_app_ms": 13.899900019168854
+          },
+          "export": {
+            "samples": 388,
+            "p95_complete_ms": 3578.9934000058565,
+            "timing_coverage": 388,
+            "p95_before_app_ms": 3421.861999988323,
+            "p95_after_app_ms": 13.550199975725263
+          }
+        }
+      }
+    },
+    {
+      "check": "逐请求及并发复算: client1_server1_360_summary",
+      "passed": true,
+      "details": {
+        "tag": "client1_server1_360_summary",
+        "samples": 1957,
+        "failures": 0,
+        "global_workers": 360,
+        "peak_client_inflight": 360,
+        "successful_per_minute": 9695.365457608645,
+        "groups": {
+          "reception": {
+            "samples": 398,
+            "p95_complete_ms": 2719.300299999304,
+            "timing_coverage": 398,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "query": {
+            "samples": 410,
+            "p95_complete_ms": 2885.7786000007764,
+            "timing_coverage": 410,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "guarded_diagnosis": {
+            "samples": 393,
+            "p95_complete_ms": 3377.4170000106096,
+            "timing_coverage": 393,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "medication_write": {
+            "samples": 374,
+            "p95_complete_ms": 3259.5871000085026,
+            "timing_coverage": 374,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "export": {
+            "samples": 382,
+            "p95_complete_ms": 3228.369299991755,
+            "timing_coverage": 382,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          }
+        }
+      }
+    },
+    {
+      "check": "逐请求及并发复算: client6_server1_360_summary",
+      "passed": true,
+      "details": {
+        "tag": "client6_server1_360_summary",
+        "samples": 2021,
+        "failures": 0,
+        "global_workers": 360,
+        "peak_client_inflight": 360,
+        "successful_per_minute": 9942.197510008456,
+        "groups": {
+          "reception": {
+            "samples": 413,
+            "p95_complete_ms": 3383.7705999903847,
+            "timing_coverage": 413,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "query": {
+            "samples": 413,
+            "p95_complete_ms": 3396.3069999881554,
+            "timing_coverage": 413,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "guarded_diagnosis": {
+            "samples": 399,
+            "p95_complete_ms": 3411.8125999812037,
+            "timing_coverage": 399,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "medication_write": {
+            "samples": 397,
+            "p95_complete_ms": 3895.07660001982,
+            "timing_coverage": 397,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "export": {
+            "samples": 399,
+            "p95_complete_ms": 3823.599600000307,
+            "timing_coverage": 399,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          }
+        }
+      }
+    },
+    {
+      "check": "逐请求及并发复算: client6_server2_360_summary",
+      "passed": true,
+      "details": {
+        "tag": "client6_server2_360_summary",
+        "samples": 3658,
+        "failures": 0,
+        "global_workers": 360,
+        "peak_client_inflight": 360,
+        "successful_per_minute": 19847.893226800068,
+        "groups": {
+          "reception": {
+            "samples": 735,
+            "p95_complete_ms": 1935.9191000112332,
+            "timing_coverage": 735,
+            "p95_before_app_ms": 1865.6474000017624,
+            "p95_after_app_ms": 9.014600014779717
+          },
+          "query": {
+            "samples": 739,
+            "p95_complete_ms": 1940.8415000070818,
+            "timing_coverage": 739,
+            "p95_before_app_ms": 1871.9231999712065,
+            "p95_after_app_ms": 9.038999996846542
+          },
+          "guarded_diagnosis": {
+            "samples": 727,
+            "p95_complete_ms": 1969.0530000079889,
+            "timing_coverage": 727,
+            "p95_before_app_ms": 1882.880799996201,
+            "p95_after_app_ms": 9.730600024340674
+          },
+          "medication_write": {
+            "samples": 727,
+            "p95_complete_ms": 1979.7894000075758,
+            "timing_coverage": 727,
+            "p95_before_app_ms": 1894.9520000023767,
+            "p95_after_app_ms": 8.198700001230463
+          },
+          "export": {
+            "samples": 730,
+            "p95_complete_ms": 1977.6242999942042,
+            "timing_coverage": 730,
+            "p95_before_app_ms": 1884.497899998678,
+            "p95_after_app_ms": 9.211600001435727
+          }
+        }
+      }
+    },
+    {
+      "check": "逐请求及并发复算: profile_smoke_10_summary",
+      "passed": true,
+      "details": {
+        "tag": "profile_smoke_10_summary",
+        "samples": 861,
+        "failures": 0,
+        "global_workers": 10,
+        "peak_client_inflight": 10,
+        "successful_per_minute": 10260.611997211952,
+        "groups": {
+          "reception": {
+            "samples": 203,
+            "p95_complete_ms": 65.93120002071373,
+            "timing_coverage": 203,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "query": {
+            "samples": 194,
+            "p95_complete_ms": 69.33030000072904,
+            "timing_coverage": 194,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "guarded_diagnosis": {
+            "samples": 155,
+            "p95_complete_ms": 85.18380002351478,
+            "timing_coverage": 155,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "medication_write": {
+            "samples": 147,
+            "p95_complete_ms": 87.17690000776201,
+            "timing_coverage": 147,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          },
+          "export": {
+            "samples": 162,
+            "p95_complete_ms": 83.14260002225637,
+            "timing_coverage": 162,
+            "p95_before_app_ms": null,
+            "p95_after_app_ms": null
+          }
+        }
+      }
+    },
+    {
+      "check": "完整4000份真实HTTP与审计",
+      "passed": true,
+      "details": {
+        "kind": "single_large_HTTP_response_not_P95_or_AC06",
+        "records": 4000,
+        "csv_rows": 12296,
+        "revisions": 6876,
+        "medications": 1420,
+        "utf8_bytes": 3093219,
+        "elapsed_full_response_ms": 776.1509999982081,
+        "audit_target_count": 4000,
+        "complete_scope_versions_history_and_audit": true,
+        "http_status": 200
+      }
+    },
+    {
+      "check": "当前Python源语法",
+      "passed": true,
+      "details": {
+        "files": 26
+      }
+    },
+    {
+      "check": "当前报告与导航本地链接",
+      "passed": true,
+      "details": []
+    },
+    {
+      "check": "已知连接密码和Django密钥精确扫描",
+      "passed": true,
+      "details": {
+        "files": 163,
+        "matching_files": [],
+        "scope": "known exact values only"
+      }
+    },
+    {
+      "check": "最终任务全部候选端口现场复核",
+      "passed": true,
+      "details": []
+    },
+    {
+      "check": "缓存二进制进程现场复核",
+      "passed": true,
+      "details": []
+    },
+    {
+      "check": "本轮最终stop_all退出记录",
+      "passed": true,
+      "details": null
+    }
+  ],
+  "profiled_metrics": [
+    {
+      "tag": "boundaries_client6_server1_360_summary",
+      "samples": 1945,
+      "failures": 0,
+      "global_workers": 360,
+      "peak_client_inflight": 360,
+      "successful_per_minute": 9572.322885822035,
+      "groups": {
+        "reception": {
+          "samples": 392,
+          "p95_complete_ms": 2420.3288000135217,
+          "timing_coverage": 392,
+          "p95_before_app_ms": 2294.7159000032116,
+          "p95_after_app_ms": 13.3108000154607
+        },
+        "query": {
+          "samples": 390,
+          "p95_complete_ms": 3555.7155999995302,
+          "timing_coverage": 390,
+          "p95_before_app_ms": 3501.8494999967515,
+          "p95_after_app_ms": 15.531100012594834
+        },
+        "guarded_diagnosis": {
+          "samples": 387,
+          "p95_complete_ms": 3528.5792000067886,
+          "timing_coverage": 387,
+          "p95_before_app_ms": 3366.2332000094466,
+          "p95_after_app_ms": 15.249700023559853
+        },
+        "medication_write": {
+          "samples": 388,
+          "p95_complete_ms": 3605.271200009156,
+          "timing_coverage": 388,
+          "p95_before_app_ms": 3530.661400000099,
+          "p95_after_app_ms": 13.899900019168854
+        },
+        "export": {
+          "samples": 388,
+          "p95_complete_ms": 3578.9934000058565,
+          "timing_coverage": 388,
+          "p95_before_app_ms": 3421.861999988323,
+          "p95_after_app_ms": 13.550199975725263
+        }
+      }
+    },
+    {
+      "tag": "client1_server1_360_summary",
+      "samples": 1957,
+      "failures": 0,
+      "global_workers": 360,
+      "peak_client_inflight": 360,
+      "successful_per_minute": 9695.365457608645,
+      "groups": {
+        "reception": {
+          "samples": 398,
+          "p95_complete_ms": 2719.300299999304,
+          "timing_coverage": 398,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "query": {
+          "samples": 410,
+          "p95_complete_ms": 2885.7786000007764,
+          "timing_coverage": 410,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "guarded_diagnosis": {
+          "samples": 393,
+          "p95_complete_ms": 3377.4170000106096,
+          "timing_coverage": 393,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "medication_write": {
+          "samples": 374,
+          "p95_complete_ms": 3259.5871000085026,
+          "timing_coverage": 374,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "export": {
+          "samples": 382,
+          "p95_complete_ms": 3228.369299991755,
+          "timing_coverage": 382,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        }
+      }
+    },
+    {
+      "tag": "client6_server1_360_summary",
+      "samples": 2021,
+      "failures": 0,
+      "global_workers": 360,
+      "peak_client_inflight": 360,
+      "successful_per_minute": 9942.197510008456,
+      "groups": {
+        "reception": {
+          "samples": 413,
+          "p95_complete_ms": 3383.7705999903847,
+          "timing_coverage": 413,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "query": {
+          "samples": 413,
+          "p95_complete_ms": 3396.3069999881554,
+          "timing_coverage": 413,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "guarded_diagnosis": {
+          "samples": 399,
+          "p95_complete_ms": 3411.8125999812037,
+          "timing_coverage": 399,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "medication_write": {
+          "samples": 397,
+          "p95_complete_ms": 3895.07660001982,
+          "timing_coverage": 397,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "export": {
+          "samples": 399,
+          "p95_complete_ms": 3823.599600000307,
+          "timing_coverage": 399,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        }
+      }
+    },
+    {
+      "tag": "client6_server2_360_summary",
+      "samples": 3658,
+      "failures": 0,
+      "global_workers": 360,
+      "peak_client_inflight": 360,
+      "successful_per_minute": 19847.893226800068,
+      "groups": {
+        "reception": {
+          "samples": 735,
+          "p95_complete_ms": 1935.9191000112332,
+          "timing_coverage": 735,
+          "p95_before_app_ms": 1865.6474000017624,
+          "p95_after_app_ms": 9.014600014779717
+        },
+        "query": {
+          "samples": 739,
+          "p95_complete_ms": 1940.8415000070818,
+          "timing_coverage": 739,
+          "p95_before_app_ms": 1871.9231999712065,
+          "p95_after_app_ms": 9.038999996846542
+        },
+        "guarded_diagnosis": {
+          "samples": 727,
+          "p95_complete_ms": 1969.0530000079889,
+          "timing_coverage": 727,
+          "p95_before_app_ms": 1882.880799996201,
+          "p95_after_app_ms": 9.730600024340674
+        },
+        "medication_write": {
+          "samples": 727,
+          "p95_complete_ms": 1979.7894000075758,
+          "timing_coverage": 727,
+          "p95_before_app_ms": 1894.9520000023767,
+          "p95_after_app_ms": 8.198700001230463
+        },
+        "export": {
+          "samples": 730,
+          "p95_complete_ms": 1977.6242999942042,
+          "timing_coverage": 730,
+          "p95_before_app_ms": 1884.497899998678,
+          "p95_after_app_ms": 9.211600001435727
+        }
+      }
+    },
+    {
+      "tag": "profile_smoke_10_summary",
+      "samples": 861,
+      "failures": 0,
+      "global_workers": 10,
+      "peak_client_inflight": 10,
+      "successful_per_minute": 10260.611997211952,
+      "groups": {
+        "reception": {
+          "samples": 203,
+          "p95_complete_ms": 65.93120002071373,
+          "timing_coverage": 203,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "query": {
+          "samples": 194,
+          "p95_complete_ms": 69.33030000072904,
+          "timing_coverage": 194,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "guarded_diagnosis": {
+          "samples": 155,
+          "p95_complete_ms": 85.18380002351478,
+          "timing_coverage": 155,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "medication_write": {
+          "samples": 147,
+          "p95_complete_ms": 87.17690000776201,
+          "timing_coverage": 147,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        },
+        "export": {
+          "samples": 162,
+          "p95_complete_ms": 83.14260002225637,
+          "timing_coverage": 162,
+          "p95_before_app_ms": null,
+          "p95_after_app_ms": null
+        }
+      }
+    }
+  ],
+  "source_inventory": [
+    {
+      "path": "实验代码\\diagnose_http.py",
+      "sha256": "A8A1924D106AF9CA5CE033AACCED431EE5E013AD9E3E4E13B51730B719E14CD2"
+    },
+    {
+      "path": "实验代码\\http_response_loss.py",
+      "sha256": "8985F2BE1E783FD3324F36F5ECF7857B2A970EB3455133BF5CB309188986072C"
+    },
+    {
+      "path": "实验代码\\large_export_http.py",
+      "sha256": "D87F011210FDF51FF3CBE6ECA967EEF830ADB2E2CA3474C5AD9C59334C147B78"
+    },
+    {
+      "path": "实验代码\\load_probe.py",
+      "sha256": "E610D557CF7EEA37D12D07B424CB2C9ED350698924EFF9FF88713188F0CC8350"
+    },
+    {
+      "path": "实验代码\\manage.py",
+      "sha256": "FF4E6D98A2C3750A9F5C129073D347CD5AFD1A925D2B0F9FFBE1270647D5281C"
+    },
+    {
+      "path": "实验代码\\mq_probe.py",
+      "sha256": "4DB387D16CC0320640A30E5E1B76BEA472AD3EB8EC3A7674321CD9C955BA372F"
+    },
+    {
+      "path": "实验代码\\prepare_schema.py",
+      "sha256": "CCEABEB3491A26A9B1F078FD03F6E00B1965A1421FEB7378BF15B377FD811702"
+    },
+    {
+      "path": "实验代码\\probe\\__init__.py",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "实验代码\\probe\\fixtures.py",
+      "sha256": "3772BABBFCD2BC8FB0E792C6FE16764D520A2067B37E8A3A63692BC093E66046"
+    },
+    {
+      "path": "实验代码\\probe\\migrations\\0001_initial.py",
+      "sha256": "D6E203B695579D351F160F8D58E83B2688F017E5D6018CD8ABA7E38D179D174F"
+    },
+    {
+      "path": "实验代码\\probe\\migrations\\__init__.py",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "实验代码\\probe\\models.py",
+      "sha256": "84B7848A214B1BCE285826628CED60A0A20E80EED96BDF254366E02583DD5BDC"
+    },
+    {
+      "path": "实验代码\\probe\\services.py",
+      "sha256": "00D19868C07D8B1470E89342A0B1DE7272795B63B0FBD06AF1E08A661DC642BC"
+    },
+    {
+      "path": "实验代码\\probe\\test_export_scope.py",
+      "sha256": "702068BCA97499516F29800E278732A195879BD226D4D0E41126204FC742F8E8"
+    },
+    {
+      "path": "实验代码\\probe\\test_http.py",
+      "sha256": "9B3B24DC6678A241712A6F6233819B8C1E6BCC50655373C44F72FF38849EAB01"
+    },
+    {
+      "path": "实验代码\\probe\\tests.py",
+      "sha256": "9FBFB9CE17816AE5EBD02F1D3A62973BFBEC470352BC19FB07A5DF79F01501B2"
+    },
+    {
+      "path": "实验代码\\probe\\views.py",
+      "sha256": "C828125FB51A936AE082B3D5488AB73073E1551D6DA7EFC9EE5CE309ABE8DBBB"
+    },
+    {
+      "path": "实验代码\\profile_load.py",
+      "sha256": "A12710A34CA0F184861D888E7A37CEBB15D5A3AC26A220E6F0E286CA052B2459"
+    },
+    {
+      "path": "实验代码\\run_tests.py",
+      "sha256": "A46F9BA6A7A2030F8A403F06E8A354E65E373F61E3CD9895851F73B9C3E8BA2C"
+    },
+    {
+      "path": "实验代码\\serve.py",
+      "sha256": "832186CFFF565ED3B9DDCAAB1984899C3D7D3DCF00FA2D90B7830CDA07A1F654"
+    },
+    {
+      "path": "实验代码\\serve_profile.py",
+      "sha256": "407964C6CE55AF7F0C71A9EC283857B454B5AC6E396130415FA48B8AD975AAC3"
+    },
+    {
+      "path": "实验代码\\settings.py",
+      "sha256": "5FF0601F0C02DF13656A177CC6901D3E01A822BDEB16C5D01C80247D3C972528"
+    },
+    {
+      "path": "实验代码\\snapshot_state.py",
+      "sha256": "661E2899521DC1D4F98084EE23F3D9F7CBC7A1A9ACE32A213C9A89247D5E915C"
+    },
+    {
+      "path": "实验代码\\urls.py",
+      "sha256": "220C5E4D8CB8A7B3B8CEC758087E8D5ABF836C571547C4A4F3507ECB8165A73E"
+    },
+    {
+      "path": "运行脚本\\03_证据检查.py",
+      "sha256": "93BC99B87131B5C814D2F49050C57A6022EEF9F57517FBA9F054EB4F60F32E6D"
+    },
+    {
+      "path": "运行脚本\\04_性能证据检查.py",
+      "sha256": "CC17E47156C663059D9C96943F4E35CA6D97D7F0274D4907E2FD87C576DB122D"
+    }
+  ],
+  "performance_requirement_met": false,
+  "formal_AC06_executed": false
+}

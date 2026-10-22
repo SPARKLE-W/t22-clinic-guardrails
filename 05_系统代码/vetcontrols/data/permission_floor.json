@@ -1,0 +1,2096 @@
+{
+  "catalog_version": "1.0",
+  "kind": "authorization_floor_catalog",
+  "status": "design_catalog_not_approved_not_runtime",
+  "sources": [
+    {
+      "path": "04_设计与控制文件/02_权限矩阵与字段投影.md",
+      "sha256": "F5DA3F520A165DD5F8898306D4AB14BE71C7AE4B8034BC0CC2C009D486BFBCAE",
+      "sections": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "path": "04_设计与控制文件/控制文件/02_控制包候选_v0.1.json",
+      "sha256": "4CD20020DBA106E768D13F1AE1BB37D576B29FD7E38B3FCC60189BEADF67CC81",
+      "sections": [
+        "authorization"
+      ]
+    },
+    {
+      "path": "03_需求规格说明书.md",
+      "version": "v1.0",
+      "sha256": "FE95C5BF2495B763EA2C7075C46CBE5D367F7F82401E2E1818EF81BF9243DAE8",
+      "usage": "frozen_requirement_boundary_no_edit"
+    }
+  ],
+  "mapping_decisions": [
+    {
+      "id": "MAP-01",
+      "basis": "D2 §4.1 Q-OWN",
+      "decision": "Only encounter_ref/record_ref/time_range; unspecified other legal filters not added."
+    },
+    {
+      "id": "MAP-02",
+      "basis": "D2 §4.1-4.4 combined Q/R/W rows",
+      "decision": "Split input/output; server-derived identity, ownership, history and computed results are not writable fields."
+    },
+    {
+      "id": "MAP-03",
+      "basis": "D2 §4.1 auxiliary modes",
+      "decision": "doctor_options has empty query fields; verify_pet_ref only pet_ref; output is mode-specific."
+    },
+    {
+      "id": "MAP-04",
+      "basis": "D2 §4.4 shared Q-EXPORT-HIT",
+      "decision": "Doctor scope permitted only under D; manager only time/rule/state under MG, no case scope."
+    },
+    {
+      "id": "MAP-05",
+      "basis": "D2 §4 logic-group declaration",
+      "decision": "Types register bounded logical groups, not final transport names/nested serializer fields. Parent coordinator accepted technical mapping; no business approval asserted."
+    }
+  ],
+  "authorization": {
+    "default": "deny",
+    "trusted_identity": "server_session",
+    "unknown_fields": "reject",
+    "predicates": {
+      "F+": "server principal owns new encounter; verify assigned doctor belongs to same store",
+      "F": "Encounter.store == Principal.store AND Encounter.receptionist == Principal.id",
+      "D": "Encounter.store == Principal.store AND Encounter.doctor == Principal.id",
+      "M": "Object.store == Principal.store AND object is governance or collaboration metadata",
+      "MA": "AuditMeta.event_store == Principal.store; select C-06 metadata only",
+      "MG": "restrict to Principal.store before aggregation; no clinical or identity detail"
+    },
+    "bindings": [
+      {
+        "goal": "UC-01.1",
+        "permission": "encounter.create",
+        "role": "frontdesk",
+        "row_predicate": "F+",
+        "input_projections": [
+          "W-CREATE",
+          "Q-CREATE-AUX"
+        ],
+        "output_projections": [
+          "R-RECEPTION",
+          "R-CREATE-AUX"
+        ],
+        "server_selected_modes": [
+          "create",
+          "doctor_options",
+          "verify_pet_ref"
+        ],
+        "mode_projections": {
+          "create": {
+            "input_projections": [
+              "W-CREATE"
+            ],
+            "output_projections": [
+              "R-RECEPTION"
+            ]
+          },
+          "doctor_options": {
+            "input_projections": [
+              "Q-CREATE-AUX"
+            ],
+            "output_projections": [
+              "R-CREATE-AUX"
+            ]
+          },
+          "verify_pet_ref": {
+            "input_projections": [
+              "Q-CREATE-AUX"
+            ],
+            "output_projections": [
+              "R-CREATE-AUX"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-01.2",
+        "permission": "encounter.read",
+        "role": "frontdesk",
+        "row_predicate": "F",
+        "input_projections": [
+          "Q-OWN"
+        ],
+        "output_projections": [
+          "R-RECEPTION"
+        ],
+        "server_selected_modes": [
+          "list",
+          "detail"
+        ],
+        "mode_projections": {
+          "list": {
+            "input_projections": [
+              "Q-OWN"
+            ],
+            "output_projections": [
+              "R-RECEPTION"
+            ]
+          },
+          "detail": {
+            "input_projections": [
+              "Q-OWN"
+            ],
+            "output_projections": [
+              "R-RECEPTION"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "X11",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-01.3",
+        "permission": "encounter.correct",
+        "role": "frontdesk",
+        "row_predicate": "F",
+        "input_projections": [
+          "W-RECEPTION"
+        ],
+        "output_projections": [
+          "R-RECEPTION"
+        ],
+        "server_selected_modes": [
+          "correct"
+        ],
+        "mode_projections": {
+          "correct": {
+            "input_projections": [
+              "W-RECEPTION"
+            ],
+            "output_projections": [
+              "R-RECEPTION"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "X11",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-01.4",
+        "permission": "encounter.mark_error",
+        "role": "frontdesk",
+        "row_predicate": "F",
+        "input_projections": [
+          "W-ERROR"
+        ],
+        "output_projections": [
+          "R-RECEPTION"
+        ],
+        "server_selected_modes": [
+          "mark"
+        ],
+        "mode_projections": {
+          "mark": {
+            "input_projections": [
+              "W-ERROR"
+            ],
+            "output_projections": [
+              "R-RECEPTION"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "X11",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-02.1",
+        "permission": "clinical.read",
+        "role": "doctor",
+        "row_predicate": "D",
+        "input_projections": [
+          "Q-OWN"
+        ],
+        "output_projections": [
+          "R-CLINICAL",
+          "R-RECEPTION",
+          "R-SUGGESTION"
+        ],
+        "server_selected_modes": [
+          "list",
+          "detail"
+        ],
+        "mode_projections": {
+          "list": {
+            "input_projections": [
+              "Q-OWN"
+            ],
+            "output_projections": [
+              "R-CLINICAL",
+              "R-RECEPTION",
+              "R-SUGGESTION"
+            ]
+          },
+          "detail": {
+            "input_projections": [
+              "Q-OWN"
+            ],
+            "output_projections": [
+              "R-CLINICAL",
+              "R-RECEPTION",
+              "R-SUGGESTION"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "X11",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-02.2",
+        "permission": "clinical.diagnosis.write",
+        "role": "doctor",
+        "row_predicate": "D",
+        "input_projections": [
+          "W-DIAGNOSIS"
+        ],
+        "output_projections": [
+          "R-CLINICAL"
+        ],
+        "server_selected_modes": [
+          "record",
+          "correct"
+        ],
+        "mode_projections": {
+          "record": {
+            "input_projections": [
+              "W-DIAGNOSIS"
+            ],
+            "output_projections": [
+              "R-CLINICAL"
+            ]
+          },
+          "correct": {
+            "input_projections": [
+              "W-DIAGNOSIS"
+            ],
+            "output_projections": [
+              "R-CLINICAL"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "X11",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-03",
+        "permission": "medication.record",
+        "role": "doctor",
+        "row_predicate": "D",
+        "input_projections": [
+          "W-MEDICATION"
+        ],
+        "output_projections": [
+          "R-WRITE-RESULT"
+        ],
+        "server_selected_modes": [
+          "append",
+          "correct"
+        ],
+        "mode_projections": {
+          "append": {
+            "input_projections": [
+              "W-MEDICATION"
+            ],
+            "output_projections": [
+              "R-WRITE-RESULT"
+            ]
+          },
+          "correct": {
+            "input_projections": [
+              "W-MEDICATION"
+            ],
+            "output_projections": [
+              "R-WRITE-RESULT"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "X11",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-04.1",
+        "permission": "clinical.suggestion.adopt",
+        "role": "doctor",
+        "row_predicate": "D",
+        "input_projections": [
+          "W-ADOPT"
+        ],
+        "output_projections": [
+          "R-WRITE-RESULT"
+        ],
+        "server_selected_modes": [
+          "adopt"
+        ],
+        "mode_projections": {
+          "adopt": {
+            "input_projections": [
+              "W-ADOPT"
+            ],
+            "output_projections": [
+              "R-WRITE-RESULT"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "X11",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-04.2",
+        "permission": "clinical.suggestion.decline",
+        "role": "doctor",
+        "row_predicate": "D",
+        "input_projections": [
+          "W-DECLINE"
+        ],
+        "output_projections": [
+          "R-WRITE-RESULT"
+        ],
+        "server_selected_modes": [
+          "decline"
+        ],
+        "mode_projections": {
+          "decline": {
+            "input_projections": [
+              "W-DECLINE"
+            ],
+            "output_projections": [
+              "R-WRITE-RESULT"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "X11",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-05",
+        "permission": "clinical.alert.handle",
+        "role": "doctor",
+        "row_predicate": "D",
+        "input_projections": [
+          "Q-ALERT",
+          "W-ALERT"
+        ],
+        "output_projections": [
+          "R-ALERT"
+        ],
+        "server_selected_modes": [
+          "read",
+          "resolve"
+        ],
+        "mode_projections": {
+          "read": {
+            "input_projections": [
+              "Q-ALERT"
+            ],
+            "output_projections": [
+              "R-ALERT"
+            ]
+          },
+          "resolve": {
+            "input_projections": [
+              "W-ALERT"
+            ],
+            "output_projections": [
+              "R-ALERT"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "X11",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-06.1",
+        "permission": "governance.candidate.review",
+        "role": "manager",
+        "row_predicate": "M",
+        "input_projections": [
+          "Q-GOVERNANCE",
+          "W-REVIEW"
+        ],
+        "output_projections": [
+          "R-GOVERNANCE"
+        ],
+        "server_selected_modes": [
+          "read",
+          "review"
+        ],
+        "mode_projections": {
+          "read": {
+            "input_projections": [
+              "Q-GOVERNANCE"
+            ],
+            "output_projections": [
+              "R-GOVERNANCE"
+            ]
+          },
+          "review": {
+            "input_projections": [
+              "W-REVIEW"
+            ],
+            "output_projections": [
+              "R-GOVERNANCE"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-06.2",
+        "permission": "governance.candidate.activate",
+        "role": "manager",
+        "row_predicate": "M",
+        "input_projections": [
+          "W-ACTIVATE"
+        ],
+        "output_projections": [
+          "R-GOVERNANCE"
+        ],
+        "server_selected_modes": [
+          "activate"
+        ],
+        "mode_projections": {
+          "activate": {
+            "input_projections": [
+              "W-ACTIVATE"
+            ],
+            "output_projections": [
+              "R-GOVERNANCE"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-07.1",
+        "permission": "report.store_summary.read",
+        "role": "manager",
+        "row_predicate": "MG",
+        "input_projections": [
+          "Q-SUMMARY"
+        ],
+        "output_projections": [
+          "R-SUMMARY"
+        ],
+        "server_selected_modes": [
+          "read"
+        ],
+        "mode_projections": {
+          "read": {
+            "input_projections": [
+              "Q-SUMMARY"
+            ],
+            "output_projections": [
+              "R-SUMMARY"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-07.2",
+        "permission": "audit.metadata.read",
+        "role": "manager",
+        "row_predicate": "MA",
+        "input_projections": [
+          "Q-AUDIT"
+        ],
+        "output_projections": [
+          "R-AUDIT"
+        ],
+        "server_selected_modes": [
+          "read"
+        ],
+        "mode_projections": {
+          "read": {
+            "input_projections": [
+              "Q-AUDIT"
+            ],
+            "output_projections": [
+              "R-AUDIT"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-08",
+        "permission": "export.clinical",
+        "role": "doctor",
+        "row_predicate": "D",
+        "input_projections": [
+          "Q-EXPORT-CLINICAL"
+        ],
+        "output_projections": [
+          "CSV-CLINICAL"
+        ],
+        "server_selected_modes": [
+          "export"
+        ],
+        "mode_projections": {
+          "export": {
+            "input_projections": [
+              "Q-EXPORT-CLINICAL"
+            ],
+            "output_projections": [
+              "CSV-CLINICAL"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "X11",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-09.1",
+        "permission": "export.guard_detail",
+        "role": "doctor",
+        "row_predicate": "D",
+        "input_projections": [
+          "Q-EXPORT-HIT"
+        ],
+        "output_projections": [
+          "CSV-GUARD-DETAIL"
+        ],
+        "server_selected_modes": [
+          "export"
+        ],
+        "mode_projections": {
+          "export": {
+            "input_projections": [
+              "Q-EXPORT-HIT"
+            ],
+            "output_projections": [
+              "CSV-GUARD-DETAIL"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "X11",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-09.2",
+        "permission": "export.guard_summary",
+        "role": "manager",
+        "row_predicate": "MG",
+        "input_projections": [
+          "Q-EXPORT-HIT"
+        ],
+        "output_projections": [
+          "CSV-GUARD-SUMMARY"
+        ],
+        "server_selected_modes": [
+          "export"
+        ],
+        "mode_projections": {
+          "export": {
+            "input_projections": [
+              "Q-EXPORT-HIT"
+            ],
+            "output_projections": [
+              "CSV-GUARD-SUMMARY"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-10",
+        "permission": "governance.candidate.generate",
+        "role": "manager",
+        "row_predicate": "M",
+        "input_projections": [
+          "W-GENERATE"
+        ],
+        "output_projections": [
+          "R-GOVERNANCE"
+        ],
+        "server_selected_modes": [
+          "generate"
+        ],
+        "mode_projections": {
+          "generate": {
+            "input_projections": [
+              "W-GENERATE"
+            ],
+            "output_projections": [
+              "R-GOVERNANCE"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-11.1",
+        "permission": "collaboration.assignment.write",
+        "role": "manager",
+        "row_predicate": "M",
+        "input_projections": [
+          "Q-ASSIGNMENT",
+          "W-ASSIGNMENT"
+        ],
+        "output_projections": [
+          "R-ASSIGNMENT"
+        ],
+        "server_selected_modes": [
+          "read",
+          "write"
+        ],
+        "mode_projections": {
+          "read": {
+            "input_projections": [
+              "Q-ASSIGNMENT"
+            ],
+            "output_projections": [
+              "R-ASSIGNMENT"
+            ]
+          },
+          "write": {
+            "input_projections": [
+              "W-ASSIGNMENT"
+            ],
+            "output_projections": [
+              "R-ASSIGNMENT"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "U"
+        ]
+      },
+      {
+        "goal": "UC-11.2",
+        "permission": "collaboration.assignment.review",
+        "role": "manager",
+        "row_predicate": "M",
+        "input_projections": [
+          "W-ASSIGNMENT-REVIEW"
+        ],
+        "output_projections": [
+          "R-ASSIGNMENT"
+        ],
+        "server_selected_modes": [
+          "review"
+        ],
+        "mode_projections": {
+          "review": {
+            "input_projections": [
+              "W-ASSIGNMENT-REVIEW"
+            ],
+            "output_projections": [
+              "R-ASSIGNMENT"
+            ]
+          }
+        },
+        "refusal_audit_scopes": [
+          "L",
+          "U"
+        ]
+      }
+    ],
+    "cross_store_clinical_refusal": {
+      "source": "C-11",
+      "event_store": "trusted_requester_store_only",
+      "manager_projection": "R-AUDIT",
+      "target_ref_opens_clinical_record": false
+    },
+    "other_undecided_event_visibility": "retain_security_evidence_without_inventing_store_access",
+    "projections": {
+      "CSV-CLINICAL": {
+        "source_ref": "DES-AUTHZ-002 §4.4",
+        "direction": "output",
+        "fields": {
+          "record_ref": {
+            "type": "reference",
+            "description": "获准病历"
+          },
+          "encounter_ref": {
+            "type": "reference",
+            "description": "实际父接诊"
+          },
+          "template_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "field_meanings": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "原模板字段含义；历史按原版解释"
+          },
+          "diagnosis": {
+            "type": "text",
+            "description": "正式诊断说明"
+          },
+          "examination": {
+            "type": "text",
+            "description": "可选检查说明"
+          },
+          "adopted_content": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "已正式采纳的内容；不含待决定或不采纳建议"
+          },
+          "responsibility_metadata": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "正式内容实际责任账号/时间及必要关联"
+          },
+          "medication_chain": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "同病历药品/用量/单位原项及追加更正链、实际账号/时间/理由"
+          },
+          "clinical_versions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "获准既存诊疗版本、原值/新值、实际账号/时间/更正理由"
+          },
+          "error_mark": {
+            "type": "boolean",
+            "description": "接诊误建状态"
+          },
+          "related_encounter_refs": {
+            "type": "reference_list",
+            "description": "可解释新旧接诊无正文引用"
+          }
+        },
+        "constraints": [
+          "完整UTF-8正式病历集合、原模板含义及追加更正链；仅D",
+          "无待决定/不采纳建议；不静默截断；审计成功后发送字节",
+          "不把任务受理当完整接收；服务端就绪/完整接收/断连分别表达"
+        ]
+      },
+      "CSV-GUARD-DETAIL": {
+        "source_ref": "DES-AUTHZ-002 §4.4",
+        "direction": "output",
+        "fields": {
+          "event_ref": {
+            "type": "reference",
+            "description": "获准命中事件"
+          },
+          "record_ref": {
+            "type": "reference",
+            "description": "获准病历关联"
+          },
+          "rule_ref": {
+            "type": "reference",
+            "description": "规则编号"
+          },
+          "hit_field": {
+            "type": "text",
+            "description": "命中字段标识"
+          },
+          "handling_state": {
+            "type": "enum",
+            "values": [
+              "unhandled",
+              "handled"
+            ],
+            "description": "未处理/已处理"
+          },
+          "handler_ref": {
+            "type": "reference",
+            "description": "已有真实处理账号"
+          },
+          "handled_at": {
+            "type": "timestamp",
+            "description": "已有真实处理时间"
+          },
+          "handling_result": {
+            "type": "text",
+            "description": "医生已有实际处理结果"
+          }
+        },
+        "constraints": [
+          "仅D完整集合，无全病历或其他接诊信息；不额外用途必填",
+          "审计完成后发送；导出不改变告警状态"
+        ]
+      },
+      "CSV-GUARD-SUMMARY": {
+        "source_ref": "DES-AUTHZ-002 §4.4",
+        "direction": "output",
+        "fields": {
+          "filter_semantics": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "本店时间/规则/状态所用口径"
+          },
+          "grouped_counts": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "仅按规则/处理状态的汇总数量"
+          }
+        },
+        "constraints": [
+          "仅MG；无事件/病历/宠物级明细、临床命中值或自由文本原因",
+          "无审计元数据/接待资料导出权限；不额外用途必填"
+        ]
+      },
+      "Q-ALERT": {
+        "source_ref": "DES-AUTHZ-002 §4.2",
+        "direction": "input",
+        "fields": {
+          "record_ref": {
+            "type": "reference",
+            "description": "获准病历"
+          },
+          "alert_ref": {
+            "type": "reference",
+            "description": "获准告警"
+          },
+          "rule_ref": {
+            "type": "reference",
+            "description": "规则筛选"
+          },
+          "handling_state": {
+            "type": "enum",
+            "values": [
+              "unhandled",
+              "handled"
+            ],
+            "description": "未处理/已处理"
+          }
+        },
+        "constraints": [
+          "始终D，不以给定子项引用替代实际父关联"
+        ]
+      },
+      "Q-ASSIGNMENT": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "input",
+        "fields": {
+          "work_item_ref": {
+            "type": "reference",
+            "description": "本店工作项"
+          },
+          "stage_ref": {
+            "type": "reference",
+            "description": "阶段"
+          },
+          "plan_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "actual_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "comparison_state": {
+            "type": "text",
+            "description": "比较状态"
+          },
+          "pagination": {
+            "type": "pagination",
+            "description": "文档明确允许的分页，不决定导出集合"
+          }
+        },
+        "constraints": [
+          "仅M元数据及复核历史，不按事件引用打开临床正文"
+        ]
+      },
+      "Q-AUDIT": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "input",
+        "fields": {
+          "time_range": {
+            "type": "time_range",
+            "description": "本次业务获准时间筛选"
+          },
+          "record_ref": {
+            "type": "reference",
+            "description": "仅比较病历引用值，不加载目标"
+          },
+          "operator_ref": {
+            "type": "reference",
+            "description": "操作者筛选"
+          }
+        },
+        "constraints": [
+          "MA事件归店而非目标归店；不因引用产生正文读取权"
+        ]
+      },
+      "Q-CREATE-AUX": {
+        "source_ref": "DES-AUTHZ-002 §4.1",
+        "direction": "input",
+        "fields": {
+          "pet_ref": {
+            "type": "reference",
+            "description": "仅给定的已知宠物标识"
+          }
+        },
+        "constraints": [
+          "模式由服务端路由固定；无跨店参数；无宠物搜索"
+        ],
+        "mode_fields": {
+          "doctor_options": [],
+          "verify_pet_ref": [
+            "pet_ref"
+          ]
+        }
+      },
+      "Q-EXPORT-CLINICAL": {
+        "source_ref": "DES-AUTHZ-002 §4.4",
+        "direction": "input",
+        "fields": {
+          "scope": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "必填D范围：获准显式病历集合或先固定D再限时间"
+          },
+          "purpose": {
+            "type": "text",
+            "description": "必填本次用途"
+          }
+        },
+        "constraints": [
+          "显式集合一个无权目标整次拒绝，不静默删行",
+          "完整授权集合不按当前页截断；导出前复核身份和范围"
+        ]
+      },
+      "Q-EXPORT-HIT": {
+        "source_ref": "DES-AUTHZ-002 §4.4",
+        "direction": "input",
+        "fields": {
+          "scope": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "仅医生D范围命中集合；管理输入无病例级scope"
+          },
+          "time_range": {
+            "type": "time_range",
+            "description": "本次业务获准时间筛选"
+          },
+          "rule_ref": {
+            "type": "reference",
+            "description": "规则筛选"
+          },
+          "handling_state": {
+            "type": "enum",
+            "values": [
+              "unhandled",
+              "handled"
+            ],
+            "description": "未处理/已处理"
+          }
+        },
+        "constraints": [
+          "不增加用途必填；导出不改变处理状态",
+          "管理仅本店MG汇总，不接收病例集合"
+        ],
+        "per_binding_fields": {
+          "export.guard_detail": [
+            "scope",
+            "time_range",
+            "rule_ref",
+            "handling_state"
+          ],
+          "export.guard_summary": [
+            "time_range",
+            "rule_ref",
+            "handling_state"
+          ]
+        }
+      },
+      "Q-GOVERNANCE": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "input",
+        "fields": {
+          "candidate_ref": {
+            "type": "reference",
+            "description": "本店候选"
+          },
+          "version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "status": {
+            "type": "text",
+            "description": "定义治理状态筛选"
+          },
+          "time_range": {
+            "type": "time_range",
+            "description": "本次业务获准时间筛选"
+          },
+          "pagination": {
+            "type": "pagination",
+            "description": "文档明确允许的分页，不决定导出集合"
+          }
+        },
+        "constraints": [
+          "仅M定义/版本/差异，无临床正文"
+        ]
+      },
+      "Q-OWN": {
+        "source_ref": "DES-AUTHZ-002 §4.1",
+        "direction": "input",
+        "fields": {
+          "encounter_ref": {
+            "type": "reference",
+            "description": "本次业务接诊"
+          },
+          "record_ref": {
+            "type": "reference",
+            "description": "本次业务病历"
+          },
+          "time_range": {
+            "type": "time_range",
+            "description": "本次业务获准时间筛选"
+          }
+        },
+        "constraints": [
+          "始终叠加F或D；显式他店/他账号请求不得改写为本店成功",
+          "仅映射文档明确提到的接诊/病历引用和时间；‘等合法条件’不开放额外字段"
+        ]
+      },
+      "Q-SUMMARY": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "input",
+        "fields": {
+          "time_range": {
+            "type": "time_range",
+            "description": "本次业务获准时间筛选"
+          },
+          "group_by": {
+            "type": "enum",
+            "values": [
+              "rule",
+              "handling_state"
+            ],
+            "description": "获准规则/处理状态分组"
+          }
+        },
+        "constraints": [
+          "仅MG；建档数量不套告警规则维度"
+        ]
+      },
+      "R-ALERT": {
+        "source_ref": "DES-AUTHZ-002 §4.2",
+        "direction": "output",
+        "fields": {
+          "alert_ref": {
+            "type": "reference",
+            "description": "获准告警"
+          },
+          "record_ref": {
+            "type": "reference",
+            "description": "关联病历"
+          },
+          "rule_ref": {
+            "type": "reference",
+            "description": "规则编号"
+          },
+          "hit_field": {
+            "type": "text",
+            "description": "命中字段标识，不是命中值"
+          },
+          "handling_state": {
+            "type": "enum",
+            "values": [
+              "unhandled",
+              "handled"
+            ],
+            "description": "未处理/已处理"
+          },
+          "handler_ref": {
+            "type": "reference",
+            "description": "已有真实处理账号"
+          },
+          "handled_at": {
+            "type": "timestamp",
+            "description": "已有真实处理时间"
+          },
+          "handling_result": {
+            "type": "text",
+            "description": "医生已有实际处理结果"
+          },
+          "event_ref": {
+            "type": "reference",
+            "description": "与原事件核对的关联"
+          }
+        },
+        "constraints": [
+          "仅D；投递状态与处理状态独立；不返回其他医生事件"
+        ]
+      },
+      "R-ASSIGNMENT": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "output",
+        "fields": {
+          "work_item_ref": {
+            "type": "reference",
+            "description": "工作项"
+          },
+          "stage_ref": {
+            "type": "reference",
+            "description": "阶段"
+          },
+          "plan_dimensions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "计划责任维度和值"
+          },
+          "plan_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "actual_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "actual_execution_metadata": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "生成方式、录入者与人工决定主体分离；实际账号/角色/时间、标准化事件结果"
+          },
+          "source_event_refs": {
+            "type": "reference_list",
+            "description": "来源/事件无正文引用"
+          },
+          "manual_evidence_provenance": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "手工登记者及依据性质；与系统事件分离"
+          },
+          "comparison": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "指定计划/实际版本的差异及比较状态"
+          },
+          "maintenance_history": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "实际维护账号/时间/说明及版本"
+          },
+          "review_history": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "真实复核账号/时间/结论/理由及绑定版本"
+          }
+        },
+        "constraints": [
+          "仅M元数据；不跳转临床正文或返回医生自由文本"
+        ]
+      },
+      "R-AUDIT": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "output",
+        "fields": {
+          "event_ref": {
+            "type": "reference",
+            "description": "事件号"
+          },
+          "event_at": {
+            "type": "timestamp",
+            "description": "事件时间"
+          },
+          "event_store_ref": {
+            "type": "reference",
+            "description": "可信事件所属门店"
+          },
+          "operator_ref": {
+            "type": "reference",
+            "description": "实际操作者"
+          },
+          "operator_role": {
+            "type": "text",
+            "description": "已有事件实际操作者角色标记；不据此新增运行账号角色"
+          },
+          "action": {
+            "type": "text",
+            "description": "标准动作"
+          },
+          "outcome": {
+            "type": "text",
+            "description": "标准结果"
+          },
+          "normalized_reason": {
+            "type": "text",
+            "description": "标准化脱敏原因"
+          },
+          "target_ref": {
+            "type": "reference",
+            "description": "无正文目标引用"
+          }
+        },
+        "constraints": [
+          "无主诉/诊断/处方/建议、医生处理结果/理由或导出用途正文",
+          "C11仅请求者店；目标引用不打开病历"
+        ]
+      },
+      "R-CLINICAL": {
+        "source_ref": "DES-AUTHZ-002 §4.2",
+        "direction": "output",
+        "fields": {
+          "record_ref": {
+            "type": "reference",
+            "description": "获准病历"
+          },
+          "encounter_ref": {
+            "type": "reference",
+            "description": "实际父接诊"
+          },
+          "template_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "field_meanings": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "原模板字段含义；历史按原版解释"
+          },
+          "diagnosis": {
+            "type": "text",
+            "description": "正式诊断说明"
+          },
+          "examination": {
+            "type": "text",
+            "description": "可选检查说明"
+          },
+          "adopted_content": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "已正式采纳的内容；不含待决定或不采纳建议"
+          },
+          "responsibility_metadata": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "正式内容实际责任账号/时间及必要关联"
+          },
+          "medication_chain": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "同病历药品/用量/单位原项及追加更正链、实际账号/时间/理由"
+          },
+          "clinical_versions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "获准既存诊疗版本、原值/新值、实际账号/时间/更正理由"
+          },
+          "error_mark": {
+            "type": "boolean",
+            "description": "接诊误建状态"
+          },
+          "related_encounter_refs": {
+            "type": "reference_list",
+            "description": "可解释新旧接诊无正文引用"
+          }
+        },
+        "constraints": [
+          "仅D；子项实际父关联必须一致",
+          "无正文引用不展开其他接诊；关联R-RECEPTION仅只读"
+        ]
+      },
+      "R-CREATE-AUX": {
+        "source_ref": "DES-AUTHZ-002 §4.1",
+        "direction": "output",
+        "fields": {
+          "doctor_options": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "同店候选列表；每项仅doctor_ref与最小display_name"
+          },
+          "pet_ref": {
+            "type": "reference",
+            "description": "仅回显本次给定宠物标识"
+          },
+          "associable": {
+            "type": "boolean",
+            "description": "此标识可关联或不可关联"
+          }
+        },
+        "constraints": [
+          "不返回医生接诊/完整人员档案、旧种类/主诉、主人资料、历史接诊"
+        ],
+        "mode_fields": {
+          "doctor_options": [
+            "doctor_options"
+          ],
+          "verify_pet_ref": [
+            "pet_ref",
+            "associable"
+          ]
+        }
+      },
+      "R-GOVERNANCE": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "output",
+        "fields": {
+          "input_package_ref": {
+            "type": "reference",
+            "description": "输入包"
+          },
+          "candidate_ref": {
+            "type": "reference",
+            "description": "候选"
+          },
+          "content_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "field_definitions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "本店字段定义/必填"
+          },
+          "template_definitions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "本店模板定义"
+          },
+          "rule_definitions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "规则对象/操作/条件/拒绝结果"
+          },
+          "source": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "定义来源"
+          },
+          "coding_standards": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "编码规范"
+          },
+          "quality_gates": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "质量门禁"
+          },
+          "validation_results": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "校验缺项/冲突"
+          },
+          "definition_differences": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "定义差异"
+          },
+          "governance_history": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "提交/审批/启用的实际账号/时间/该治理步骤理由"
+          },
+          "content_binding": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "内容及批准/启用版本绑定"
+          },
+          "active_and_historic_definitions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "当前生效及历史定义"
+          }
+        },
+        "constraints": [
+          "不加载临床实体或医生临床理由；无治理导出权限"
+        ]
+      },
+      "R-RECEPTION": {
+        "source_ref": "DES-AUTHZ-002 §4.1",
+        "direction": "output",
+        "fields": {
+          "encounter_ref": {
+            "type": "reference",
+            "description": "当次接诊"
+          },
+          "store_ref": {
+            "type": "reference",
+            "description": "当次固定门店"
+          },
+          "receptionist_ref": {
+            "type": "reference",
+            "description": "当次实际接待账号"
+          },
+          "doctor_ref": {
+            "type": "reference",
+            "description": "当次固定接诊医生"
+          },
+          "created_at": {
+            "type": "timestamp",
+            "description": "服务端接诊时间"
+          },
+          "pet_ref": {
+            "type": "reference",
+            "description": "当次固定宠物关联"
+          },
+          "species": {
+            "type": "text",
+            "description": "当次种类"
+          },
+          "complaint": {
+            "type": "text",
+            "description": "当次主诉"
+          },
+          "pet_name": {
+            "type": "text",
+            "description": "可选称呼"
+          },
+          "error_mark": {
+            "type": "boolean",
+            "description": "误建状态"
+          },
+          "error_reason": {
+            "type": "text",
+            "description": "差错说明"
+          },
+          "reception_versions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "仅获准当次普通资料版本、更正前后值/关联、实际账号/时间/理由"
+          },
+          "related_encounter_refs": {
+            "type": "reference_list",
+            "description": "新旧接诊无正文引用；不自动展开"
+          }
+        },
+        "constraints": [
+          "不含诊断/检查/处方/建议/采纳理由/临床告警"
+        ]
+      },
+      "R-SUGGESTION": {
+        "source_ref": "DES-AUTHZ-002 §4.2",
+        "direction": "output",
+        "fields": {
+          "content": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "D范围内保存建议内容"
+          },
+          "source": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "建议保存来源"
+          },
+          "status": {
+            "type": "enum",
+            "values": [
+              "pending",
+              "adopted",
+              "declined"
+            ],
+            "description": "建议决定状态"
+          },
+          "decision": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "既有决定及真实账号/时间、采纳理由或已填不采纳说明"
+          }
+        },
+        "constraints": [
+          "不采纳登记保留；待决定/不采纳内容不混入正式病历导出"
+        ]
+      },
+      "R-SUMMARY": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "output",
+        "fields": {
+          "time_range": {
+            "type": "time_range",
+            "description": "本次业务获准时间筛选"
+          },
+          "encounter_created_count": {
+            "type": "integer",
+            "description": "含误建/重建的接诊建档数，不作去重宠物或有效人数"
+          },
+          "error_marked_count": {
+            "type": "integer",
+            "description": "脱敏误建数"
+          },
+          "hit_count": {
+            "type": "integer",
+            "description": "命中数"
+          },
+          "alert_count": {
+            "type": "integer",
+            "description": "告警数"
+          },
+          "unhandled_count": {
+            "type": "integer",
+            "description": "未处理数"
+          },
+          "grouped_counts": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "仅按规则/处理状态获准汇总，不将建档数套规则维度"
+          }
+        },
+        "constraints": [
+          "先限本店再聚合；不下钻病历/宠物/事件明细、命中值或临床原因"
+        ]
+      },
+      "R-WRITE-RESULT": {
+        "source_ref": "DES-AUTHZ-002 §4.2",
+        "direction": "output",
+        "fields": {
+          "operation_state": {
+            "type": "text",
+            "description": "本次保存/决定操作状态"
+          },
+          "saved_ref": {
+            "type": "reference",
+            "description": "保存或决定引用"
+          },
+          "record_ref": {
+            "type": "reference",
+            "description": "实际病历引用，如有"
+          },
+          "version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "original_entry_ref": {
+            "type": "reference",
+            "description": "原项，如适用"
+          },
+          "correction_entry_ref": {
+            "type": "reference",
+            "description": "追加更正项，如适用"
+          },
+          "responsibility_metadata": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "实际责任关联"
+          }
+        },
+        "constraints": [
+          "UC03/UC04.1/UC04.2保存响应不内嵌病历或建议正文",
+          "获取正文另走受控读取及审计"
+        ]
+      },
+      "W-ACTIVATE": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "input",
+        "fields": {
+          "candidate_ref": {
+            "type": "reference",
+            "description": "已获批候选"
+          },
+          "reason": {
+            "type": "text",
+            "description": "本次操作理由，非服务端身份或历史责任改写"
+          }
+        },
+        "constraints": [
+          "手动启用且批准绑定内容未变；失败保留旧生效版本",
+          "实际启用账号/时间及内容绑定取服务端"
+        ]
+      },
+      "W-ADOPT": {
+        "source_ref": "DES-AUTHZ-002 §4.2",
+        "direction": "input",
+        "fields": {
+          "encounter_ref": {
+            "type": "reference",
+            "description": "获准接诊"
+          },
+          "suggestion_ref": {
+            "type": "reference",
+            "description": "同次保存建议"
+          },
+          "record_ref": {
+            "type": "reference",
+            "description": "若已建，仅同次病历"
+          },
+          "adopted_content": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "拟正式采纳内容"
+          },
+          "reason": {
+            "type": "text",
+            "description": "本次操作理由，非服务端身份或历史责任改写"
+          }
+        },
+        "constraints": [
+          "新采纳仅pending且非误建；同一操作重试幂等",
+          "账号/来源/父关联取服务端保存记录",
+          "首次建病历仍满足诊断/模板/护栏；决定/病历/审计同事务"
+        ]
+      },
+      "W-ALERT": {
+        "source_ref": "DES-AUTHZ-002 §4.2",
+        "direction": "input",
+        "fields": {
+          "alert_ref": {
+            "type": "reference",
+            "description": "获准既存告警"
+          },
+          "handling_result": {
+            "type": "text",
+            "description": "必填实际处理结果"
+          }
+        },
+        "constraints": [
+          "可信处理账号/时间由服务端取得；误建原告警仍可处理",
+          "读取/投递不自动处理"
+        ]
+      },
+      "W-ASSIGNMENT": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "input",
+        "fields": {
+          "work_item_ref": {
+            "type": "reference",
+            "description": "同工作项"
+          },
+          "stage_ref": {
+            "type": "reference",
+            "description": "同阶段"
+          },
+          "plan_dimensions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "计划内容生成/录入/人工决定的责任维度和值"
+          },
+          "plan_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "actual_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "source_event_refs": {
+            "type": "reference_list",
+            "description": "实际执行事件的无正文引用；服务端解析实际账号/角色/时间/标准结果"
+          },
+          "manual_actual_evidence": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "手工登记的生成方式、录入者/决定主体分离元数据与依据性质；必须明确为手工来源，不冒充系统事实"
+          },
+          "reason": {
+            "type": "text",
+            "description": "本次维护说明"
+          }
+        },
+        "constraints": [
+          "实际系统事件账号/角色/时间/结果不可由管理输入改写",
+          "维护账号/时间、比较差异/状态及复核历史由服务端保留",
+          "不含建议/采纳理由/用药更正或治疗结果正文；无来源不可比较"
+        ]
+      },
+      "W-ASSIGNMENT-REVIEW": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "input",
+        "fields": {
+          "work_item_ref": {
+            "type": "reference",
+            "description": "工作项"
+          },
+          "stage_ref": {
+            "type": "reference",
+            "description": "阶段"
+          },
+          "plan_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "actual_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "redacted_evidence": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "脱敏来源依据"
+          },
+          "conclusion": {
+            "type": "text",
+            "description": "真实人工结论"
+          },
+          "reason": {
+            "type": "text",
+            "description": "本次操作理由，非服务端身份或历史责任改写"
+          }
+        },
+        "constraints": [
+          "资料不足不得标复核；版本变化重比；不读临床原文补依据",
+          "实际复核账号/时间服务端生成"
+        ]
+      },
+      "W-CREATE": {
+        "source_ref": "DES-AUTHZ-002 §4.1",
+        "direction": "input",
+        "fields": {
+          "pet_identity_choice": {
+            "type": "enum",
+            "values": [
+              "new",
+              "known"
+            ],
+            "description": "系统新建或关联给定已知宠物标识"
+          },
+          "pet_ref": {
+            "type": "reference",
+            "description": "仅已知标识关联分支；新标识由系统生成"
+          },
+          "species": {
+            "type": "text",
+            "description": "当次种类"
+          },
+          "complaint": {
+            "type": "text",
+            "description": "当次到院主诉"
+          },
+          "doctor_ref": {
+            "type": "reference",
+            "description": "服务端核验为当前账号同店医生"
+          },
+          "pet_name": {
+            "type": "text",
+            "description": "可选当次称呼"
+          },
+          "template_ref": {
+            "type": "reference",
+            "description": "由服务端核验有效模板"
+          }
+        },
+        "constraints": [
+          "不接受store/receptionist/actor/time/历史接诊归属",
+          "不接收诊断/处方/主人联系方式",
+          "不读取旧接诊或共享宠物资料"
+        ]
+      },
+      "W-DECLINE": {
+        "source_ref": "DES-AUTHZ-002 §4.2",
+        "direction": "input",
+        "fields": {
+          "encounter_ref": {
+            "type": "reference",
+            "description": "获准接诊"
+          },
+          "suggestion_ref": {
+            "type": "reference",
+            "description": "同次保存建议"
+          },
+          "record_ref": {
+            "type": "reference",
+            "description": "若有，同次已建病历"
+          },
+          "decision": {
+            "type": "enum",
+            "values": [
+              "declined"
+            ],
+            "description": "不采纳登记"
+          },
+          "reason": {
+            "type": "text",
+            "description": "可选不采纳理由"
+          }
+        },
+        "constraints": [
+          "新登记仅pending；同一操作重试幂等",
+          "不创建或更新正式病历；不套用采纳必填理由/正式写入护栏",
+          "实际账号取Principal；不删除已有建议"
+        ]
+      },
+      "W-DIAGNOSIS": {
+        "source_ref": "DES-AUTHZ-002 §4.2",
+        "direction": "input",
+        "fields": {
+          "diagnosis": {
+            "type": "text",
+            "description": "正式诊断或既有诊断新值"
+          },
+          "examination": {
+            "type": "text",
+            "description": "可选检查说明或新值"
+          },
+          "original_content_ref": {
+            "type": "reference",
+            "description": "correct的既存内容"
+          },
+          "original_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "reason": {
+            "type": "text",
+            "description": "本次操作理由，非服务端身份或历史责任改写"
+          }
+        },
+        "constraints": [
+          "正式提交至少诊断说明",
+          "误建仅更正既存内容，不借correct新增诊疗",
+          "目标Encounter及可选已建Record由受控路由上下文绑定"
+        ],
+        "mode_fields": {
+          "record": [
+            "diagnosis",
+            "examination"
+          ],
+          "correct": [
+            "original_content_ref",
+            "original_version_ref",
+            "diagnosis",
+            "examination",
+            "reason"
+          ]
+        }
+      },
+      "W-ERROR": {
+        "source_ref": "DES-AUTHZ-002 §4.1",
+        "direction": "input",
+        "fields": {
+          "encounter_ref": {
+            "type": "reference",
+            "description": "原接诊"
+          },
+          "reason": {
+            "type": "text",
+            "description": "本次操作理由，非服务端身份或历史责任改写"
+          },
+          "rebuilt_encounter_ref": {
+            "type": "reference",
+            "description": "分别合法新建后的重建接诊；无正文关联"
+          }
+        },
+        "constraints": [
+          "无删除/解标/归属改派/自动撤销用药/临床内容转移"
+        ]
+      },
+      "W-GENERATE": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "input",
+        "fields": {
+          "input_package_ref": {
+            "type": "reference",
+            "description": "输入需求包"
+          },
+          "candidate_ref": {
+            "type": "reference",
+            "description": "既有候选引用，如适用"
+          },
+          "content_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "field_definitions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "本店允许字段定义与必填要求"
+          },
+          "template_definitions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "本店模板定义"
+          },
+          "rule_definitions": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "已登记对象/操作/条件/拒绝结果的定义，不是可执行代码"
+          },
+          "source": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "定义需求来源"
+          },
+          "coding_standards": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "编码规范"
+          },
+          "quality_gates": {
+            "type": "semantic_group",
+            "serialization": "logical_group_only_no_entity_wildcard",
+            "description": "质量门禁"
+          }
+        },
+        "constraints": [
+          "仅定义需求，不输入既存诊断/处方/建议正文",
+          "校验结果/差异/摘要/状态/实际提交审批启用账号时间由服务端生成；不能伪填"
+        ]
+      },
+      "W-MEDICATION": {
+        "source_ref": "DES-AUTHZ-002 §4.2",
+        "direction": "input",
+        "fields": {
+          "drug": {
+            "type": "text",
+            "description": "药品"
+          },
+          "amount": {
+            "type": "text",
+            "description": "用量；不引入药理数值阈值"
+          },
+          "unit": {
+            "type": "text",
+            "description": "单位"
+          },
+          "original_entry_ref": {
+            "type": "reference",
+            "description": "correct同病历原项"
+          },
+          "reason": {
+            "type": "text",
+            "description": "本次操作理由，非服务端身份或历史责任改写"
+          }
+        },
+        "constraints": [
+          "append/correct都新增不可变项；无update/delete",
+          "服务端路由固定模式；误建只更正既存项",
+          "实际账号/时间由可信上下文生成"
+        ],
+        "mode_fields": {
+          "append": [
+            "drug",
+            "amount",
+            "unit"
+          ],
+          "correct": [
+            "original_entry_ref",
+            "drug",
+            "amount",
+            "unit",
+            "reason"
+          ]
+        }
+      },
+      "W-RECEPTION": {
+        "source_ref": "DES-AUTHZ-002 §4.1",
+        "direction": "input",
+        "fields": {
+          "species": {
+            "type": "text",
+            "description": "当次种类新值"
+          },
+          "complaint": {
+            "type": "text",
+            "description": "当次主诉新值"
+          },
+          "pet_name": {
+            "type": "text",
+            "description": "当次称呼新值"
+          },
+          "original_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "reason": {
+            "type": "text",
+            "description": "本次操作理由，非服务端身份或历史责任改写"
+          }
+        },
+        "constraints": [
+          "接诊号/宠物标识/门店/前台/医生归属不可更正",
+          "保留前后值及可信账号时间"
+        ]
+      },
+      "W-REVIEW": {
+        "source_ref": "DES-AUTHZ-002 §4.3",
+        "direction": "input",
+        "fields": {
+          "candidate_ref": {
+            "type": "reference",
+            "description": "具体候选"
+          },
+          "content_version_ref": {
+            "type": "reference",
+            "description": "指定既有版本；不改变实际父关联"
+          },
+          "decision": {
+            "type": "enum",
+            "values": [
+              "approve",
+              "reject"
+            ],
+            "description": "人工审批决定"
+          },
+          "reason": {
+            "type": "text",
+            "description": "本次操作理由，非服务端身份或历史责任改写"
+          }
+        },
+        "constraints": [
+          "校验未过不得批准；内容变化使旧批准不可复用；审批不自动启用",
+          "实际审批账号/时间服务端生成"
+        ]
+      }
+    },
+    "roles": [
+      "frontdesk",
+      "doctor",
+      "manager"
+    ],
+    "projection_semantics": {
+      "field_naming": "stable_logical_fields_not_final_API_serialization",
+      "unknown_nested_entity_fields": "not_authorized_by_semantic_group",
+      "semantic_group": "Only the bounded concepts in description and constraints; no arbitrary object serialization or clinical entity loading.",
+      "mode_selection": "server_registered_route_not_payload",
+      "identity_and_ownership": "server principal and stored Encounter; never client actor/store/time claims",
+      "server_owned_fields": "identity, ownership, actual execution actor/role/time/result, computed validation/comparison, audit and version linkage are server derived; explicit original/desired version references remain client selectors only"
+    },
+    "refusal_audit_scopes": {
+      "L": "可信本店上下文归本店；不取客户端店号；同店拒绝不获他人病历",
+      "X11": "仅可信跨店病历及关联操作拒绝，事件归可信请求账号所属店，管理只R-AUDIT；目标店不获查看权",
+      "U": "身份/归店缺失或未定类别保留安全依据；不凭空分店或授管理跨店可见权"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+@startuml
+left to right direction
+actor "医生账号" as Doctor
+rectangle "VetRules系统（关系子图）" {
+  usecase "UC-02.1 查询接诊病历" as Q
+  usecase "UC-02.2 记录或更正诊疗" as W
+  usecase "UC-03 追加处方与用药更正" as P
+  usecase "UC-04.1 采纳建议入病历" as A
+  usecase "UC-S01 校验当前身份与数据范围" as Auth
+  usecase "UC-S02 校验正式病历变更\n扩展点：运行护栏判定完成" as Guard
+  usecase "UC-S03 记录运行护栏命中告警" as Hit
+}
+Doctor -- Q
+Doctor -- W
+Doctor -- P
+Doctor -- A
+Q ..> Auth : <<include>>
+W ..> Auth : <<include>>
+P ..> Auth : <<include>>
+A ..> Auth : <<include>>
+W ..> Guard : <<include>>
+P ..> Guard : <<include>>
+A ..> Guard : <<include>>
+Hit ..> Guard : <<extend>>\n[运行护栏命中]
+@enduml

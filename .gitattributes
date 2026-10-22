@@ -1,0 +1,5 @@
+# Preserve existing evidence and frozen baseline bytes, including line endings.
+* -text
+.github/** text eol=lf
+*.docx binary
+*.pdf binary

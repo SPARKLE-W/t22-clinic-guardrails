@@ -1,0 +1,194 @@
+{
+  "scope": "document_integrity_and_design_reference_checks_only",
+  "sourceSHA256": "FE95C5BF2495B763EA2C7075C46CBE5D367F7F82401E2E1818EF81BF9243DAE8",
+  "passed": 34,
+  "total": 34,
+  "checks": [
+    {
+      "check": "需求v1.0指纹未变",
+      "passed": true,
+      "detail": "FE95C5BF2495B763EA2C7075C46CBE5D367F7F82401E2E1818EF81BF9243DAE8"
+    },
+    {
+      "check": "冻结快照逐字节一致",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "v0.8历史快照指纹保持",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Word导出源关联v1.0",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Word与实际排版记录指纹一致",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "PDF与实际排版记录指纹一致",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Word压缩包完整",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Word全部XML可解析",
+      "passed": true,
+      "detail": "16 XML/relationship parts"
+    },
+    {
+      "check": "Word52表及8图",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "PDF40页且无空白文本页",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "PDF文本块无页面越界",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "check": "首轮设计8份Markdown",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "设计文档围栏闭合",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "矩阵20个唯一权限键",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "两个JSON可解析",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "输入引用摘要对应实际文件",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "两个样例需求基线正确",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "三必需部分完整且输入输出一致",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "SR01—10各一项及独立版本",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "JSON/矩阵/输入20键一致",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "JSON默认拒绝且仅三角色",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "投影引用全部登记并有D2定义",
+      "passed": true,
+      "detail": "35 projection names"
+    },
+    {
+      "check": "API权限键与矩阵一致",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "辅助模式与只读投影已登记",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "用药及决定响应为无正文结果投影",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "无虚构审批/启用或生成成功",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "屏幕基准与视口记录分开",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "题定质量数字为目标",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "追踪表含全部FR/NFR/AC行",
+      "passed": true,
+      "detail": "25 rows"
+    },
+    {
+      "check": "rule_id加入同轮去重",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "并发与FloorSpec修正已写入",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "未生成产品实现目录",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "设计及当前导航的本地文档链接可达",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "check": "三份实际审查报告存在",
+      "passed": true,
+      "detail": ""
+    }
+  ],
+  "designSHA256": {
+    "04_设计与控制文件/00_设计导航与基线.md": "3C7202CD258BA0A196A8016A97D7BC7E7D4FB4C817BF5B88FA4F799F9ED59EAE",
+    "04_设计与控制文件/01_控制文件格式与生成校验设计.md": "2612FC3873CBFA85AEF9F2E4D122872512BC1A03CFC73F1FE35894B3F926C420",
+    "04_设计与控制文件/02_权限矩阵与字段投影.md": "F5DA3F520A165DD5F8898306D4AB14BE71C7AE4B8034BC0CC2C009D486BFBCAE",
+    "04_设计与控制文件/03_数据与接口设计.md": "B7ACE444E1BC9F0D71C4DB1F161419B8EFE3A61F2B0A3CA48EEFBE31C73B3834",
+    "04_设计与控制文件/04_关键流程与时序设计.md": "62877D65EC4541A748092DEB8FB8E305E93AA88B71B6A5E895E98932E374BC5C",
+    "04_设计与控制文件/05_需求到设计追踪矩阵.md": "084AFB809024F831F7539B08A14D39E578A8CF2EFA09D66D9FA433D5C7530BDE",
+    "04_设计与控制文件/06_设计决策与预研验证方案.md": "F25D179774A012243C30FE96B2AD9EB186BDC170C43ED2044931FA4287232BC4",
+    "04_设计与控制文件/architecture.md": "F4A6E796D9D2D39CBAB2788981C89F05D8D93C6D7F4252810D44587D4FB551CC",
+    "04_设计与控制文件/控制文件/01_演示需求输入_v0.1.json": "9F1F806B0517F8360C9E78B0DD3AA07455E65D4BB18349F2C1683569B8C9063F",
+    "04_设计与控制文件/控制文件/02_控制包候选_v0.1.json": "4CD20020DBA106E768D13F1AE1BB37D576B29FD7E38B3FCC60189BEADF67CC81"
+  },
+  "runtime_tests_executed": false,
+  "generator_executed": false,
+  "mermaid_rendered": false,
+  "full_OOXML_schema_validation": false
+}

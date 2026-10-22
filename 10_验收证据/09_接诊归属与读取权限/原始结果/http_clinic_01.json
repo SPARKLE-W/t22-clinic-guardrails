@@ -1,0 +1,99 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "check": "实际浏览器建档已持久保存",
+      "passed": true,
+      "details": {
+        "encounter_ref": "6e814774-edcb-4a80-9078-03c04d65286b"
+      }
+    },
+    {
+      "check": "真实HTTP同一建档操作重试仅一笔",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "HTTP不能通过更正改写接诊归属",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "HTTP更正保留两版资料",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "HTTP误建标记保留旧单",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "辅助核验不返回历史或身份正文",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "前台查询临床字段拒绝",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "医生可读其负责的误建接诊",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "尚无正式病历不冒充空诊断",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "a_manager直调临床接口拒绝",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "a_frontdesk直调临床接口拒绝",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "b_doctor直调临床接口拒绝",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "跨店拒绝只归请求账号B店",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "B店管理只可见获准拒绝元数据",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "实际读取留逐接诊审计引用",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "更正及误建没有改写实际归属",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "应用未通过夹具伪造正式病历",
+      "passed": true,
+      "details": null
+    },
+    {
+      "check": "接待历史和宠物最小登记保留",
+      "passed": true,
+      "details": null
+    }
+  ],
+  "scope": "synthetic_reception_real_browser_and_HTTP_not_clinical_write_acceptance",
+  "encounter_ref": "6e814774-edcb-4a80-9078-03c04d65286b"
+}

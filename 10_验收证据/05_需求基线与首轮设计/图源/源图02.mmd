@@ -1,0 +1,17 @@
+stateDiagram-v2
+    accTitle: 规则与模板候选审批启用
+    accDescr: 管理提交草案，经校验和人工审批后手动启用；失败不替换现有版本，内容修改重新走流程。
+    state "草案" as Draft
+    state "待审批" as Review
+    state "已驳回" as Rejected
+    state "已批准" as Approved
+    state "已启用" as Active
+    [*] --> Draft
+    Draft --> Review: 校验通过并提交
+    Draft --> Draft: 校验失败
+    Review --> Rejected: 人工驳回
+    Review --> Approved: 人工批准具体内容
+    Approved --> Active: 管理手动启用成功
+    Approved --> Approved: 启用失败
+    Rejected --> Draft: 修改形成新候选
+    Approved --> Draft: 内容修改形成新候选

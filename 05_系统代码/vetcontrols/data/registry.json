@@ -1,0 +1,1035 @@
+{
+  "version": "0.2",
+  "status": "static_contract_runtime_not_integrated",
+  "srs_sha256": "FE95C5BF2495B763EA2C7075C46CBE5D367F7F82401E2E1818EF81BF9243DAE8",
+  "phases": [
+    "candidate",
+    "authorization",
+    "clinical_change",
+    "decision_change",
+    "reception_change",
+    "activation",
+    "read",
+    "export",
+    "release",
+    "persistence",
+    "delivery"
+  ],
+  "checkers": [
+    {
+      "id": "SR-03",
+      "checker": "append_only_medication",
+      "phases": [
+        "candidate",
+        "clinical_change"
+      ],
+      "failure_class": "guard_hit_when_evaluated"
+    },
+    {
+      "id": "SR-06",
+      "checker": "audit_and_authorized_export",
+      "phases": [
+        "candidate",
+        "clinical_change",
+        "decision_change",
+        "export",
+        "read",
+        "reception_change"
+      ],
+      "failure_class": "audit_or_export_fault"
+    },
+    {
+      "id": "SR-08",
+      "checker": "credential_and_parameterized_query",
+      "phases": [
+        "candidate",
+        "persistence",
+        "release"
+      ],
+      "failure_class": "security_refusal"
+    },
+    {
+      "id": "SR-09",
+      "checker": "durable_alert_and_idempotency",
+      "phases": [
+        "candidate",
+        "clinical_change",
+        "decision_change",
+        "delivery",
+        "reception_change"
+      ],
+      "failure_class": "recovery_fault"
+    },
+    {
+      "id": "SR-04",
+      "checker": "human_adoption_and_retention",
+      "phases": [
+        "candidate",
+        "clinical_change",
+        "decision_change"
+      ],
+      "failure_class": "guard_hit_when_evaluated"
+    },
+    {
+      "id": "SR-10",
+      "checker": "mandatory_control_sections",
+      "phases": [
+        "candidate"
+      ],
+      "failure_class": "candidate_validation_failure"
+    },
+    {
+      "id": "SR-05",
+      "checker": "manual_approval_content_binding",
+      "phases": [
+        "activation",
+        "candidate"
+      ],
+      "failure_class": "governance_refusal"
+    },
+    {
+      "id": "SR-02",
+      "checker": "referenced_template",
+      "phases": [
+        "candidate",
+        "clinical_change"
+      ],
+      "failure_class": "guard_hit_when_evaluated"
+    },
+    {
+      "id": "SR-07",
+      "checker": "registered_permission_entry",
+      "phases": [
+        "authorization",
+        "candidate",
+        "release"
+      ],
+      "failure_class": "security_refusal"
+    },
+    {
+      "id": "SR-01",
+      "checker": "scope_and_projection",
+      "phases": [
+        "authorization",
+        "candidate"
+      ],
+      "failure_class": "security_refusal"
+    }
+  ],
+  "facts": {
+    "candidate.scope_projection_bounds_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "condition_selectable": true,
+      "availability": "compiler_derived"
+    },
+    "candidate.template_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "condition_selectable": true,
+      "availability": "compiler_derived"
+    },
+    "candidate.medication_append_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "condition_selectable": true,
+      "availability": "compiler_derived"
+    },
+    "candidate.suggestion_decision_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "condition_selectable": true,
+      "availability": "compiler_derived"
+    },
+    "candidate.manual_activation_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "condition_selectable": true,
+      "availability": "compiler_derived"
+    },
+    "candidate.audit_export_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "condition_selectable": true,
+      "availability": "compiler_derived"
+    },
+    "candidate.permission_gate_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "condition_selectable": true,
+      "availability": "compiler_derived"
+    },
+    "candidate.credential_query_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "condition_selectable": true,
+      "availability": "compiler_derived"
+    },
+    "candidate.recovery_idempotency_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "condition_selectable": true,
+      "availability": "compiler_derived"
+    },
+    "candidate.required_sections": {
+      "type": "array",
+      "provider": "compiler_structure_validator",
+      "phases": [
+        "candidate"
+      ],
+      "condition_selectable": true,
+      "availability": "compiler_derived",
+      "items": {
+        "type": "string"
+      }
+    },
+    "candidate.references_valid": {
+      "type": "boolean",
+      "provider": "compiler_structure_validator",
+      "phases": [
+        "candidate"
+      ],
+      "condition_selectable": true,
+      "availability": "compiler_derived"
+    },
+    "authorization.identity_current": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "authorization.role_allowed": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "authorization.row_scope_allowed": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "authorization.input_projection_allowed": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "authorization.output_projection_allowed": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "entry.permission_key_bound": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "entry.mode_server_selected": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "entry.central_authorization_invoked": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "policy.pin_valid": {
+      "type": "boolean",
+      "provider": "policy_template_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "template.reference_resolved": {
+      "type": "boolean",
+      "provider": "policy_template_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "template.interpretation_matches_reference": {
+      "type": "boolean",
+      "provider": "policy_template_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "template.required_fields_valid": {
+      "type": "boolean",
+      "provider": "policy_template_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "template.medication_group_valid": {
+      "type": "boolean",
+      "provider": "policy_template_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "medication.append_plan_only": {
+      "type": "boolean",
+      "provider": "clinical_change_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "medication.original_link_valid": {
+      "type": "boolean",
+      "provider": "clinical_change_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "medication.correction_reason_valid": {
+      "type": "boolean",
+      "provider": "clinical_change_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "actor.actual_identity_bound": {
+      "type": "boolean",
+      "provider": "clinical_change_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "activation"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "actor.actual_time_server_owned": {
+      "type": "boolean",
+      "provider": "clinical_change_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "activation"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "suggestion.saved_context_valid": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "clinical_change",
+        "decision_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "suggestion.transition_allowed": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "clinical_change",
+        "decision_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "suggestion.source_retention_planned": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "clinical_change",
+        "decision_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "suggestion.adoption_reason_valid": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "suggestion.no_direct_ai_write": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "suggestion.decline_no_formal_write": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "decision_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "governance.same_store_verified": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "governance.candidate_validated": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "governance.human_approval_recorded": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "governance.approved_content_matches": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "governance.manual_activation_requested": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "governance.activation_reason_valid": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "governance.current_head_condition_valid": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "audit.facility_ready": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "export",
+        "read",
+        "reception_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "audit.required_plan_complete": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "export",
+        "read",
+        "reception_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "audit.same_transaction_planned": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "response.release_gate_installed": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "read",
+        "export"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "export.all_explicit_targets_authorized": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "export.complete_scope_planned": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "export.projection_valid": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "export.purpose_required": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "export.purpose_present": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "export.version_snapshot_planned": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "release.endpoint_scan_complete": {
+      "type": "boolean",
+      "provider": "release_gate",
+      "phases": [
+        "release"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "release.permission_scan_clean": {
+      "type": "boolean",
+      "provider": "release_gate",
+      "phases": [
+        "release"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "release.credential_check_clean": {
+      "type": "boolean",
+      "provider": "release_gate",
+      "phases": [
+        "release"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "release.parameter_binding_check_clean": {
+      "type": "boolean",
+      "provider": "release_gate",
+      "phases": [
+        "release"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "persistence.parameter_binding_enforced": {
+      "type": "boolean",
+      "provider": "persistence_adapter",
+      "phases": [
+        "persistence"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "persistence.password_representation": {
+      "type": "string",
+      "provider": "persistence_adapter",
+      "phases": [
+        "persistence"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input",
+      "enum": [
+        "not_applicable",
+        "one_way_hash",
+        "plaintext",
+        "unknown"
+      ]
+    },
+    "persistence.secret_logging_prohibited": {
+      "type": "boolean",
+      "provider": "persistence_adapter",
+      "phases": [
+        "persistence"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "operation.key_bound": {
+      "type": "boolean",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "operation.digest_bound": {
+      "type": "boolean",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "operation.current_authorization_checked": {
+      "type": "boolean",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "recovery.local_evidence_plan_ready": {
+      "type": "boolean",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "recovery.guard_refusal_plan_ready": {
+      "type": "boolean",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "operation.claim_state": {
+      "type": "string",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input",
+      "enum": [
+        "execute_owner",
+        "completed_replay",
+        "in_progress",
+        "content_conflict",
+        "unknown"
+      ]
+    },
+    "delivery.event_identity_bound": {
+      "type": "boolean",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "delivery.local_evidence_durable": {
+      "type": "boolean",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "delivery.lease_current": {
+      "type": "boolean",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "delivery.receipt_transaction_ready": {
+      "type": "boolean",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input"
+    },
+    "delivery.kind": {
+      "type": "string",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input",
+      "enum": [
+        "publish",
+        "consume",
+        "recover"
+      ]
+    },
+    "delivery.publish_confirmation": {
+      "type": "string",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input",
+      "enum": [
+        "not_sent",
+        "confirmed",
+        "negative",
+        "unknown"
+      ]
+    },
+    "outcome.commit_state": {
+      "type": "string",
+      "provider": "commit_result_observer",
+      "phases": [
+        "read",
+        "clinical_change",
+        "decision_change",
+        "reception_change",
+        "activation",
+        "export",
+        "delivery"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only",
+      "enum": [
+        "committed",
+        "rolled_back",
+        "unknown"
+      ]
+    },
+    "outcome.audit_state": {
+      "type": "string",
+      "provider": "commit_result_observer",
+      "phases": [
+        "read",
+        "clinical_change",
+        "decision_change",
+        "reception_change",
+        "activation",
+        "export"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only",
+      "enum": [
+        "durable",
+        "failed",
+        "unknown"
+      ]
+    },
+    "outcome.business_audit_atomic": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only"
+    },
+    "outcome.medication_original_preserved": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only"
+    },
+    "outcome.suggestion_source_retained": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change",
+        "decision_change"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only"
+    },
+    "outcome.formal_clinical_mutation": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change",
+        "decision_change"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only"
+    },
+    "outcome.active_pointer_matches_approval": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "activation"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only"
+    },
+    "outcome.refusal_evidence_durable": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only"
+    },
+    "outcome.outbox_durable": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change",
+        "delivery"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only"
+    },
+    "outcome.consumer_receipt_durable": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "delivery"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only"
+    },
+    "outcome.delivery_business_state_unchanged": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "delivery"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only"
+    },
+    "outcome.export_artifact_state": {
+      "type": "string",
+      "provider": "commit_result_observer",
+      "phases": [
+        "export"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only",
+      "enum": [
+        "complete",
+        "failed",
+        "unknown"
+      ]
+    },
+    "outcome.export_row_count": {
+      "type": "integer",
+      "provider": "commit_result_observer",
+      "phases": [
+        "export"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only"
+    },
+    "outcome.export_record_count": {
+      "type": "integer",
+      "provider": "commit_result_observer",
+      "phases": [
+        "export"
+      ],
+      "condition_selectable": false,
+      "availability": "after_commit_only"
+    },
+    "principal.role": {
+      "type": "string",
+      "provider": "authorization_entry",
+      "phases": [
+        "candidate",
+        "authorization",
+        "clinical_change",
+        "decision_change",
+        "reception_change",
+        "activation",
+        "read",
+        "export",
+        "release",
+        "persistence",
+        "delivery"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input",
+      "enum": [
+        "frontdesk",
+        "doctor",
+        "manager"
+      ]
+    },
+    "operation.mode": {
+      "type": "string",
+      "provider": "authorization_entry",
+      "phases": [
+        "candidate",
+        "authorization",
+        "clinical_change",
+        "decision_change",
+        "reception_change",
+        "activation",
+        "read",
+        "export",
+        "release",
+        "persistence",
+        "delivery"
+      ],
+      "condition_selectable": true,
+      "availability": "trusted_service_input",
+      "enum": [
+        "activate",
+        "adopt",
+        "append",
+        "correct",
+        "create",
+        "decline",
+        "detail",
+        "doctor_options",
+        "export",
+        "generate",
+        "list",
+        "mark",
+        "read",
+        "record",
+        "resolve",
+        "review",
+        "verify_pet_ref",
+        "write"
+      ]
+    }
+  }
+}

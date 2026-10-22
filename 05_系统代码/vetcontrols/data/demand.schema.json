@@ -1,0 +1,2939 @@
+{
+  "type": "object",
+  "required": [
+    "format_version",
+    "demand_id",
+    "version",
+    "scope",
+    "srs",
+    "safety_redlines",
+    "coding_standards",
+    "quality_gates",
+    "templates",
+    "collaboration",
+    "authorization",
+    "additional_rules"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {
+      "const": "0.2"
+    },
+    "demand_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
+    },
+    "scope": {
+      "type": "object",
+      "required": [
+        "store_id",
+        "synthetic"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "store_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "synthetic": {
+          "type": "boolean"
+        }
+      }
+    },
+    "srs": {
+      "const": {
+        "sha256": "FE95C5BF2495B763EA2C7075C46CBE5D367F7F82401E2E1818EF81BF9243DAE8",
+        "version": "1.0"
+      }
+    },
+    "safety_redlines": {
+      "const": [
+        {
+          "checker": "append_only_medication",
+          "failure_class": "guard_hit_when_evaluated",
+          "id": "SR-03",
+          "may_weaken": false,
+          "phases": [
+            "candidate",
+            "clinical_change"
+          ],
+          "source": [
+            "FR-04",
+            "SR-03"
+          ],
+          "version": "0.1"
+        },
+        {
+          "checker": "audit_and_authorized_export",
+          "failure_class": "audit_or_export_fault",
+          "id": "SR-06",
+          "may_weaken": false,
+          "phases": [
+            "candidate",
+            "clinical_change",
+            "decision_change",
+            "export",
+            "read",
+            "reception_change"
+          ],
+          "source": [
+            "FR-08",
+            "SR-06"
+          ],
+          "version": "0.1"
+        },
+        {
+          "checker": "credential_and_parameterized_query",
+          "failure_class": "security_refusal",
+          "id": "SR-08",
+          "may_weaken": false,
+          "phases": [
+            "candidate",
+            "persistence",
+            "release"
+          ],
+          "source": [
+            "NFR-06",
+            "SR-08"
+          ],
+          "version": "0.1"
+        },
+        {
+          "checker": "durable_alert_and_idempotency",
+          "failure_class": "recovery_fault",
+          "id": "SR-09",
+          "may_weaken": false,
+          "phases": [
+            "candidate",
+            "clinical_change",
+            "decision_change",
+            "delivery",
+            "reception_change"
+          ],
+          "source": [
+            "NFR-05",
+            "SR-09"
+          ],
+          "version": "0.1"
+        },
+        {
+          "checker": "human_adoption_and_retention",
+          "failure_class": "guard_hit_when_evaluated",
+          "id": "SR-04",
+          "may_weaken": false,
+          "phases": [
+            "candidate",
+            "clinical_change",
+            "decision_change"
+          ],
+          "source": [
+            "FR-06",
+            "SR-04"
+          ],
+          "version": "0.1"
+        },
+        {
+          "checker": "mandatory_control_sections",
+          "failure_class": "candidate_validation_failure",
+          "id": "SR-10",
+          "may_weaken": false,
+          "phases": [
+            "candidate"
+          ],
+          "source": [
+            "FR-01",
+            "SR-10"
+          ],
+          "version": "0.1"
+        },
+        {
+          "checker": "manual_approval_content_binding",
+          "failure_class": "governance_refusal",
+          "id": "SR-05",
+          "may_weaken": false,
+          "phases": [
+            "activation",
+            "candidate"
+          ],
+          "source": [
+            "FR-01",
+            "SR-05"
+          ],
+          "version": "0.1"
+        },
+        {
+          "checker": "referenced_template",
+          "failure_class": "guard_hit_when_evaluated",
+          "id": "SR-02",
+          "may_weaken": false,
+          "phases": [
+            "candidate",
+            "clinical_change"
+          ],
+          "source": [
+            "FR-02",
+            "SR-02"
+          ],
+          "version": "0.1"
+        },
+        {
+          "checker": "registered_permission_entry",
+          "failure_class": "security_refusal",
+          "id": "SR-07",
+          "may_weaken": false,
+          "phases": [
+            "authorization",
+            "candidate",
+            "release"
+          ],
+          "source": [
+            "FR-05.4",
+            "SR-07"
+          ],
+          "version": "0.1"
+        },
+        {
+          "checker": "scope_and_projection",
+          "failure_class": "security_refusal",
+          "id": "SR-01",
+          "may_weaken": false,
+          "phases": [
+            "authorization",
+            "candidate"
+          ],
+          "source": [
+            "FR-05",
+            "SR-01"
+          ],
+          "version": "0.1"
+        }
+      ]
+    },
+    "coding_standards": {
+      "const": [
+        {
+          "id": "CS-01",
+          "obligations": [
+            "registered_permission_entry",
+            "server_projections"
+          ]
+        },
+        {
+          "id": "CS-02",
+          "obligations": [
+            "no_raw_credentials_or_request_bodies_in_audit",
+            "parameterized_queries",
+            "password_hashing"
+          ]
+        },
+        {
+          "id": "CS-03",
+          "obligations": [
+            "clinical_audit_atomic_transaction",
+            "no_required_audit_after_response",
+            "required_commit_before_success"
+          ]
+        },
+        {
+          "id": "CS-04",
+          "obligations": [
+            "append_only_medication",
+            "trusted_actor_and_time"
+          ]
+        },
+        {
+          "id": "CS-05",
+          "obligations": [
+            "no_arbitrary_object_or_file_selectors",
+            "no_executable_controls"
+          ]
+        },
+        {
+          "id": "CS-06",
+          "obligations": [
+            "outbox_receipt_deduplication",
+            "publish_confirmation_not_handling",
+            "stable_event_ids"
+          ]
+        }
+      ]
+    },
+    "quality_gates": {
+      "type": "object",
+      "required": [
+        "all_error_codes_and_negative_scenarios_accounted",
+        "all_tests_pass",
+        "browser",
+        "coverage",
+        "data",
+        "effective_code_lines",
+        "evidence_required",
+        "extension_per_example",
+        "load",
+        "protected_endpoint_scan",
+        "required_sections",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "all_error_codes_and_negative_scenarios_accounted": {
+          "const": true
+        },
+        "all_tests_pass": {
+          "const": true
+        },
+        "browser": {
+          "type": "object",
+          "required": [
+            "actual_viewport",
+            "families",
+            "minimum_screen_resolution",
+            "os",
+            "window",
+            "zoom_percent"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "actual_viewport": {
+              "const": "record_during_test"
+            },
+            "families": {
+              "const": [
+                "Chrome",
+                "Edge"
+              ]
+            },
+            "minimum_screen_resolution": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1366
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 768
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "os": {
+              "const": "Windows"
+            },
+            "window": {
+              "const": "maximized"
+            },
+            "zoom_percent": {
+              "const": 100
+            }
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "required": [
+            "measurement_kind",
+            "minimum_percent"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "measurement_kind": {
+              "const": "to_be_declared_before_measurement"
+            },
+            "minimum_percent": {
+              "type": "number",
+              "minimum": 80,
+              "maximum": 100
+            }
+          }
+        },
+        "data": {
+          "type": "object",
+          "required": [
+            "pets_approx",
+            "records_approx",
+            "stores"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "pets_approx": {
+              "type": "integer",
+              "minimum": 6000
+            },
+            "records_approx": {
+              "type": "integer",
+              "minimum": 20000
+            },
+            "stores": {
+              "type": "integer",
+              "minimum": 5
+            }
+          }
+        },
+        "effective_code_lines": {
+          "type": "object",
+          "required": [
+            "counting_scope",
+            "maximum",
+            "minimum"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "counting_scope": {
+              "const": "to_be_declared"
+            },
+            "maximum": {
+              "type": "integer",
+              "minimum": 3200,
+              "maximum": 4800
+            },
+            "minimum": {
+              "type": "integer",
+              "minimum": 3200,
+              "maximum": 4800
+            }
+          }
+        },
+        "evidence_required": {
+          "const": [
+            "authorization_and_projection",
+            "clinical_csv_completeness",
+            "queue_recovery",
+            "real_AI_process",
+            "restart",
+            "retry_and_redelivery",
+            "transaction_audit_faults"
+          ]
+        },
+        "extension_per_example": {
+          "type": "object",
+          "required": [
+            "both_rule_and_template_examples_required",
+            "modules_max",
+            "person_days_max",
+            "rule_files_max"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "both_rule_and_template_examples_required": {
+              "const": true
+            },
+            "modules_max": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "person_days_max": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "rule_files_max": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "load": {
+          "type": "object",
+          "required": [
+            "authorized_failures_max",
+            "concurrency",
+            "duration_seconds",
+            "p95_ms_max",
+            "report_separately",
+            "throughput_per_minute_min",
+            "timing_end"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "authorized_failures_max": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 0
+            },
+            "concurrency": {
+              "type": "integer",
+              "minimum": 360
+            },
+            "duration_seconds": {
+              "type": "integer",
+              "minimum": 600
+            },
+            "p95_ms_max": {
+              "type": "number",
+              "minimum": 0.001,
+              "maximum": 280
+            },
+            "report_separately": {
+              "const": [
+                "clinical_write",
+                "export",
+                "guard_check",
+                "query",
+                "reception"
+              ]
+            },
+            "throughput_per_minute_min": {
+              "type": "integer",
+              "minimum": 800
+            },
+            "timing_end": {
+              "const": "complete_response_received"
+            }
+          }
+        },
+        "protected_endpoint_scan": {
+          "type": "object",
+          "required": [
+            "missing_permission",
+            "negative_sample_required"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "missing_permission": {
+              "const": "block_release"
+            },
+            "negative_sample_required": {
+              "const": true
+            }
+          }
+        },
+        "required_sections": {
+          "const": [
+            "coding_standards",
+            "quality_gates",
+            "safety_redlines"
+          ]
+        },
+        "status": {
+          "const": "targets_not_results"
+        }
+      }
+    },
+    "templates": {
+      "type": "object",
+      "required": [
+        "clinical",
+        "reception",
+        "source",
+        "version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "clinical": {
+          "type": "object",
+          "required": [
+            "adoption",
+            "extra_fields",
+            "field_types",
+            "first_record_still_requires_diagnosis",
+            "historic_interpretation",
+            "medication",
+            "optional",
+            "required",
+            "type"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "adoption": {
+              "type": "object",
+              "required": [
+                "decline_reason_required",
+                "direct_AI_write",
+                "requires",
+                "source_preserved",
+                "state_from",
+                "state_to"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "decline_reason_required": {
+                  "const": false
+                },
+                "direct_AI_write": {
+                  "const": false
+                },
+                "requires": {
+                  "const": [
+                    "reason",
+                    "saved_suggestion_ref",
+                    "trusted_doctor"
+                  ]
+                },
+                "source_preserved": {
+                  "const": true
+                },
+                "state_from": {
+                  "const": "pending"
+                },
+                "state_to": {
+                  "const": "adopted"
+                }
+              }
+            },
+            "extra_fields": {
+              "type": "array",
+              "maxItems": 64,
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "required",
+                  "visible_role"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^x_[a-z][a-z0-9_]{0,47}$"
+                  },
+                  "type": {
+                    "enum": [
+                      "text",
+                      "integer",
+                      "boolean"
+                    ]
+                  },
+                  "required": {
+                    "const": false
+                  },
+                  "visible_role": {
+                    "const": "doctor"
+                  }
+                }
+              }
+            },
+            "field_types": {
+              "type": "object",
+              "required": [
+                "diagnosis",
+                "examination"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "diagnosis": {
+                  "const": "text"
+                },
+                "examination": {
+                  "const": "text"
+                }
+              }
+            },
+            "first_record_still_requires_diagnosis": {
+              "const": true
+            },
+            "historic_interpretation": {
+              "const": "referenced_version"
+            },
+            "medication": {
+              "type": "object",
+              "required": [
+                "all_or_none",
+                "correction_requires",
+                "optional_when_no_medication",
+                "pharmacology_thresholds",
+                "storage",
+                "value_type"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "all_or_none": {
+                  "const": [
+                    "amount",
+                    "drug",
+                    "unit"
+                  ]
+                },
+                "correction_requires": {
+                  "const": [
+                    "original_entry_ref",
+                    "reason"
+                  ]
+                },
+                "optional_when_no_medication": {
+                  "const": true
+                },
+                "pharmacology_thresholds": {
+                  "const": null
+                },
+                "storage": {
+                  "const": "append_only"
+                },
+                "value_type": {
+                  "const": "nonempty_text"
+                }
+              }
+            },
+            "optional": {
+              "const": [
+                "examination"
+              ]
+            },
+            "required": {
+              "const": [
+                "diagnosis"
+              ]
+            },
+            "type": {
+              "const": "versioned_text_fields"
+            }
+          }
+        },
+        "reception": {
+          "type": "object",
+          "required": [
+            "field_types",
+            "optional",
+            "owner_fixed_after_creation",
+            "pet_id_immutable_after_creation",
+            "required",
+            "server_owned"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "field_types": {
+              "type": "object",
+              "required": [
+                "complaint",
+                "doctor_id",
+                "pet_id",
+                "pet_name",
+                "species"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "complaint": {
+                  "const": "text"
+                },
+                "doctor_id": {
+                  "const": "reference"
+                },
+                "pet_id": {
+                  "const": "reference"
+                },
+                "pet_name": {
+                  "const": "text"
+                },
+                "species": {
+                  "const": "text"
+                }
+              }
+            },
+            "optional": {
+              "const": [
+                "pet_name"
+              ]
+            },
+            "owner_fixed_after_creation": {
+              "const": true
+            },
+            "pet_id_immutable_after_creation": {
+              "const": true
+            },
+            "required": {
+              "const": [
+                "complaint",
+                "doctor_id",
+                "pet_id",
+                "species"
+              ]
+            },
+            "server_owned": {
+              "const": [
+                "created_at",
+                "encounter_id",
+                "receptionist_id",
+                "store_id"
+              ]
+            }
+          }
+        },
+        "source": {
+          "const": [
+            "C-06",
+            "C-07",
+            "FR-02"
+          ]
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
+        }
+      }
+    },
+    "collaboration": {
+      "const": {
+        "changed_version": "compare_again",
+        "clinical_text_visible": false,
+        "dimensions": [
+          "content_generation",
+          "data_entry",
+          "human_decision"
+        ],
+        "manual_review_required": true,
+        "missing_evidence": "not_comparable",
+        "owner_role": "manager",
+        "scope": "own_store",
+        "source": [
+          "C-04",
+          "FR-03"
+        ]
+      }
+    },
+    "authorization": {
+      "const": {
+        "bindings": [
+          {
+            "goal": "UC-01.1",
+            "input_projections": [
+              "Q-CREATE-AUX",
+              "W-CREATE"
+            ],
+            "mode_projections": {
+              "create": {
+                "input_projections": [
+                  "W-CREATE"
+                ],
+                "output_projections": [
+                  "R-RECEPTION"
+                ]
+              },
+              "doctor_options": {
+                "input_projections": [
+                  "Q-CREATE-AUX"
+                ],
+                "output_projections": [
+                  "R-CREATE-AUX"
+                ]
+              },
+              "verify_pet_ref": {
+                "input_projections": [
+                  "Q-CREATE-AUX"
+                ],
+                "output_projections": [
+                  "R-CREATE-AUX"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-CREATE-AUX",
+              "R-RECEPTION"
+            ],
+            "permission": "encounter.create",
+            "refusal_audit_scopes": [
+              "L",
+              "U"
+            ],
+            "role": "frontdesk",
+            "row_predicate": "F+",
+            "server_selected_modes": [
+              "create",
+              "doctor_options",
+              "verify_pet_ref"
+            ]
+          },
+          {
+            "goal": "UC-01.2",
+            "input_projections": [
+              "Q-OWN"
+            ],
+            "mode_projections": {
+              "detail": {
+                "input_projections": [
+                  "Q-OWN"
+                ],
+                "output_projections": [
+                  "R-RECEPTION"
+                ]
+              },
+              "list": {
+                "input_projections": [
+                  "Q-OWN"
+                ],
+                "output_projections": [
+                  "R-RECEPTION"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-RECEPTION"
+            ],
+            "permission": "encounter.read",
+            "refusal_audit_scopes": [
+              "L",
+              "U",
+              "X11"
+            ],
+            "role": "frontdesk",
+            "row_predicate": "F",
+            "server_selected_modes": [
+              "detail",
+              "list"
+            ]
+          },
+          {
+            "goal": "UC-01.3",
+            "input_projections": [
+              "W-RECEPTION"
+            ],
+            "mode_projections": {
+              "correct": {
+                "input_projections": [
+                  "W-RECEPTION"
+                ],
+                "output_projections": [
+                  "R-RECEPTION"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-RECEPTION"
+            ],
+            "permission": "encounter.correct",
+            "refusal_audit_scopes": [
+              "L",
+              "U",
+              "X11"
+            ],
+            "role": "frontdesk",
+            "row_predicate": "F",
+            "server_selected_modes": [
+              "correct"
+            ]
+          },
+          {
+            "goal": "UC-01.4",
+            "input_projections": [
+              "W-ERROR"
+            ],
+            "mode_projections": {
+              "mark": {
+                "input_projections": [
+                  "W-ERROR"
+                ],
+                "output_projections": [
+                  "R-RECEPTION"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-RECEPTION"
+            ],
+            "permission": "encounter.mark_error",
+            "refusal_audit_scopes": [
+              "L",
+              "U",
+              "X11"
+            ],
+            "role": "frontdesk",
+            "row_predicate": "F",
+            "server_selected_modes": [
+              "mark"
+            ]
+          },
+          {
+            "goal": "UC-02.1",
+            "input_projections": [
+              "Q-OWN"
+            ],
+            "mode_projections": {
+              "detail": {
+                "input_projections": [
+                  "Q-OWN"
+                ],
+                "output_projections": [
+                  "R-CLINICAL",
+                  "R-RECEPTION",
+                  "R-SUGGESTION"
+                ]
+              },
+              "list": {
+                "input_projections": [
+                  "Q-OWN"
+                ],
+                "output_projections": [
+                  "R-CLINICAL",
+                  "R-RECEPTION",
+                  "R-SUGGESTION"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-CLINICAL",
+              "R-RECEPTION",
+              "R-SUGGESTION"
+            ],
+            "permission": "clinical.read",
+            "refusal_audit_scopes": [
+              "L",
+              "U",
+              "X11"
+            ],
+            "role": "doctor",
+            "row_predicate": "D",
+            "server_selected_modes": [
+              "detail",
+              "list"
+            ]
+          },
+          {
+            "goal": "UC-02.2",
+            "input_projections": [
+              "W-DIAGNOSIS"
+            ],
+            "mode_projections": {
+              "correct": {
+                "input_projections": [
+                  "W-DIAGNOSIS"
+                ],
+                "output_projections": [
+                  "R-CLINICAL"
+                ]
+              },
+              "record": {
+                "input_projections": [
+                  "W-DIAGNOSIS"
+                ],
+                "output_projections": [
+                  "R-CLINICAL"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-CLINICAL"
+            ],
+            "permission": "clinical.diagnosis.write",
+            "refusal_audit_scopes": [
+              "L",
+              "U",
+              "X11"
+            ],
+            "role": "doctor",
+            "row_predicate": "D",
+            "server_selected_modes": [
+              "correct",
+              "record"
+            ]
+          },
+          {
+            "goal": "UC-03",
+            "input_projections": [
+              "W-MEDICATION"
+            ],
+            "mode_projections": {
+              "append": {
+                "input_projections": [
+                  "W-MEDICATION"
+                ],
+                "output_projections": [
+                  "R-WRITE-RESULT"
+                ]
+              },
+              "correct": {
+                "input_projections": [
+                  "W-MEDICATION"
+                ],
+                "output_projections": [
+                  "R-WRITE-RESULT"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-WRITE-RESULT"
+            ],
+            "permission": "medication.record",
+            "refusal_audit_scopes": [
+              "L",
+              "U",
+              "X11"
+            ],
+            "role": "doctor",
+            "row_predicate": "D",
+            "server_selected_modes": [
+              "append",
+              "correct"
+            ]
+          },
+          {
+            "goal": "UC-04.1",
+            "input_projections": [
+              "W-ADOPT"
+            ],
+            "mode_projections": {
+              "adopt": {
+                "input_projections": [
+                  "W-ADOPT"
+                ],
+                "output_projections": [
+                  "R-WRITE-RESULT"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-WRITE-RESULT"
+            ],
+            "permission": "clinical.suggestion.adopt",
+            "refusal_audit_scopes": [
+              "L",
+              "U",
+              "X11"
+            ],
+            "role": "doctor",
+            "row_predicate": "D",
+            "server_selected_modes": [
+              "adopt"
+            ]
+          },
+          {
+            "goal": "UC-04.2",
+            "input_projections": [
+              "W-DECLINE"
+            ],
+            "mode_projections": {
+              "decline": {
+                "input_projections": [
+                  "W-DECLINE"
+                ],
+                "output_projections": [
+                  "R-WRITE-RESULT"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-WRITE-RESULT"
+            ],
+            "permission": "clinical.suggestion.decline",
+            "refusal_audit_scopes": [
+              "L",
+              "U",
+              "X11"
+            ],
+            "role": "doctor",
+            "row_predicate": "D",
+            "server_selected_modes": [
+              "decline"
+            ]
+          },
+          {
+            "goal": "UC-05",
+            "input_projections": [
+              "Q-ALERT",
+              "W-ALERT"
+            ],
+            "mode_projections": {
+              "read": {
+                "input_projections": [
+                  "Q-ALERT"
+                ],
+                "output_projections": [
+                  "R-ALERT"
+                ]
+              },
+              "resolve": {
+                "input_projections": [
+                  "W-ALERT"
+                ],
+                "output_projections": [
+                  "R-ALERT"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-ALERT"
+            ],
+            "permission": "clinical.alert.handle",
+            "refusal_audit_scopes": [
+              "L",
+              "U",
+              "X11"
+            ],
+            "role": "doctor",
+            "row_predicate": "D",
+            "server_selected_modes": [
+              "read",
+              "resolve"
+            ]
+          },
+          {
+            "goal": "UC-06.1",
+            "input_projections": [
+              "Q-GOVERNANCE",
+              "W-REVIEW"
+            ],
+            "mode_projections": {
+              "read": {
+                "input_projections": [
+                  "Q-GOVERNANCE"
+                ],
+                "output_projections": [
+                  "R-GOVERNANCE"
+                ]
+              },
+              "review": {
+                "input_projections": [
+                  "W-REVIEW"
+                ],
+                "output_projections": [
+                  "R-GOVERNANCE"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-GOVERNANCE"
+            ],
+            "permission": "governance.candidate.review",
+            "refusal_audit_scopes": [
+              "L",
+              "U"
+            ],
+            "role": "manager",
+            "row_predicate": "M",
+            "server_selected_modes": [
+              "read",
+              "review"
+            ]
+          },
+          {
+            "goal": "UC-06.2",
+            "input_projections": [
+              "W-ACTIVATE"
+            ],
+            "mode_projections": {
+              "activate": {
+                "input_projections": [
+                  "W-ACTIVATE"
+                ],
+                "output_projections": [
+                  "R-GOVERNANCE"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-GOVERNANCE"
+            ],
+            "permission": "governance.candidate.activate",
+            "refusal_audit_scopes": [
+              "L",
+              "U"
+            ],
+            "role": "manager",
+            "row_predicate": "M",
+            "server_selected_modes": [
+              "activate"
+            ]
+          },
+          {
+            "goal": "UC-07.1",
+            "input_projections": [
+              "Q-SUMMARY"
+            ],
+            "mode_projections": {
+              "read": {
+                "input_projections": [
+                  "Q-SUMMARY"
+                ],
+                "output_projections": [
+                  "R-SUMMARY"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-SUMMARY"
+            ],
+            "permission": "report.store_summary.read",
+            "refusal_audit_scopes": [
+              "L",
+              "U"
+            ],
+            "role": "manager",
+            "row_predicate": "MG",
+            "server_selected_modes": [
+              "read"
+            ]
+          },
+          {
+            "goal": "UC-07.2",
+            "input_projections": [
+              "Q-AUDIT"
+            ],
+            "mode_projections": {
+              "read": {
+                "input_projections": [
+                  "Q-AUDIT"
+                ],
+                "output_projections": [
+                  "R-AUDIT"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-AUDIT"
+            ],
+            "permission": "audit.metadata.read",
+            "refusal_audit_scopes": [
+              "L",
+              "U"
+            ],
+            "role": "manager",
+            "row_predicate": "MA",
+            "server_selected_modes": [
+              "read"
+            ]
+          },
+          {
+            "goal": "UC-08",
+            "input_projections": [
+              "Q-EXPORT-CLINICAL"
+            ],
+            "mode_projections": {
+              "export": {
+                "input_projections": [
+                  "Q-EXPORT-CLINICAL"
+                ],
+                "output_projections": [
+                  "CSV-CLINICAL"
+                ]
+              }
+            },
+            "output_projections": [
+              "CSV-CLINICAL"
+            ],
+            "permission": "export.clinical",
+            "refusal_audit_scopes": [
+              "L",
+              "U",
+              "X11"
+            ],
+            "role": "doctor",
+            "row_predicate": "D",
+            "server_selected_modes": [
+              "export"
+            ]
+          },
+          {
+            "goal": "UC-09.1",
+            "input_projections": [
+              "Q-EXPORT-HIT"
+            ],
+            "mode_projections": {
+              "export": {
+                "input_projections": [
+                  "Q-EXPORT-HIT"
+                ],
+                "output_projections": [
+                  "CSV-GUARD-DETAIL"
+                ]
+              }
+            },
+            "output_projections": [
+              "CSV-GUARD-DETAIL"
+            ],
+            "permission": "export.guard_detail",
+            "refusal_audit_scopes": [
+              "L",
+              "U",
+              "X11"
+            ],
+            "role": "doctor",
+            "row_predicate": "D",
+            "server_selected_modes": [
+              "export"
+            ]
+          },
+          {
+            "goal": "UC-09.2",
+            "input_projections": [
+              "Q-EXPORT-HIT"
+            ],
+            "mode_projections": {
+              "export": {
+                "input_projections": [
+                  "Q-EXPORT-HIT"
+                ],
+                "output_projections": [
+                  "CSV-GUARD-SUMMARY"
+                ]
+              }
+            },
+            "output_projections": [
+              "CSV-GUARD-SUMMARY"
+            ],
+            "permission": "export.guard_summary",
+            "refusal_audit_scopes": [
+              "L",
+              "U"
+            ],
+            "role": "manager",
+            "row_predicate": "MG",
+            "server_selected_modes": [
+              "export"
+            ]
+          },
+          {
+            "goal": "UC-10",
+            "input_projections": [
+              "W-GENERATE"
+            ],
+            "mode_projections": {
+              "generate": {
+                "input_projections": [
+                  "W-GENERATE"
+                ],
+                "output_projections": [
+                  "R-GOVERNANCE"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-GOVERNANCE"
+            ],
+            "permission": "governance.candidate.generate",
+            "refusal_audit_scopes": [
+              "L",
+              "U"
+            ],
+            "role": "manager",
+            "row_predicate": "M",
+            "server_selected_modes": [
+              "generate"
+            ]
+          },
+          {
+            "goal": "UC-11.1",
+            "input_projections": [
+              "Q-ASSIGNMENT",
+              "W-ASSIGNMENT"
+            ],
+            "mode_projections": {
+              "read": {
+                "input_projections": [
+                  "Q-ASSIGNMENT"
+                ],
+                "output_projections": [
+                  "R-ASSIGNMENT"
+                ]
+              },
+              "write": {
+                "input_projections": [
+                  "W-ASSIGNMENT"
+                ],
+                "output_projections": [
+                  "R-ASSIGNMENT"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-ASSIGNMENT"
+            ],
+            "permission": "collaboration.assignment.write",
+            "refusal_audit_scopes": [
+              "L",
+              "U"
+            ],
+            "role": "manager",
+            "row_predicate": "M",
+            "server_selected_modes": [
+              "read",
+              "write"
+            ]
+          },
+          {
+            "goal": "UC-11.2",
+            "input_projections": [
+              "W-ASSIGNMENT-REVIEW"
+            ],
+            "mode_projections": {
+              "review": {
+                "input_projections": [
+                  "W-ASSIGNMENT-REVIEW"
+                ],
+                "output_projections": [
+                  "R-ASSIGNMENT"
+                ]
+              }
+            },
+            "output_projections": [
+              "R-ASSIGNMENT"
+            ],
+            "permission": "collaboration.assignment.review",
+            "refusal_audit_scopes": [
+              "L",
+              "U"
+            ],
+            "role": "manager",
+            "row_predicate": "M",
+            "server_selected_modes": [
+              "review"
+            ]
+          }
+        ],
+        "cross_store_clinical_refusal": {
+          "event_store": "trusted_requester_store_only",
+          "manager_projection": "R-AUDIT",
+          "source": "C-11",
+          "target_ref_opens_clinical_record": false
+        },
+        "default": "deny",
+        "other_undecided_event_visibility": "retain_security_evidence_without_inventing_store_access",
+        "predicates": {
+          "D": "Encounter.store == Principal.store AND Encounter.doctor == Principal.id",
+          "F": "Encounter.store == Principal.store AND Encounter.receptionist == Principal.id",
+          "F+": "server principal owns new encounter; verify assigned doctor belongs to same store",
+          "M": "Object.store == Principal.store AND object is governance or collaboration metadata",
+          "MA": "AuditMeta.event_store == Principal.store; select C-06 metadata only",
+          "MG": "restrict to Principal.store before aggregation; no clinical or identity detail"
+        },
+        "projection_semantics": {
+          "field_naming": "stable_logical_fields_not_final_API_serialization",
+          "identity_and_ownership": "server principal and stored Encounter; never client actor/store/time claims",
+          "mode_selection": "server_registered_route_not_payload",
+          "semantic_group": "Only the bounded concepts in description and constraints; no arbitrary object serialization or clinical entity loading.",
+          "server_owned_fields": "identity, ownership, actual execution actor/role/time/result, computed validation/comparison, audit and version linkage are server derived; explicit original/desired version references remain client selectors only",
+          "unknown_nested_entity_fields": "not_authorized_by_semantic_group"
+        },
+        "projections": {
+          "CSV-CLINICAL": {
+            "constraints": [
+              "不把任务受理当完整接收；服务端就绪/完整接收/断连分别表达",
+              "完整UTF-8正式病历集合、原模板含义及追加更正链；仅D",
+              "无待决定/不采纳建议；不静默截断；审计成功后发送字节"
+            ],
+            "direction": "output",
+            "fields": {
+              "adopted_content": {
+                "description": "已正式采纳的内容；不含待决定或不采纳建议",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "clinical_versions": {
+                "description": "获准既存诊疗版本、原值/新值、实际账号/时间/更正理由",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "diagnosis": {
+                "description": "正式诊断说明",
+                "type": "text"
+              },
+              "encounter_ref": {
+                "description": "实际父接诊",
+                "type": "reference"
+              },
+              "error_mark": {
+                "description": "接诊误建状态",
+                "type": "boolean"
+              },
+              "examination": {
+                "description": "可选检查说明",
+                "type": "text"
+              },
+              "field_meanings": {
+                "description": "原模板字段含义；历史按原版解释",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "medication_chain": {
+                "description": "同病历药品/用量/单位原项及追加更正链、实际账号/时间/理由",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "record_ref": {
+                "description": "获准病历",
+                "type": "reference"
+              },
+              "related_encounter_refs": {
+                "description": "可解释新旧接诊无正文引用",
+                "type": "reference_list"
+              },
+              "responsibility_metadata": {
+                "description": "正式内容实际责任账号/时间及必要关联",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "template_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.4"
+          },
+          "CSV-GUARD-DETAIL": {
+            "constraints": [
+              "仅D完整集合，无全病历或其他接诊信息；不额外用途必填",
+              "审计完成后发送；导出不改变告警状态"
+            ],
+            "direction": "output",
+            "fields": {
+              "event_ref": {
+                "description": "获准命中事件",
+                "type": "reference"
+              },
+              "handled_at": {
+                "description": "已有真实处理时间",
+                "type": "timestamp"
+              },
+              "handler_ref": {
+                "description": "已有真实处理账号",
+                "type": "reference"
+              },
+              "handling_result": {
+                "description": "医生已有实际处理结果",
+                "type": "text"
+              },
+              "handling_state": {
+                "description": "未处理/已处理",
+                "type": "enum",
+                "values": [
+                  "handled",
+                  "unhandled"
+                ]
+              },
+              "hit_field": {
+                "description": "命中字段标识",
+                "type": "text"
+              },
+              "record_ref": {
+                "description": "获准病历关联",
+                "type": "reference"
+              },
+              "rule_ref": {
+                "description": "规则编号",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.4"
+          },
+          "CSV-GUARD-SUMMARY": {
+            "constraints": [
+              "仅MG；无事件/病历/宠物级明细、临床命中值或自由文本原因",
+              "无审计元数据/接待资料导出权限；不额外用途必填"
+            ],
+            "direction": "output",
+            "fields": {
+              "filter_semantics": {
+                "description": "本店时间/规则/状态所用口径",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "grouped_counts": {
+                "description": "仅按规则/处理状态的汇总数量",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.4"
+          },
+          "Q-ALERT": {
+            "constraints": [
+              "始终D，不以给定子项引用替代实际父关联"
+            ],
+            "direction": "input",
+            "fields": {
+              "alert_ref": {
+                "description": "获准告警",
+                "type": "reference"
+              },
+              "handling_state": {
+                "description": "未处理/已处理",
+                "type": "enum",
+                "values": [
+                  "handled",
+                  "unhandled"
+                ]
+              },
+              "record_ref": {
+                "description": "获准病历",
+                "type": "reference"
+              },
+              "rule_ref": {
+                "description": "规则筛选",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.2"
+          },
+          "Q-ASSIGNMENT": {
+            "constraints": [
+              "仅M元数据及复核历史，不按事件引用打开临床正文"
+            ],
+            "direction": "input",
+            "fields": {
+              "actual_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "comparison_state": {
+                "description": "比较状态",
+                "type": "text"
+              },
+              "pagination": {
+                "description": "文档明确允许的分页，不决定导出集合",
+                "type": "pagination"
+              },
+              "plan_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "stage_ref": {
+                "description": "阶段",
+                "type": "reference"
+              },
+              "work_item_ref": {
+                "description": "本店工作项",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "Q-AUDIT": {
+            "constraints": [
+              "MA事件归店而非目标归店；不因引用产生正文读取权"
+            ],
+            "direction": "input",
+            "fields": {
+              "operator_ref": {
+                "description": "操作者筛选",
+                "type": "reference"
+              },
+              "record_ref": {
+                "description": "仅比较病历引用值，不加载目标",
+                "type": "reference"
+              },
+              "time_range": {
+                "description": "本次业务获准时间筛选",
+                "type": "time_range"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "Q-CREATE-AUX": {
+            "constraints": [
+              "模式由服务端路由固定；无跨店参数；无宠物搜索"
+            ],
+            "direction": "input",
+            "fields": {
+              "pet_ref": {
+                "description": "仅给定的已知宠物标识",
+                "type": "reference"
+              }
+            },
+            "mode_fields": {
+              "doctor_options": [],
+              "verify_pet_ref": [
+                "pet_ref"
+              ]
+            },
+            "source_ref": "DES-AUTHZ-002 §4.1"
+          },
+          "Q-EXPORT-CLINICAL": {
+            "constraints": [
+              "完整授权集合不按当前页截断；导出前复核身份和范围",
+              "显式集合一个无权目标整次拒绝，不静默删行"
+            ],
+            "direction": "input",
+            "fields": {
+              "purpose": {
+                "description": "必填本次用途",
+                "type": "text"
+              },
+              "scope": {
+                "description": "必填D范围：获准显式病历集合或先固定D再限时间",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.4"
+          },
+          "Q-EXPORT-HIT": {
+            "constraints": [
+              "不增加用途必填；导出不改变处理状态",
+              "管理仅本店MG汇总，不接收病例集合"
+            ],
+            "direction": "input",
+            "fields": {
+              "handling_state": {
+                "description": "未处理/已处理",
+                "type": "enum",
+                "values": [
+                  "handled",
+                  "unhandled"
+                ]
+              },
+              "rule_ref": {
+                "description": "规则筛选",
+                "type": "reference"
+              },
+              "scope": {
+                "description": "仅医生D范围命中集合；管理输入无病例级scope",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "time_range": {
+                "description": "本次业务获准时间筛选",
+                "type": "time_range"
+              }
+            },
+            "per_binding_fields": {
+              "export.guard_detail": [
+                "handling_state",
+                "rule_ref",
+                "scope",
+                "time_range"
+              ],
+              "export.guard_summary": [
+                "handling_state",
+                "rule_ref",
+                "time_range"
+              ]
+            },
+            "source_ref": "DES-AUTHZ-002 §4.4"
+          },
+          "Q-GOVERNANCE": {
+            "constraints": [
+              "仅M定义/版本/差异，无临床正文"
+            ],
+            "direction": "input",
+            "fields": {
+              "candidate_ref": {
+                "description": "本店候选",
+                "type": "reference"
+              },
+              "pagination": {
+                "description": "文档明确允许的分页，不决定导出集合",
+                "type": "pagination"
+              },
+              "status": {
+                "description": "定义治理状态筛选",
+                "type": "text"
+              },
+              "time_range": {
+                "description": "本次业务获准时间筛选",
+                "type": "time_range"
+              },
+              "version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "Q-OWN": {
+            "constraints": [
+              "仅映射文档明确提到的接诊/病历引用和时间；‘等合法条件’不开放额外字段",
+              "始终叠加F或D；显式他店/他账号请求不得改写为本店成功"
+            ],
+            "direction": "input",
+            "fields": {
+              "encounter_ref": {
+                "description": "本次业务接诊",
+                "type": "reference"
+              },
+              "record_ref": {
+                "description": "本次业务病历",
+                "type": "reference"
+              },
+              "time_range": {
+                "description": "本次业务获准时间筛选",
+                "type": "time_range"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.1"
+          },
+          "Q-SUMMARY": {
+            "constraints": [
+              "仅MG；建档数量不套告警规则维度"
+            ],
+            "direction": "input",
+            "fields": {
+              "group_by": {
+                "description": "获准规则/处理状态分组",
+                "type": "enum",
+                "values": [
+                  "handling_state",
+                  "rule"
+                ]
+              },
+              "time_range": {
+                "description": "本次业务获准时间筛选",
+                "type": "time_range"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "R-ALERT": {
+            "constraints": [
+              "仅D；投递状态与处理状态独立；不返回其他医生事件"
+            ],
+            "direction": "output",
+            "fields": {
+              "alert_ref": {
+                "description": "获准告警",
+                "type": "reference"
+              },
+              "event_ref": {
+                "description": "与原事件核对的关联",
+                "type": "reference"
+              },
+              "handled_at": {
+                "description": "已有真实处理时间",
+                "type": "timestamp"
+              },
+              "handler_ref": {
+                "description": "已有真实处理账号",
+                "type": "reference"
+              },
+              "handling_result": {
+                "description": "医生已有实际处理结果",
+                "type": "text"
+              },
+              "handling_state": {
+                "description": "未处理/已处理",
+                "type": "enum",
+                "values": [
+                  "handled",
+                  "unhandled"
+                ]
+              },
+              "hit_field": {
+                "description": "命中字段标识，不是命中值",
+                "type": "text"
+              },
+              "record_ref": {
+                "description": "关联病历",
+                "type": "reference"
+              },
+              "rule_ref": {
+                "description": "规则编号",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.2"
+          },
+          "R-ASSIGNMENT": {
+            "constraints": [
+              "仅M元数据；不跳转临床正文或返回医生自由文本"
+            ],
+            "direction": "output",
+            "fields": {
+              "actual_execution_metadata": {
+                "description": "生成方式、录入者与人工决定主体分离；实际账号/角色/时间、标准化事件结果",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "actual_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "comparison": {
+                "description": "指定计划/实际版本的差异及比较状态",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "maintenance_history": {
+                "description": "实际维护账号/时间/说明及版本",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "manual_evidence_provenance": {
+                "description": "手工登记者及依据性质；与系统事件分离",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "plan_dimensions": {
+                "description": "计划责任维度和值",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "plan_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "review_history": {
+                "description": "真实复核账号/时间/结论/理由及绑定版本",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "source_event_refs": {
+                "description": "来源/事件无正文引用",
+                "type": "reference_list"
+              },
+              "stage_ref": {
+                "description": "阶段",
+                "type": "reference"
+              },
+              "work_item_ref": {
+                "description": "工作项",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "R-AUDIT": {
+            "constraints": [
+              "C11仅请求者店；目标引用不打开病历",
+              "无主诉/诊断/处方/建议、医生处理结果/理由或导出用途正文"
+            ],
+            "direction": "output",
+            "fields": {
+              "action": {
+                "description": "标准动作",
+                "type": "text"
+              },
+              "event_at": {
+                "description": "事件时间",
+                "type": "timestamp"
+              },
+              "event_ref": {
+                "description": "事件号",
+                "type": "reference"
+              },
+              "event_store_ref": {
+                "description": "可信事件所属门店",
+                "type": "reference"
+              },
+              "normalized_reason": {
+                "description": "标准化脱敏原因",
+                "type": "text"
+              },
+              "operator_ref": {
+                "description": "实际操作者",
+                "type": "reference"
+              },
+              "operator_role": {
+                "description": "已有事件实际操作者角色标记；不据此新增运行账号角色",
+                "type": "text"
+              },
+              "outcome": {
+                "description": "标准结果",
+                "type": "text"
+              },
+              "target_ref": {
+                "description": "无正文目标引用",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "R-CLINICAL": {
+            "constraints": [
+              "仅D；子项实际父关联必须一致",
+              "无正文引用不展开其他接诊；关联R-RECEPTION仅只读"
+            ],
+            "direction": "output",
+            "fields": {
+              "adopted_content": {
+                "description": "已正式采纳的内容；不含待决定或不采纳建议",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "clinical_versions": {
+                "description": "获准既存诊疗版本、原值/新值、实际账号/时间/更正理由",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "diagnosis": {
+                "description": "正式诊断说明",
+                "type": "text"
+              },
+              "encounter_ref": {
+                "description": "实际父接诊",
+                "type": "reference"
+              },
+              "error_mark": {
+                "description": "接诊误建状态",
+                "type": "boolean"
+              },
+              "examination": {
+                "description": "可选检查说明",
+                "type": "text"
+              },
+              "field_meanings": {
+                "description": "原模板字段含义；历史按原版解释",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "medication_chain": {
+                "description": "同病历药品/用量/单位原项及追加更正链、实际账号/时间/理由",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "record_ref": {
+                "description": "获准病历",
+                "type": "reference"
+              },
+              "related_encounter_refs": {
+                "description": "可解释新旧接诊无正文引用",
+                "type": "reference_list"
+              },
+              "responsibility_metadata": {
+                "description": "正式内容实际责任账号/时间及必要关联",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "template_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.2"
+          },
+          "R-CREATE-AUX": {
+            "constraints": [
+              "不返回医生接诊/完整人员档案、旧种类/主诉、主人资料、历史接诊"
+            ],
+            "direction": "output",
+            "fields": {
+              "associable": {
+                "description": "此标识可关联或不可关联",
+                "type": "boolean"
+              },
+              "doctor_options": {
+                "description": "同店候选列表；每项仅doctor_ref与最小display_name",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "pet_ref": {
+                "description": "仅回显本次给定宠物标识",
+                "type": "reference"
+              }
+            },
+            "mode_fields": {
+              "doctor_options": [
+                "doctor_options"
+              ],
+              "verify_pet_ref": [
+                "associable",
+                "pet_ref"
+              ]
+            },
+            "source_ref": "DES-AUTHZ-002 §4.1"
+          },
+          "R-GOVERNANCE": {
+            "constraints": [
+              "不加载临床实体或医生临床理由；无治理导出权限"
+            ],
+            "direction": "output",
+            "fields": {
+              "active_and_historic_definitions": {
+                "description": "当前生效及历史定义",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "candidate_ref": {
+                "description": "候选",
+                "type": "reference"
+              },
+              "coding_standards": {
+                "description": "编码规范",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "content_binding": {
+                "description": "内容及批准/启用版本绑定",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "content_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "definition_differences": {
+                "description": "定义差异",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "field_definitions": {
+                "description": "本店字段定义/必填",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "governance_history": {
+                "description": "提交/审批/启用的实际账号/时间/该治理步骤理由",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "input_package_ref": {
+                "description": "输入包",
+                "type": "reference"
+              },
+              "quality_gates": {
+                "description": "质量门禁",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "rule_definitions": {
+                "description": "规则对象/操作/条件/拒绝结果",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "source": {
+                "description": "定义来源",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "template_definitions": {
+                "description": "本店模板定义",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "validation_results": {
+                "description": "校验缺项/冲突",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "R-RECEPTION": {
+            "constraints": [
+              "不含诊断/检查/处方/建议/采纳理由/临床告警"
+            ],
+            "direction": "output",
+            "fields": {
+              "complaint": {
+                "description": "当次主诉",
+                "type": "text"
+              },
+              "created_at": {
+                "description": "服务端接诊时间",
+                "type": "timestamp"
+              },
+              "doctor_ref": {
+                "description": "当次固定接诊医生",
+                "type": "reference"
+              },
+              "encounter_ref": {
+                "description": "当次接诊",
+                "type": "reference"
+              },
+              "error_mark": {
+                "description": "误建状态",
+                "type": "boolean"
+              },
+              "error_reason": {
+                "description": "差错说明",
+                "type": "text"
+              },
+              "pet_name": {
+                "description": "可选称呼",
+                "type": "text"
+              },
+              "pet_ref": {
+                "description": "当次固定宠物关联",
+                "type": "reference"
+              },
+              "reception_versions": {
+                "description": "仅获准当次普通资料版本、更正前后值/关联、实际账号/时间/理由",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "receptionist_ref": {
+                "description": "当次实际接待账号",
+                "type": "reference"
+              },
+              "related_encounter_refs": {
+                "description": "新旧接诊无正文引用；不自动展开",
+                "type": "reference_list"
+              },
+              "species": {
+                "description": "当次种类",
+                "type": "text"
+              },
+              "store_ref": {
+                "description": "当次固定门店",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.1"
+          },
+          "R-SUGGESTION": {
+            "constraints": [
+              "不采纳登记保留；待决定/不采纳内容不混入正式病历导出"
+            ],
+            "direction": "output",
+            "fields": {
+              "content": {
+                "description": "D范围内保存建议内容",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "decision": {
+                "description": "既有决定及真实账号/时间、采纳理由或已填不采纳说明",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "source": {
+                "description": "建议保存来源",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "status": {
+                "description": "建议决定状态",
+                "type": "enum",
+                "values": [
+                  "adopted",
+                  "declined",
+                  "pending"
+                ]
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.2"
+          },
+          "R-SUMMARY": {
+            "constraints": [
+              "先限本店再聚合；不下钻病历/宠物/事件明细、命中值或临床原因"
+            ],
+            "direction": "output",
+            "fields": {
+              "alert_count": {
+                "description": "告警数",
+                "type": "integer"
+              },
+              "encounter_created_count": {
+                "description": "含误建/重建的接诊建档数，不作去重宠物或有效人数",
+                "type": "integer"
+              },
+              "error_marked_count": {
+                "description": "脱敏误建数",
+                "type": "integer"
+              },
+              "grouped_counts": {
+                "description": "仅按规则/处理状态获准汇总，不将建档数套规则维度",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "hit_count": {
+                "description": "命中数",
+                "type": "integer"
+              },
+              "time_range": {
+                "description": "本次业务获准时间筛选",
+                "type": "time_range"
+              },
+              "unhandled_count": {
+                "description": "未处理数",
+                "type": "integer"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "R-WRITE-RESULT": {
+            "constraints": [
+              "UC03/UC04.1/UC04.2保存响应不内嵌病历或建议正文",
+              "获取正文另走受控读取及审计"
+            ],
+            "direction": "output",
+            "fields": {
+              "correction_entry_ref": {
+                "description": "追加更正项，如适用",
+                "type": "reference"
+              },
+              "operation_state": {
+                "description": "本次保存/决定操作状态",
+                "type": "text"
+              },
+              "original_entry_ref": {
+                "description": "原项，如适用",
+                "type": "reference"
+              },
+              "record_ref": {
+                "description": "实际病历引用，如有",
+                "type": "reference"
+              },
+              "responsibility_metadata": {
+                "description": "实际责任关联",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "saved_ref": {
+                "description": "保存或决定引用",
+                "type": "reference"
+              },
+              "version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.2"
+          },
+          "W-ACTIVATE": {
+            "constraints": [
+              "实际启用账号/时间及内容绑定取服务端",
+              "手动启用且批准绑定内容未变；失败保留旧生效版本"
+            ],
+            "direction": "input",
+            "fields": {
+              "candidate_ref": {
+                "description": "已获批候选",
+                "type": "reference"
+              },
+              "reason": {
+                "description": "本次操作理由，非服务端身份或历史责任改写",
+                "type": "text"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "W-ADOPT": {
+            "constraints": [
+              "新采纳仅pending且非误建；同一操作重试幂等",
+              "账号/来源/父关联取服务端保存记录",
+              "首次建病历仍满足诊断/模板/护栏；决定/病历/审计同事务"
+            ],
+            "direction": "input",
+            "fields": {
+              "adopted_content": {
+                "description": "拟正式采纳内容",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "encounter_ref": {
+                "description": "获准接诊",
+                "type": "reference"
+              },
+              "reason": {
+                "description": "本次操作理由，非服务端身份或历史责任改写",
+                "type": "text"
+              },
+              "record_ref": {
+                "description": "若已建，仅同次病历",
+                "type": "reference"
+              },
+              "suggestion_ref": {
+                "description": "同次保存建议",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.2"
+          },
+          "W-ALERT": {
+            "constraints": [
+              "可信处理账号/时间由服务端取得；误建原告警仍可处理",
+              "读取/投递不自动处理"
+            ],
+            "direction": "input",
+            "fields": {
+              "alert_ref": {
+                "description": "获准既存告警",
+                "type": "reference"
+              },
+              "handling_result": {
+                "description": "必填实际处理结果",
+                "type": "text"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.2"
+          },
+          "W-ASSIGNMENT": {
+            "constraints": [
+              "不含建议/采纳理由/用药更正或治疗结果正文；无来源不可比较",
+              "实际系统事件账号/角色/时间/结果不可由管理输入改写",
+              "维护账号/时间、比较差异/状态及复核历史由服务端保留"
+            ],
+            "direction": "input",
+            "fields": {
+              "actual_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "manual_actual_evidence": {
+                "description": "手工登记的生成方式、录入者/决定主体分离元数据与依据性质；必须明确为手工来源，不冒充系统事实",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "plan_dimensions": {
+                "description": "计划内容生成/录入/人工决定的责任维度和值",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "plan_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "reason": {
+                "description": "本次维护说明",
+                "type": "text"
+              },
+              "source_event_refs": {
+                "description": "实际执行事件的无正文引用；服务端解析实际账号/角色/时间/标准结果",
+                "type": "reference_list"
+              },
+              "stage_ref": {
+                "description": "同阶段",
+                "type": "reference"
+              },
+              "work_item_ref": {
+                "description": "同工作项",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "W-ASSIGNMENT-REVIEW": {
+            "constraints": [
+              "实际复核账号/时间服务端生成",
+              "资料不足不得标复核；版本变化重比；不读临床原文补依据"
+            ],
+            "direction": "input",
+            "fields": {
+              "actual_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "conclusion": {
+                "description": "真实人工结论",
+                "type": "text"
+              },
+              "plan_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "reason": {
+                "description": "本次操作理由，非服务端身份或历史责任改写",
+                "type": "text"
+              },
+              "redacted_evidence": {
+                "description": "脱敏来源依据",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "stage_ref": {
+                "description": "阶段",
+                "type": "reference"
+              },
+              "work_item_ref": {
+                "description": "工作项",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "W-CREATE": {
+            "constraints": [
+              "不接受store/receptionist/actor/time/历史接诊归属",
+              "不接收诊断/处方/主人联系方式",
+              "不读取旧接诊或共享宠物资料"
+            ],
+            "direction": "input",
+            "fields": {
+              "complaint": {
+                "description": "当次到院主诉",
+                "type": "text"
+              },
+              "doctor_ref": {
+                "description": "服务端核验为当前账号同店医生",
+                "type": "reference"
+              },
+              "pet_identity_choice": {
+                "description": "系统新建或关联给定已知宠物标识",
+                "type": "enum",
+                "values": [
+                  "known",
+                  "new"
+                ]
+              },
+              "pet_name": {
+                "description": "可选当次称呼",
+                "type": "text"
+              },
+              "pet_ref": {
+                "description": "仅已知标识关联分支；新标识由系统生成",
+                "type": "reference"
+              },
+              "species": {
+                "description": "当次种类",
+                "type": "text"
+              },
+              "template_ref": {
+                "description": "由服务端核验有效模板",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.1"
+          },
+          "W-DECLINE": {
+            "constraints": [
+              "不创建或更新正式病历；不套用采纳必填理由/正式写入护栏",
+              "实际账号取Principal；不删除已有建议",
+              "新登记仅pending；同一操作重试幂等"
+            ],
+            "direction": "input",
+            "fields": {
+              "decision": {
+                "description": "不采纳登记",
+                "type": "enum",
+                "values": [
+                  "declined"
+                ]
+              },
+              "encounter_ref": {
+                "description": "获准接诊",
+                "type": "reference"
+              },
+              "reason": {
+                "description": "可选不采纳理由",
+                "type": "text"
+              },
+              "record_ref": {
+                "description": "若有，同次已建病历",
+                "type": "reference"
+              },
+              "suggestion_ref": {
+                "description": "同次保存建议",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.2"
+          },
+          "W-DIAGNOSIS": {
+            "constraints": [
+              "正式提交至少诊断说明",
+              "目标Encounter及可选已建Record由受控路由上下文绑定",
+              "误建仅更正既存内容，不借correct新增诊疗"
+            ],
+            "direction": "input",
+            "fields": {
+              "diagnosis": {
+                "description": "正式诊断或既有诊断新值",
+                "type": "text"
+              },
+              "examination": {
+                "description": "可选检查说明或新值",
+                "type": "text"
+              },
+              "original_content_ref": {
+                "description": "correct的既存内容",
+                "type": "reference"
+              },
+              "original_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "reason": {
+                "description": "本次操作理由，非服务端身份或历史责任改写",
+                "type": "text"
+              }
+            },
+            "mode_fields": {
+              "correct": [
+                "diagnosis",
+                "examination",
+                "original_content_ref",
+                "original_version_ref",
+                "reason"
+              ],
+              "record": [
+                "diagnosis",
+                "examination"
+              ]
+            },
+            "source_ref": "DES-AUTHZ-002 §4.2"
+          },
+          "W-ERROR": {
+            "constraints": [
+              "无删除/解标/归属改派/自动撤销用药/临床内容转移"
+            ],
+            "direction": "input",
+            "fields": {
+              "encounter_ref": {
+                "description": "原接诊",
+                "type": "reference"
+              },
+              "reason": {
+                "description": "本次操作理由，非服务端身份或历史责任改写",
+                "type": "text"
+              },
+              "rebuilt_encounter_ref": {
+                "description": "分别合法新建后的重建接诊；无正文关联",
+                "type": "reference"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.1"
+          },
+          "W-GENERATE": {
+            "constraints": [
+              "仅定义需求，不输入既存诊断/处方/建议正文",
+              "校验结果/差异/摘要/状态/实际提交审批启用账号时间由服务端生成；不能伪填"
+            ],
+            "direction": "input",
+            "fields": {
+              "candidate_ref": {
+                "description": "既有候选引用，如适用",
+                "type": "reference"
+              },
+              "coding_standards": {
+                "description": "编码规范",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "content_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "field_definitions": {
+                "description": "本店允许字段定义与必填要求",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "input_package_ref": {
+                "description": "输入需求包",
+                "type": "reference"
+              },
+              "quality_gates": {
+                "description": "质量门禁",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "rule_definitions": {
+                "description": "已登记对象/操作/条件/拒绝结果的定义，不是可执行代码",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "source": {
+                "description": "定义需求来源",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              },
+              "template_definitions": {
+                "description": "本店模板定义",
+                "serialization": "logical_group_only_no_entity_wildcard",
+                "type": "semantic_group"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          },
+          "W-MEDICATION": {
+            "constraints": [
+              "实际账号/时间由可信上下文生成",
+              "服务端路由固定模式；误建只更正既存项",
+              "append/correct都新增不可变项；无update/delete"
+            ],
+            "direction": "input",
+            "fields": {
+              "amount": {
+                "description": "用量；不引入药理数值阈值",
+                "type": "text"
+              },
+              "drug": {
+                "description": "药品",
+                "type": "text"
+              },
+              "original_entry_ref": {
+                "description": "correct同病历原项",
+                "type": "reference"
+              },
+              "reason": {
+                "description": "本次操作理由，非服务端身份或历史责任改写",
+                "type": "text"
+              },
+              "unit": {
+                "description": "单位",
+                "type": "text"
+              }
+            },
+            "mode_fields": {
+              "append": [
+                "amount",
+                "drug",
+                "unit"
+              ],
+              "correct": [
+                "amount",
+                "drug",
+                "original_entry_ref",
+                "reason",
+                "unit"
+              ]
+            },
+            "source_ref": "DES-AUTHZ-002 §4.2"
+          },
+          "W-RECEPTION": {
+            "constraints": [
+              "保留前后值及可信账号时间",
+              "接诊号/宠物标识/门店/前台/医生归属不可更正"
+            ],
+            "direction": "input",
+            "fields": {
+              "complaint": {
+                "description": "当次主诉新值",
+                "type": "text"
+              },
+              "original_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "pet_name": {
+                "description": "当次称呼新值",
+                "type": "text"
+              },
+              "reason": {
+                "description": "本次操作理由，非服务端身份或历史责任改写",
+                "type": "text"
+              },
+              "species": {
+                "description": "当次种类新值",
+                "type": "text"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.1"
+          },
+          "W-REVIEW": {
+            "constraints": [
+              "实际审批账号/时间服务端生成",
+              "校验未过不得批准；内容变化使旧批准不可复用；审批不自动启用"
+            ],
+            "direction": "input",
+            "fields": {
+              "candidate_ref": {
+                "description": "具体候选",
+                "type": "reference"
+              },
+              "content_version_ref": {
+                "description": "指定既有版本；不改变实际父关联",
+                "type": "reference"
+              },
+              "decision": {
+                "description": "人工审批决定",
+                "type": "enum",
+                "values": [
+                  "approve",
+                  "reject"
+                ]
+              },
+              "reason": {
+                "description": "本次操作理由，非服务端身份或历史责任改写",
+                "type": "text"
+              }
+            },
+            "source_ref": "DES-AUTHZ-002 §4.3"
+          }
+        },
+        "refusal_audit_scopes": {
+          "L": "可信本店上下文归本店；不取客户端店号；同店拒绝不获他人病历",
+          "U": "身份/归店缺失或未定类别保留安全依据；不凭空分店或授管理跨店可见权",
+          "X11": "仅可信跨店病历及关联操作拒绝，事件归可信请求账号所属店，管理只R-AUDIT；目标店不获查看权"
+        },
+        "roles": [
+          "doctor",
+          "frontdesk",
+          "manager"
+        ],
+        "trusted_identity": "server_session",
+        "unknown_fields": "reject"
+      }
+    },
+    "additional_rules": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "checker",
+          "phases",
+          "source",
+          "depends_on",
+          "when"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^EXT-[A-Za-z0-9_-]{1,48}$"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
+          },
+          "checker": {
+            "enum": [
+              "append_only_medication",
+              "audit_and_authorized_export",
+              "credential_and_parameterized_query",
+              "durable_alert_and_idempotency",
+              "human_adoption_and_retention",
+              "mandatory_control_sections",
+              "manual_approval_content_binding",
+              "referenced_template",
+              "registered_permission_entry",
+              "scope_and_projection"
+            ]
+          },
+          "phases": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 11,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "candidate",
+                "authorization",
+                "clinical_change",
+                "decision_change",
+                "reception_change",
+                "activation",
+                "read",
+                "export",
+                "release",
+                "persistence",
+                "delivery"
+              ]
+            }
+          },
+          "source": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "FR-01",
+                "FR-02",
+                "FR-04",
+                "FR-05",
+                "FR-05.4",
+                "FR-06",
+                "FR-08",
+                "NFR-05",
+                "NFR-06",
+                "SR-01",
+                "SR-02",
+                "SR-03",
+                "SR-04",
+                "SR-05",
+                "SR-06",
+                "SR-07",
+                "SR-08",
+                "SR-09",
+                "SR-10"
+              ]
+            }
+          },
+          "depends_on": {
+            "type": "array",
+            "maxItems": 128,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
+            }
+          },
+          "when": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:t22:control-demand:0.2"
+}

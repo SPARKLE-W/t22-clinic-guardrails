@@ -1,0 +1,2555 @@
+{
+  "version": "0.2-registration-proposal",
+  "srs_sha256": "FE95C5BF2495B763EA2C7075C46CBE5D367F7F82401E2E1818EF81BF9243DAE8",
+  "status": "AI_proposal_pending_parent_catalog_review",
+  "checkers": [
+    {
+      "id": "SR-01",
+      "checker": "scope_and_projection",
+      "phases": [
+        "candidate",
+        "authorization"
+      ],
+      "failure_class": "security_refusal",
+      "operations": [
+        "control.compile",
+        "governance.candidate.generate:generate",
+        "encounter.create:create",
+        "encounter.create:doctor_options",
+        "encounter.create:verify_pet_ref",
+        "encounter.read:list",
+        "encounter.read:detail",
+        "encounter.correct:correct",
+        "encounter.mark_error:mark",
+        "clinical.read:list",
+        "clinical.read:detail",
+        "clinical.diagnosis.write:record",
+        "clinical.diagnosis.write:correct",
+        "medication.record:append",
+        "medication.record:correct",
+        "clinical.suggestion.adopt:adopt",
+        "clinical.suggestion.decline:decline",
+        "clinical.alert.handle:read",
+        "clinical.alert.handle:resolve",
+        "governance.candidate.review:read",
+        "governance.candidate.review:review",
+        "governance.candidate.activate:activate",
+        "report.store_summary.read:read",
+        "audit.metadata.read:read",
+        "export.clinical:export",
+        "export.guard_detail:export",
+        "export.guard_summary:export",
+        "collaboration.assignment.write:read",
+        "collaboration.assignment.write:write",
+        "collaboration.assignment.review:review"
+      ],
+      "mandatory_floor": true,
+      "candidate_when_allowed": false,
+      "runtime_handler_status": "not_implemented_by_this_registration_proposal",
+      "phase_contracts": {
+        "candidate": {
+          "operations": [
+            "control.compile",
+            "governance.candidate.generate:generate"
+          ],
+          "required_facts": [
+            "candidate.scope_projection_bounds_valid"
+          ],
+          "success_means": "静态定义满足独立FloorSpec；不等于运行通过、获批或启用。",
+          "notes": []
+        },
+        "authorization": {
+          "operations": [
+            "encounter.create:create",
+            "encounter.create:doctor_options",
+            "encounter.create:verify_pet_ref",
+            "encounter.read:list",
+            "encounter.read:detail",
+            "encounter.correct:correct",
+            "encounter.mark_error:mark",
+            "clinical.read:list",
+            "clinical.read:detail",
+            "clinical.diagnosis.write:record",
+            "clinical.diagnosis.write:correct",
+            "medication.record:append",
+            "medication.record:correct",
+            "clinical.suggestion.adopt:adopt",
+            "clinical.suggestion.decline:decline",
+            "clinical.alert.handle:read",
+            "clinical.alert.handle:resolve",
+            "governance.candidate.review:read",
+            "governance.candidate.review:review",
+            "governance.candidate.activate:activate",
+            "report.store_summary.read:read",
+            "audit.metadata.read:read",
+            "export.clinical:export",
+            "export.guard_detail:export",
+            "export.guard_summary:export",
+            "governance.candidate.generate:generate",
+            "collaboration.assignment.write:read",
+            "collaboration.assignment.write:write",
+            "collaboration.assignment.review:review"
+          ],
+          "required_facts": [
+            "authorization.identity_current",
+            "authorization.role_allowed",
+            "authorization.row_scope_allowed",
+            "authorization.input_projection_allowed",
+            "authorization.output_projection_allowed"
+          ],
+          "success_means": "只允许进入该服务操作的后续步骤；未授权拒绝不返回正文。",
+          "notes": []
+        }
+      },
+      "after_commit_obligations": [],
+      "notes": [
+        "拒绝事件归店按L/X11/U；C11只确定跨店临床拒绝归请求账号店，不扩到所有治理拒绝。"
+      ]
+    },
+    {
+      "id": "SR-02",
+      "checker": "referenced_template",
+      "phases": [
+        "candidate",
+        "clinical_change"
+      ],
+      "failure_class": "guard_hit_when_evaluated",
+      "operations": [
+        "control.compile",
+        "governance.candidate.generate:generate",
+        "clinical.diagnosis.write:record",
+        "clinical.diagnosis.write:correct",
+        "medication.record:append",
+        "medication.record:correct",
+        "clinical.suggestion.adopt:adopt"
+      ],
+      "mandatory_floor": true,
+      "candidate_when_allowed": false,
+      "runtime_handler_status": "not_implemented_by_this_registration_proposal",
+      "phase_contracts": {
+        "candidate": {
+          "operations": [
+            "control.compile",
+            "governance.candidate.generate:generate"
+          ],
+          "required_facts": [
+            "candidate.template_contract_valid"
+          ],
+          "success_means": "静态定义满足独立FloorSpec；不等于运行通过、获批或启用。",
+          "notes": []
+        },
+        "clinical_change": {
+          "operations": [
+            "clinical.diagnosis.write:record",
+            "clinical.diagnosis.write:correct",
+            "medication.record:append",
+            "medication.record:correct",
+            "clinical.suggestion.adopt:adopt"
+          ],
+          "required_facts": [
+            "policy.pin_valid",
+            "template.reference_resolved",
+            "template.interpretation_matches_reference",
+            "template.required_fields_valid",
+            "template.medication_group_valid"
+          ],
+          "success_means": "拟正式变更可继续检查；缺策略/事实是设施或上下文故障，不伪造临床命中。",
+          "notes": []
+        }
+      },
+      "after_commit_obligations": [],
+      "notes": []
+    },
+    {
+      "id": "SR-03",
+      "checker": "append_only_medication",
+      "phases": [
+        "candidate",
+        "clinical_change"
+      ],
+      "failure_class": "guard_hit_when_evaluated",
+      "operations": [
+        "control.compile",
+        "governance.candidate.generate:generate",
+        "medication.record:append",
+        "medication.record:correct"
+      ],
+      "mandatory_floor": true,
+      "candidate_when_allowed": false,
+      "runtime_handler_status": "not_implemented_by_this_registration_proposal",
+      "phase_contracts": {
+        "candidate": {
+          "operations": [
+            "control.compile",
+            "governance.candidate.generate:generate"
+          ],
+          "required_facts": [
+            "candidate.medication_append_contract_valid"
+          ],
+          "success_means": "静态定义满足独立FloorSpec；不等于运行通过、获批或启用。",
+          "notes": []
+        },
+        "clinical_change": {
+          "operations": [
+            "medication.record:append",
+            "medication.record:correct"
+          ],
+          "required_facts": [
+            "medication.append_plan_only",
+            "medication.original_link_valid",
+            "medication.correction_reason_valid",
+            "actor.actual_identity_bound",
+            "actor.actual_time_server_owned"
+          ],
+          "success_means": "拟新增/关联更正计划满足只追加，未声称已经提交。",
+          "notes": []
+        }
+      },
+      "after_commit_obligations": [
+        {
+          "phase": "clinical_change",
+          "operations": [
+            "medication.record:append",
+            "medication.record:correct"
+          ],
+          "required_outcome": {
+            "op": "all",
+            "args": [
+              {
+                "op": "eq",
+                "fact": "outcome.commit_state",
+                "value": "committed"
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.medication_original_preserved",
+                "value": true
+              }
+            ]
+          },
+          "unknown_policy": "拒绝虚报保存，保留unknown并按同操作核对，不重新新增原项。"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "SR-04",
+      "checker": "human_adoption_and_retention",
+      "phases": [
+        "candidate",
+        "clinical_change",
+        "decision_change"
+      ],
+      "failure_class": "guard_hit_when_evaluated",
+      "operations": [
+        "control.compile",
+        "governance.candidate.generate:generate",
+        "clinical.suggestion.adopt:adopt",
+        "clinical.suggestion.decline:decline"
+      ],
+      "mandatory_floor": true,
+      "candidate_when_allowed": false,
+      "runtime_handler_status": "not_implemented_by_this_registration_proposal",
+      "phase_contracts": {
+        "candidate": {
+          "operations": [
+            "control.compile",
+            "governance.candidate.generate:generate"
+          ],
+          "required_facts": [
+            "candidate.suggestion_decision_contract_valid"
+          ],
+          "success_means": "静态定义满足独立FloorSpec；不等于运行通过、获批或启用。",
+          "notes": []
+        },
+        "clinical_change": {
+          "operations": [
+            "clinical.suggestion.adopt:adopt"
+          ],
+          "required_facts": [
+            "suggestion.saved_context_valid",
+            "suggestion.transition_allowed",
+            "suggestion.source_retention_planned",
+            "actor.actual_identity_bound",
+            "actor.actual_time_server_owned",
+            "suggestion.adoption_reason_valid",
+            "suggestion.no_direct_ai_write"
+          ],
+          "success_means": "只允许待决定建议进入人工采纳及正式写入的提交路径；仍须SR02/06/09。",
+          "notes": []
+        },
+        "decision_change": {
+          "operations": [
+            "clinical.suggestion.decline:decline"
+          ],
+          "required_facts": [
+            "suggestion.saved_context_valid",
+            "suggestion.transition_allowed",
+            "suggestion.source_retention_planned",
+            "actor.actual_identity_bound",
+            "actor.actual_time_server_owned",
+            "suggestion.decline_no_formal_write"
+          ],
+          "success_means": "仅允许登记不采纳；理由可空，不触发正式临床变更/临床命中告警。",
+          "notes": []
+        }
+      },
+      "after_commit_obligations": [
+        {
+          "phase": "clinical_change",
+          "operations": [
+            "clinical.suggestion.adopt:adopt"
+          ],
+          "required_outcome": {
+            "op": "all",
+            "args": [
+              {
+                "op": "eq",
+                "fact": "outcome.commit_state",
+                "value": "committed"
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.suggestion_source_retained",
+                "value": true
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.business_audit_atomic",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "phase": "decision_change",
+          "operations": [
+            "clinical.suggestion.decline:decline"
+          ],
+          "required_outcome": {
+            "op": "all",
+            "args": [
+              {
+                "op": "eq",
+                "fact": "outcome.commit_state",
+                "value": "committed"
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.suggestion_source_retained",
+                "value": true
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.formal_clinical_mutation",
+                "value": false
+              }
+            ]
+          }
+        }
+      ],
+      "notes": [
+        "failure_class沿用v0.1机械标识；decision_change拒绝不是临床护栏命中事件，不能仅凭该标识建临床告警。",
+        "旧终态新决定拒绝；同意图重试由OperationResult先核对，不重新写决定。"
+      ]
+    },
+    {
+      "id": "SR-05",
+      "checker": "manual_approval_content_binding",
+      "phases": [
+        "candidate",
+        "activation"
+      ],
+      "failure_class": "governance_refusal",
+      "operations": [
+        "control.compile",
+        "governance.candidate.generate:generate",
+        "governance.candidate.activate:activate"
+      ],
+      "mandatory_floor": true,
+      "candidate_when_allowed": false,
+      "runtime_handler_status": "not_implemented_by_this_registration_proposal",
+      "phase_contracts": {
+        "candidate": {
+          "operations": [
+            "control.compile",
+            "governance.candidate.generate:generate"
+          ],
+          "required_facts": [
+            "candidate.manual_activation_contract_valid"
+          ],
+          "success_means": "静态定义满足独立FloorSpec；不等于运行通过、获批或启用。",
+          "notes": []
+        },
+        "activation": {
+          "operations": [
+            "governance.candidate.activate:activate"
+          ],
+          "required_facts": [
+            "governance.same_store_verified",
+            "governance.candidate_validated",
+            "governance.human_approval_recorded",
+            "governance.approved_content_matches",
+            "governance.manual_activation_requested",
+            "governance.activation_reason_valid",
+            "governance.current_head_condition_valid",
+            "actor.actual_identity_bound",
+            "actor.actual_time_server_owned"
+          ],
+          "success_means": "可进入切换事务，生成/批准不自动切换；不要求两个不同管理账号。",
+          "notes": []
+        }
+      },
+      "after_commit_obligations": [
+        {
+          "phase": "activation",
+          "operations": [
+            "governance.candidate.activate:activate"
+          ],
+          "required_outcome": {
+            "op": "all",
+            "args": [
+              {
+                "op": "eq",
+                "fact": "outcome.commit_state",
+                "value": "committed"
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.audit_state",
+                "value": "durable"
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.active_pointer_matches_approval",
+                "value": true
+              }
+            ]
+          },
+          "failure_policy": "失败保留旧指针；未知结果核对当前指针及审计，不宣称回滚。"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "SR-06",
+      "checker": "audit_and_authorized_export",
+      "phases": [
+        "candidate",
+        "read",
+        "clinical_change",
+        "export"
+      ],
+      "failure_class": "audit_or_export_fault",
+      "operations": [
+        "control.compile",
+        "governance.candidate.generate:generate",
+        "clinical.read:list",
+        "clinical.read:detail",
+        "clinical.diagnosis.write:record",
+        "clinical.diagnosis.write:correct",
+        "medication.record:append",
+        "medication.record:correct",
+        "clinical.suggestion.adopt:adopt",
+        "export.clinical:export",
+        "export.guard_detail:export",
+        "export.guard_summary:export"
+      ],
+      "mandatory_floor": true,
+      "candidate_when_allowed": false,
+      "runtime_handler_status": "not_implemented_by_this_registration_proposal",
+      "phase_contracts": {
+        "candidate": {
+          "operations": [
+            "control.compile",
+            "governance.candidate.generate:generate"
+          ],
+          "required_facts": [
+            "candidate.audit_export_contract_valid"
+          ],
+          "success_means": "静态定义满足独立FloorSpec；不等于运行通过、获批或启用。",
+          "notes": []
+        },
+        "read": {
+          "operations": [
+            "clinical.read:list",
+            "clinical.read:detail"
+          ],
+          "required_facts": [
+            "audit.facility_ready",
+            "audit.required_plan_complete",
+            "response.release_gate_installed"
+          ],
+          "success_means": "可执行受控读取并保存读取审计；尚未允许释放临床字节。",
+          "notes": []
+        },
+        "clinical_change": {
+          "operations": [
+            "clinical.diagnosis.write:record",
+            "clinical.diagnosis.write:correct",
+            "medication.record:append",
+            "medication.record:correct",
+            "clinical.suggestion.adopt:adopt"
+          ],
+          "required_facts": [
+            "audit.facility_ready",
+            "audit.required_plan_complete",
+            "audit.same_transaction_planned"
+          ],
+          "success_means": "仅验证事务/审计设施前提和同事务计划，不包含audit_persisted=true。",
+          "notes": []
+        },
+        "export": {
+          "operations": [
+            "export.clinical:export",
+            "export.guard_detail:export",
+            "export.guard_summary:export"
+          ],
+          "required_facts": [
+            "audit.facility_ready",
+            "audit.required_plan_complete",
+            "response.release_gate_installed",
+            "export.all_explicit_targets_authorized",
+            "export.complete_scope_planned",
+            "export.projection_valid",
+            "export.purpose_required",
+            "export.purpose_present",
+            "export.version_snapshot_planned"
+          ],
+          "success_means": "可生成完整受控产物并执行必需留痕；不等于就绪或客户端完整接收。",
+          "notes": [
+            "purpose_required仅export.clinical为true；另两命中导出不因purpose_present=false拒绝。"
+          ]
+        }
+      },
+      "after_commit_obligations": [
+        {
+          "phase": "read",
+          "operations": [
+            "clinical.read:list",
+            "clinical.read:detail"
+          ],
+          "required_outcome": {
+            "op": "all",
+            "args": [
+              {
+                "op": "eq",
+                "fact": "outcome.commit_state",
+                "value": "committed"
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.audit_state",
+                "value": "durable"
+              }
+            ]
+          },
+          "release_rule": "本次必需读取审计可确认持久后才释放白名单字节；重新读取旧幂等病历结果也记本次审计。"
+        },
+        {
+          "phase": "clinical_change",
+          "operations": [
+            "clinical.diagnosis.write:record",
+            "clinical.diagnosis.write:correct",
+            "medication.record:append",
+            "medication.record:correct",
+            "clinical.suggestion.adopt:adopt"
+          ],
+          "required_outcome": {
+            "op": "all",
+            "args": [
+              {
+                "op": "eq",
+                "fact": "outcome.commit_state",
+                "value": "committed"
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.audit_state",
+                "value": "durable"
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.business_audit_atomic",
+                "value": true
+              }
+            ]
+          },
+          "release_rule": "实际业务/责任登记与审计同事务提交成功后才报SAVED；设施ready不能代替结果。"
+        },
+        {
+          "phase": "export",
+          "operations": [
+            "export.clinical:export",
+            "export.guard_detail:export",
+            "export.guard_summary:export"
+          ],
+          "required_outcome": {
+            "op": "all",
+            "args": [
+              {
+                "op": "eq",
+                "fact": "outcome.commit_state",
+                "value": "committed"
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.audit_state",
+                "value": "durable"
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.export_artifact_state",
+                "value": "complete"
+              }
+            ]
+          },
+          "required_observed_facts": [
+            "outcome.export_row_count",
+            "outcome.export_record_count"
+          ],
+          "release_rule": "完整产物+本次必需审计先于任何临床字节返回；就绪不等于客户端完整接收，物理用户磁盘保存不属后端完成。"
+        }
+      ],
+      "notes": [
+        "所有after_commit结果仅来自可信提交观察者；unknown不选committed/durable，不在控制规则里猜未来结果。",
+        "SR06失败类别是audit_or_export_fault；授权拒绝先由SR01/07处理，不能当空集合成功。"
+      ]
+    },
+    {
+      "id": "SR-07",
+      "checker": "registered_permission_entry",
+      "phases": [
+        "candidate",
+        "release",
+        "authorization"
+      ],
+      "failure_class": "security_refusal",
+      "operations": [
+        "control.compile",
+        "governance.candidate.generate:generate",
+        "system.release.verify",
+        "encounter.create:create",
+        "encounter.create:doctor_options",
+        "encounter.create:verify_pet_ref",
+        "encounter.read:list",
+        "encounter.read:detail",
+        "encounter.correct:correct",
+        "encounter.mark_error:mark",
+        "clinical.read:list",
+        "clinical.read:detail",
+        "clinical.diagnosis.write:record",
+        "clinical.diagnosis.write:correct",
+        "medication.record:append",
+        "medication.record:correct",
+        "clinical.suggestion.adopt:adopt",
+        "clinical.suggestion.decline:decline",
+        "clinical.alert.handle:read",
+        "clinical.alert.handle:resolve",
+        "governance.candidate.review:read",
+        "governance.candidate.review:review",
+        "governance.candidate.activate:activate",
+        "report.store_summary.read:read",
+        "audit.metadata.read:read",
+        "export.clinical:export",
+        "export.guard_detail:export",
+        "export.guard_summary:export",
+        "collaboration.assignment.write:read",
+        "collaboration.assignment.write:write",
+        "collaboration.assignment.review:review"
+      ],
+      "mandatory_floor": true,
+      "candidate_when_allowed": false,
+      "runtime_handler_status": "not_implemented_by_this_registration_proposal",
+      "phase_contracts": {
+        "candidate": {
+          "operations": [
+            "control.compile",
+            "governance.candidate.generate:generate"
+          ],
+          "required_facts": [
+            "candidate.permission_gate_contract_valid"
+          ],
+          "success_means": "静态定义满足独立FloorSpec；不等于运行通过、获批或启用。",
+          "notes": []
+        },
+        "release": {
+          "operations": [
+            "system.release.verify"
+          ],
+          "required_facts": [
+            "release.endpoint_scan_complete",
+            "release.permission_scan_clean"
+          ],
+          "success_means": "允许发布流程继续；不是已发布或已实现runtime授权。",
+          "notes": []
+        },
+        "authorization": {
+          "operations": [
+            "encounter.create:create",
+            "encounter.create:doctor_options",
+            "encounter.create:verify_pet_ref",
+            "encounter.read:list",
+            "encounter.read:detail",
+            "encounter.correct:correct",
+            "encounter.mark_error:mark",
+            "clinical.read:list",
+            "clinical.read:detail",
+            "clinical.diagnosis.write:record",
+            "clinical.diagnosis.write:correct",
+            "medication.record:append",
+            "medication.record:correct",
+            "clinical.suggestion.adopt:adopt",
+            "clinical.suggestion.decline:decline",
+            "clinical.alert.handle:read",
+            "clinical.alert.handle:resolve",
+            "governance.candidate.review:read",
+            "governance.candidate.review:review",
+            "governance.candidate.activate:activate",
+            "report.store_summary.read:read",
+            "audit.metadata.read:read",
+            "export.clinical:export",
+            "export.guard_detail:export",
+            "export.guard_summary:export",
+            "governance.candidate.generate:generate",
+            "collaboration.assignment.write:read",
+            "collaboration.assignment.write:write",
+            "collaboration.assignment.review:review"
+          ],
+          "required_facts": [
+            "entry.permission_key_bound",
+            "entry.mode_server_selected",
+            "entry.central_authorization_invoked"
+          ],
+          "success_means": "仅允许继续当前权限核验，未登记/漏挂必须拒绝。",
+          "notes": []
+        }
+      },
+      "after_commit_obligations": [],
+      "notes": []
+    },
+    {
+      "id": "SR-08",
+      "checker": "credential_and_parameterized_query",
+      "phases": [
+        "candidate",
+        "release",
+        "persistence"
+      ],
+      "failure_class": "security_refusal",
+      "operations": [
+        "control.compile",
+        "governance.candidate.generate:generate",
+        "system.release.verify",
+        "system.persistence.query",
+        "system.identity.password.persist"
+      ],
+      "mandatory_floor": true,
+      "candidate_when_allowed": false,
+      "runtime_handler_status": "not_implemented_by_this_registration_proposal",
+      "phase_contracts": {
+        "candidate": {
+          "operations": [
+            "control.compile",
+            "governance.candidate.generate:generate"
+          ],
+          "required_facts": [
+            "candidate.credential_query_contract_valid"
+          ],
+          "success_means": "静态定义满足独立FloorSpec；不等于运行通过、获批或启用。",
+          "notes": []
+        },
+        "release": {
+          "operations": [
+            "system.release.verify"
+          ],
+          "required_facts": [
+            "release.credential_check_clean",
+            "release.parameter_binding_check_clean"
+          ],
+          "success_means": "安全静态门禁可继续；仍需真实持久层接入。",
+          "notes": []
+        },
+        "persistence": {
+          "operations": [
+            "system.persistence.query",
+            "system.identity.password.persist"
+          ],
+          "required_facts": [
+            "persistence.parameter_binding_enforced",
+            "persistence.password_representation",
+            "persistence.secret_logging_prohibited"
+          ],
+          "success_means": "只允许参数绑定查询与不含明文口令的持久计划；unknown不得放行。",
+          "notes": [
+            "password_representation=not_applicable适用于无口令的查询；one_way_hash才允许口令保存。",
+            "普通主诉含引号并不使parameter_binding_enforced变为false。"
+          ]
+        }
+      },
+      "after_commit_obligations": [],
+      "notes": []
+    },
+    {
+      "id": "SR-09",
+      "checker": "durable_alert_and_idempotency",
+      "phases": [
+        "candidate",
+        "clinical_change",
+        "delivery",
+        "reception_change",
+        "decision_change"
+      ],
+      "failure_class": "recovery_fault",
+      "operations": [
+        "control.compile",
+        "governance.candidate.generate:generate",
+        "clinical.diagnosis.write:record",
+        "clinical.diagnosis.write:correct",
+        "medication.record:append",
+        "medication.record:correct",
+        "clinical.suggestion.adopt:adopt",
+        "encounter.create:create",
+        "encounter.correct:correct",
+        "encounter.mark_error:mark",
+        "clinical.suggestion.decline:decline",
+        "system.alert.publish",
+        "system.alert.consume",
+        "system.alert.recover"
+      ],
+      "mandatory_floor": true,
+      "candidate_when_allowed": false,
+      "runtime_handler_status": "not_implemented_by_this_registration_proposal",
+      "phase_contracts": {
+        "candidate": {
+          "operations": [
+            "control.compile",
+            "governance.candidate.generate:generate"
+          ],
+          "required_facts": [
+            "candidate.recovery_idempotency_contract_valid"
+          ],
+          "success_means": "静态定义满足独立FloorSpec；不等于运行通过、获批或启用。",
+          "notes": []
+        },
+        "clinical_change": {
+          "operations": [
+            "clinical.diagnosis.write:record",
+            "clinical.diagnosis.write:correct",
+            "medication.record:append",
+            "medication.record:correct",
+            "clinical.suggestion.adopt:adopt"
+          ],
+          "required_facts": [
+            "operation.key_bound",
+            "operation.digest_bound",
+            "operation.current_authorization_checked",
+            "operation.claim_state",
+            "recovery.local_evidence_plan_ready",
+            "recovery.guard_refusal_plan_ready"
+          ],
+          "success_means": "核同意图归属/摘要，只有execute_owner进入新业务；completed_replay不重写，in_progress/unknown不冒充成功。",
+          "notes": []
+        },
+        "reception_change": {
+          "operations": [
+            "encounter.create:create",
+            "encounter.correct:correct",
+            "encounter.mark_error:mark"
+          ],
+          "required_facts": [
+            "operation.key_bound",
+            "operation.digest_bound",
+            "operation.current_authorization_checked",
+            "operation.claim_state",
+            "recovery.local_evidence_plan_ready"
+          ],
+          "success_means": "仅接待写操作幂等/恢复；不调用临床护栏，不给前台临床权。",
+          "notes": []
+        },
+        "decision_change": {
+          "operations": [
+            "clinical.suggestion.decline:decline"
+          ],
+          "required_facts": [
+            "operation.key_bound",
+            "operation.digest_bound",
+            "operation.current_authorization_checked",
+            "operation.claim_state",
+            "recovery.local_evidence_plan_ready"
+          ],
+          "success_means": "仅不采纳决定幂等/恢复；不强加采纳理由，不生成临床命中告警。",
+          "notes": []
+        },
+        "delivery": {
+          "operations": [
+            "system.alert.publish",
+            "system.alert.consume",
+            "system.alert.recover"
+          ],
+          "required_facts": [
+            "delivery.kind",
+            "delivery.event_identity_bound",
+            "delivery.local_evidence_durable",
+            "delivery.lease_current",
+            "delivery.receipt_transaction_ready",
+            "delivery.publish_confirmation"
+          ],
+          "success_means": "按已有事件执行发布/去重消费/恢复；确认或投递不是医生业务处理。",
+          "notes": []
+        }
+      },
+      "after_commit_obligations": [
+        {
+          "phase": "clinical_change",
+          "operations": [
+            "clinical.diagnosis.write:record",
+            "clinical.diagnosis.write:correct",
+            "medication.record:append",
+            "medication.record:correct",
+            "clinical.suggestion.adopt:adopt"
+          ],
+          "trusted_runtime_branch": "evaluated_guard_refusal",
+          "required_outcome": {
+            "op": "all",
+            "args": [
+              {
+                "op": "eq",
+                "fact": "outcome.refusal_evidence_durable",
+                "value": true
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.outbox_durable",
+                "value": true
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.formal_clinical_mutation",
+                "value": false
+              }
+            ]
+          },
+          "failure_policy": "仍拒违规；必需告警/拒绝或恢复依据保存故障则如实报留痕故障/未知，不把broker暂不可用混同本地留痕失败。"
+        },
+        {
+          "phase": "delivery",
+          "operations": [
+            "system.alert.consume"
+          ],
+          "required_outcome": {
+            "op": "all",
+            "args": [
+              {
+                "op": "eq",
+                "fact": "outcome.commit_state",
+                "value": "committed"
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.consumer_receipt_durable",
+                "value": true
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.delivery_business_state_unchanged",
+                "value": true
+              }
+            ]
+          },
+          "release_rule": "消费者副作用+收据可确认提交后才ACK；未确认可重投，不重做已去重副作用。"
+        },
+        {
+          "phase": "delivery",
+          "operations": [
+            "system.alert.publish",
+            "system.alert.recover"
+          ],
+          "required_outcome": {
+            "op": "all",
+            "args": [
+              {
+                "op": "eq",
+                "fact": "outcome.outbox_durable",
+                "value": true
+              },
+              {
+                "op": "eq",
+                "fact": "outcome.delivery_business_state_unchanged",
+                "value": true
+              }
+            ]
+          },
+          "release_rule": "确认未知保留本地待发/核对；仅有效租约可更新投递状态，不以confirm创建医生处理事实。"
+        }
+      ],
+      "notes": [
+        "v0.2新增reception_change和decision_change显式承接既有UC01/UC04.2，不扩临床告警范围。",
+        "业务处理、投递、命中次数、告警数量各自记录；独立提交分别留痕，重试/重投不增同一事件。",
+        "同键摘要冲突、未胜出竞争或执行中不能进入新业务；所有回放仍当前授权，正式病历重读审计由SR06承接。"
+      ]
+    },
+    {
+      "id": "SR-10",
+      "checker": "mandatory_control_sections",
+      "phases": [
+        "candidate"
+      ],
+      "failure_class": "candidate_validation_failure",
+      "operations": [
+        "control.compile",
+        "governance.candidate.generate:generate"
+      ],
+      "mandatory_floor": true,
+      "candidate_when_allowed": false,
+      "runtime_handler_status": "not_implemented_by_this_registration_proposal",
+      "phase_contracts": {
+        "candidate": {
+          "operations": [
+            "control.compile",
+            "governance.candidate.generate:generate"
+          ],
+          "required_facts": [
+            "candidate.required_sections",
+            "candidate.references_valid"
+          ],
+          "success_means": "静态定义满足独立FloorSpec；不等于运行通过、获批或启用。",
+          "notes": []
+        }
+      },
+      "after_commit_obligations": [],
+      "notes": [
+        "required_sections实际含safety_redlines/coding_standards/quality_gates才满足三部分；存在但空/引用错仍按结构和FloorSpec拒绝。"
+      ]
+    }
+  ],
+  "facts": {
+    "candidate.scope_projection_bounds_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "meaning": "固定F/F+/D/M/MA/MG行边界及字段投影不放宽，管理/前台无临床全文。",
+      "availability": "compiler_derived",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "candidate.template_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "meaning": "引用可解析、原模板历史解释、诊断必填与用药成组约束未削弱。",
+      "availability": "compiler_derived",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "candidate.medication_append_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "meaning": "原项不可update/delete；更正须关联原项、真实账号/时间/理由。",
+      "availability": "compiler_derived",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "candidate.suggestion_decision_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "meaning": "建议不能直写；采纳真实医生/理由；不采纳保留来源与决定且不强制理由。",
+      "availability": "compiler_derived",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "candidate.manual_activation_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "meaning": "生成/批准/手动启用独立，批准绑定具体版本和摘要，内容变化不得复用批准。",
+      "availability": "compiler_derived",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "candidate.audit_export_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "meaning": "病历读写/导出必需审计；授权范围、用途适用性、角色投影及完整产物释放门不削弱。",
+      "availability": "compiler_derived",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "candidate.permission_gate_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "meaning": "20权限键及服务端模式/入口门禁完整，未知入口不能放行。",
+      "availability": "compiler_derived",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "candidate.credential_query_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "meaning": "口令单向哈希、参数绑定及脱敏，不允许可执行SQL/Python或普通引号误拒。",
+      "availability": "compiler_derived",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "candidate.recovery_idempotency_contract_valid": {
+      "type": "boolean",
+      "provider": "compiler_floor_comparator",
+      "phases": [
+        "candidate"
+      ],
+      "meaning": "稳定事件身份、本地持久恢复、收据去重、同键异内容拒绝及独立轮次留痕未削弱。",
+      "availability": "compiler_derived",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "candidate.required_sections": {
+      "type": "array",
+      "provider": "compiler_structure_validator",
+      "phases": [
+        "candidate"
+      ],
+      "meaning": "实际出现的三必需部分名称；必须恰含必需项，非编译器补写。",
+      "availability": "compiler_derived",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler",
+      "items": {
+        "type": "string"
+      }
+    },
+    "candidate.references_valid": {
+      "type": "boolean",
+      "provider": "compiler_structure_validator",
+      "phases": [
+        "candidate"
+      ],
+      "meaning": "定义引用可解析、无循环或冲突ID；不把缺引用补为默认。",
+      "availability": "compiler_derived",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "authorization.identity_current": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "meaning": "操作时身份有效；不是只凭曾登录或旧幂等结果。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "authorization.role_allowed": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "meaning": "角色与当前登记键相符，只有前台/医生/管理三业务角色。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "authorization.row_scope_allowed": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "meaning": "目标与子对象实际关联符合F/F+/D/M/MA/MG；显式ID集合全部核验。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "authorization.input_projection_allowed": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "meaning": "本次输入仅含对应服务端模式允许字段。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "authorization.output_projection_allowed": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "meaning": "输出计划只含角色投影，管理汇总先限店再聚合。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "entry.permission_key_bound": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "meaning": "入口实际绑定已登记permission key，不接受客户端任意指定。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "entry.mode_server_selected": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "meaning": "模式由具体服务入口固定，禁止同键换模式绕过。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "entry.central_authorization_invoked": {
+      "type": "boolean",
+      "provider": "authorization_entry",
+      "phases": [
+        "authorization"
+      ],
+      "meaning": "实际通过统一授权入口；漏挂不能被页面隐藏补偿。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "policy.pin_valid": {
+      "type": "boolean",
+      "provider": "policy_template_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "本次适用生效包已由权威服务固定且版本/内容可核对，提交前并发绑定保持有效。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "template.reference_resolved": {
+      "type": "boolean",
+      "provider": "policy_template_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "当前记录引用模板真实存在且可解释；新病历模板由服务端核验。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "template.interpretation_matches_reference": {
+      "type": "boolean",
+      "provider": "policy_template_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "旧病历仍依原引用模板解释，不因发布新模板强制改用新版。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "template.required_fields_valid": {
+      "type": "boolean",
+      "provider": "policy_template_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "合并后的拟提交正式内容满足原模板必填，首次建病历仍有诊断说明。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "template.medication_group_valid": {
+      "type": "boolean",
+      "provider": "policy_template_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "有药时drug/amount/unit成组；无药可空，不新增药理阈值。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "medication.append_plan_only": {
+      "type": "boolean",
+      "provider": "clinical_change_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "实际持久计划只新增原项或关联更正，不update/delete历史项。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "medication.original_link_valid": {
+      "type": "boolean",
+      "provider": "clinical_change_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "更正的原用药实际属于同一获准病历；append模式不伪造更正关联。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "medication.correction_reason_valid": {
+      "type": "boolean",
+      "provider": "clinical_change_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "correct有非空理由；append不被额外强加更正理由。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "actor.actual_identity_bound": {
+      "type": "boolean",
+      "provider": "clinical_change_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "activation"
+      ],
+      "meaning": "实际责任账号由当前可信上下文填充，不接受任意代填账号。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "actor.actual_time_server_owned": {
+      "type": "boolean",
+      "provider": "clinical_change_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "activation"
+      ],
+      "meaning": "实际步骤时间由可信服务取得，不改写原操作者/原时间。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "suggestion.saved_context_valid": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "clinical_change",
+        "decision_change"
+      ],
+      "meaning": "建议来源及实际接诊关联来自已保存登记，存在病历引用时验证同次关联。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "suggestion.transition_allowed": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "clinical_change",
+        "decision_change"
+      ],
+      "meaning": "本次新决定仅从pending进入终态；已完成同意图重试由幂等流程核对原结果，不改决定。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "suggestion.source_retention_planned": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "clinical_change",
+        "decision_change"
+      ],
+      "meaning": "来源、建议及决定保留；不采纳也不能删除原建议。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "suggestion.adoption_reason_valid": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "仅采纳分支要求非空理由；不对decline调用此必需事实。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "suggestion.no_direct_ai_write": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "建议不会未经真实采纳步骤直接写正式病历。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "suggestion.decline_no_formal_write": {
+      "type": "boolean",
+      "provider": "suggestion_decision_service",
+      "phases": [
+        "decision_change"
+      ],
+      "meaning": "decline只登记决定及可选说明，不创建/写入正式病历。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "governance.same_store_verified": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "meaning": "启用对象与当前真实管理账号同店，不借目标ID扩跨店治理权限。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "governance.candidate_validated": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "meaning": "拟启用内容已通过结构和独立FloorSpec校验。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "governance.human_approval_recorded": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "meaning": "存在真实管理批准记录和账号/时间/理由，不由生成器捏造。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "governance.approved_content_matches": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "meaning": "包ID/版本/摘要与获批内容一致，改内容不得复用批准。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "governance.manual_activation_requested": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "meaning": "真实管理手动启用请求，不把生成成功或批准自动当启用。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "governance.activation_reason_valid": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "meaning": "本次真实启用理由非空。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "governance.current_head_condition_valid": {
+      "type": "boolean",
+      "provider": "governance_activation_service",
+      "phases": [
+        "activation"
+      ],
+      "meaning": "当前生效指针/预期版本条件仍有效；失败保留原指针。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "audit.facility_ready": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "read",
+        "clinical_change",
+        "export"
+      ],
+      "meaning": "本次必需审计的持久化设施/失败返回路径已具备，仅为写前前提。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "audit.required_plan_complete": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "read",
+        "clinical_change",
+        "export"
+      ],
+      "meaning": "服务实际计划包含本操作所需账号/动作/结果/目标/时间等脱敏留痕。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "audit.same_transaction_planned": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "正式病历写入/责任或采纳登记与必需审计拟在同一提交边界。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "response.release_gate_installed": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "read",
+        "export"
+      ],
+      "meaning": "读取/导出服务已安装提交核对后释放字节的门；不表示此时已提交。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "export.all_explicit_targets_authorized": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "meaning": "显式目标全部获准；不静默删除无权ID后返回部分成功。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "export.complete_scope_planned": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "meaning": "授权筛选集合不静默截断，计划记录行数/记录数及范围。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "export.projection_valid": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "meaning": "医生明细/管理汇总按C05角色投影，管理不先加载完整临床正文再隐藏。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "export.purpose_required": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "meaning": "服务依据permission key判断：仅病历导出题定用途必填。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "export.purpose_present": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "meaning": "用途在适用时为非空输入；命中导出false不构成拒绝理由。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "export.version_snapshot_planned": {
+      "type": "boolean",
+      "provider": "audit_export_service",
+      "phases": [
+        "export"
+      ],
+      "meaning": "完整产物按记录+原模板版本解释，保留用药追加更正链，正式AI内容仅已采纳。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "release.endpoint_scan_complete": {
+      "type": "boolean",
+      "provider": "release_gate",
+      "phases": [
+        "release"
+      ],
+      "meaning": "发布扫描覆盖全部受保护入口，不因未扫描就算通过。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "release.permission_scan_clean": {
+      "type": "boolean",
+      "provider": "release_gate",
+      "phases": [
+        "release"
+      ],
+      "meaning": "全部入口均登记权限/模式并调用统一授权，包含负向漏挂样例门禁。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "release.credential_check_clean": {
+      "type": "boolean",
+      "provider": "release_gate",
+      "phases": [
+        "release"
+      ],
+      "meaning": "口令持久化与日志脱敏检查未发现明文保存路径。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "release.parameter_binding_check_clean": {
+      "type": "boolean",
+      "provider": "release_gate",
+      "phases": [
+        "release"
+      ],
+      "meaning": "实际持久层调用采用绑定参数，未发现SQL拼接执行路径。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "persistence.parameter_binding_enforced": {
+      "type": "boolean",
+      "provider": "persistence_adapter",
+      "phases": [
+        "persistence"
+      ],
+      "meaning": "检查实际SQL调用结构与参数绑定，不以主诉包含引号/特殊字符判攻击。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "persistence.password_representation": {
+      "type": "string",
+      "provider": "persistence_adapter",
+      "phases": [
+        "persistence"
+      ],
+      "meaning": "本次持久化是否涉及口令及其实际表示；只传分类，不传口令/哈希内容。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler",
+      "enum": [
+        "not_applicable",
+        "one_way_hash",
+        "plaintext",
+        "unknown"
+      ]
+    },
+    "persistence.secret_logging_prohibited": {
+      "type": "boolean",
+      "provider": "persistence_adapter",
+      "phases": [
+        "persistence"
+      ],
+      "meaning": "实际日志/审计路径禁止原始口令、认证信息、请求全文与临床正文。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "operation.key_bound": {
+      "type": "boolean",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "meaning": "本次有服务端限定作用域的稳定操作标识，不由重试随机换键规避核对。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "operation.digest_bound": {
+      "type": "boolean",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "meaning": "规范摘要绑定服务端固定mode、规范target、业务输入和期望版本；不混入会随重试改变的当前生效包或随机观测ID。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "operation.current_authorization_checked": {
+      "type": "boolean",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "meaning": "返回旧结果前仍检查当前角色/归属/投影，旧缓存不能恢复已失权限。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "recovery.local_evidence_plan_ready": {
+      "type": "boolean",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "meaning": "本地OperationResult/拒绝记录或恢复依据设施具备；不是声称未来提交已成功。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "recovery.guard_refusal_plan_ready": {
+      "type": "boolean",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "临床命中时告警、拒绝及本地待发的可靠保存路径具备；仅临床阶段适用，不用于decline/前台告警。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "operation.claim_state": {
+      "type": "string",
+      "provider": "operation_recovery_service",
+      "phases": [
+        "clinical_change",
+        "decision_change",
+        "reception_change"
+      ],
+      "meaning": "从OperationResult唯一键/行竞争与再次核摘要后的结果取得；同键异内容为conflict，不执行业务。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler",
+      "enum": [
+        "execute_owner",
+        "completed_replay",
+        "in_progress",
+        "content_conflict",
+        "unknown"
+      ]
+    },
+    "delivery.event_identity_bound": {
+      "type": "boolean",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "meaning": "事件关联包含独立attempt、rule_id、rule_version、field；同意图重投复用稳定event_id，独立修改后新提交不跨轮合并。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "delivery.local_evidence_durable": {
+      "type": "boolean",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "meaning": "已有告警/本地待发已可确认持久；这是提交后事实在投递阶段的输入，不是写前预报。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "delivery.lease_current": {
+      "type": "boolean",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "meaning": "当前worker租约/fencing令牌有效；迟到worker不得覆盖新租约状态。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "delivery.receipt_transaction_ready": {
+      "type": "boolean",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "meaning": "消费副作用与唯一收据的同库事务设施具备，未在commit前ACK。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "delivery.kind": {
+      "type": "string",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "meaning": "内部服务固定publish/consume/recover，不是业务角色选择。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler",
+      "enum": [
+        "publish",
+        "consume",
+        "recover"
+      ]
+    },
+    "delivery.publish_confirmation": {
+      "type": "string",
+      "provider": "outbox_receipt_service",
+      "phases": [
+        "delivery"
+      ],
+      "meaning": "与本事件/租约对应的broker确认；unknown可重试，confirm不等于医生处理。",
+      "availability": "trusted_service_input",
+      "condition_selectable": true,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler",
+      "enum": [
+        "not_sent",
+        "confirmed",
+        "negative",
+        "unknown"
+      ]
+    },
+    "outcome.commit_state": {
+      "type": "string",
+      "provider": "commit_result_observer",
+      "phases": [
+        "read",
+        "clinical_change",
+        "decision_change",
+        "reception_change",
+        "activation",
+        "export",
+        "delivery"
+      ],
+      "meaning": "本次持久边界可确认结果；网络超时/断连且未经核对不能选committed或rolled_back。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler",
+      "enum": [
+        "committed",
+        "rolled_back",
+        "unknown"
+      ]
+    },
+    "outcome.audit_state": {
+      "type": "string",
+      "provider": "commit_result_observer",
+      "phases": [
+        "read",
+        "clinical_change",
+        "decision_change",
+        "reception_change",
+        "activation",
+        "export"
+      ],
+      "meaning": "必需审计的实际持久状态，不能用写前facility_ready代替。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler",
+      "enum": [
+        "durable",
+        "failed",
+        "unknown"
+      ]
+    },
+    "outcome.business_audit_atomic": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "正式业务、责任/采纳登记与必需审计同一事务结果，不用after-response回调补必需审计。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "outcome.medication_original_preserved": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "原用药未覆盖/删除，追加更正仍关联原项。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "outcome.suggestion_source_retained": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change",
+        "decision_change"
+      ],
+      "meaning": "已保存建议及来源、决定实际保留。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "outcome.formal_clinical_mutation": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change",
+        "decision_change"
+      ],
+      "meaning": "本次是否真实发生正式病历变更；decline必须为false。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "outcome.active_pointer_matches_approval": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "activation"
+      ],
+      "meaning": "实际生效指针为本次手动启用的获批内容，历史仍保留。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "outcome.refusal_evidence_durable": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change"
+      ],
+      "meaning": "运行命中拒绝的告警/拒绝或恢复依据可靠保留，不随原医疗回滚丢失。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "outcome.outbox_durable": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "clinical_change",
+        "delivery"
+      ],
+      "meaning": "需要投递的本地待发实际持久；broker不可用但此事实真不等于留痕失败。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "outcome.consumer_receipt_durable": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "delivery"
+      ],
+      "meaning": "消费者副作用与收据事务可确认提交，随后才可ACK。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "outcome.delivery_business_state_unchanged": {
+      "type": "boolean",
+      "provider": "commit_result_observer",
+      "phases": [
+        "delivery"
+      ],
+      "meaning": "仅发布/消费/恢复没有伪造医生处理账号、时间或处理状态。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler"
+    },
+    "outcome.export_artifact_state": {
+      "type": "string",
+      "provider": "commit_result_observer",
+      "phases": [
+        "export"
+      ],
+      "meaning": "已生成的完整CSV产物；仅任务ID/排队不能选complete。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler",
+      "enum": [
+        "complete",
+        "failed",
+        "unknown"
+      ]
+    },
+    "outcome.export_row_count": {
+      "type": "integer",
+      "provider": "commit_result_observer",
+      "phases": [
+        "export"
+      ],
+      "meaning": "实际完整产物行数，允许合法零结果，严格非负整数而非bool。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler",
+      "minimum": 0,
+      "reject_boolean": true
+    },
+    "outcome.export_record_count": {
+      "type": "integer",
+      "provider": "commit_result_observer",
+      "phases": [
+        "export"
+      ],
+      "meaning": "病历或事件等本次导出对象记录数，不能与含更正链的行数混称。",
+      "availability": "after_commit_only",
+      "condition_selectable": false,
+      "required_null_policy": "null/missing不得冒充有效值；阶段要求时缺失即拒绝并分类故障",
+      "implementation_status": "registration_contract_only_not_runtime_handler",
+      "minimum": 0,
+      "reject_boolean": true
+    }
+  },
+  "operations": {
+    "encounter.create:create": {
+      "kind": "protected_service_operation",
+      "permission": "encounter.create",
+      "mode": "create",
+      "goal": "UC-01.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "encounter.create:doctor_options": {
+      "kind": "protected_service_operation",
+      "permission": "encounter.create",
+      "mode": "doctor_options",
+      "goal": "UC-01.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "encounter.create:verify_pet_ref": {
+      "kind": "protected_service_operation",
+      "permission": "encounter.create",
+      "mode": "verify_pet_ref",
+      "goal": "UC-01.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "encounter.read:list": {
+      "kind": "protected_service_operation",
+      "permission": "encounter.read",
+      "mode": "list",
+      "goal": "UC-01.2",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "encounter.read:detail": {
+      "kind": "protected_service_operation",
+      "permission": "encounter.read",
+      "mode": "detail",
+      "goal": "UC-01.2",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "encounter.correct:correct": {
+      "kind": "protected_service_operation",
+      "permission": "encounter.correct",
+      "mode": "correct",
+      "goal": "UC-01.3",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "encounter.mark_error:mark": {
+      "kind": "protected_service_operation",
+      "permission": "encounter.mark_error",
+      "mode": "mark",
+      "goal": "UC-01.4",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "clinical.read:list": {
+      "kind": "protected_service_operation",
+      "permission": "clinical.read",
+      "mode": "list",
+      "goal": "UC-02.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "clinical.read:detail": {
+      "kind": "protected_service_operation",
+      "permission": "clinical.read",
+      "mode": "detail",
+      "goal": "UC-02.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "clinical.diagnosis.write:record": {
+      "kind": "protected_service_operation",
+      "permission": "clinical.diagnosis.write",
+      "mode": "record",
+      "goal": "UC-02.2",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "clinical.diagnosis.write:correct": {
+      "kind": "protected_service_operation",
+      "permission": "clinical.diagnosis.write",
+      "mode": "correct",
+      "goal": "UC-02.2",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "medication.record:append": {
+      "kind": "protected_service_operation",
+      "permission": "medication.record",
+      "mode": "append",
+      "goal": "UC-03",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "medication.record:correct": {
+      "kind": "protected_service_operation",
+      "permission": "medication.record",
+      "mode": "correct",
+      "goal": "UC-03",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "clinical.suggestion.adopt:adopt": {
+      "kind": "protected_service_operation",
+      "permission": "clinical.suggestion.adopt",
+      "mode": "adopt",
+      "goal": "UC-04.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "clinical.suggestion.decline:decline": {
+      "kind": "protected_service_operation",
+      "permission": "clinical.suggestion.decline",
+      "mode": "decline",
+      "goal": "UC-04.2",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "clinical.alert.handle:read": {
+      "kind": "protected_service_operation",
+      "permission": "clinical.alert.handle",
+      "mode": "read",
+      "goal": "UC-05",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "clinical.alert.handle:resolve": {
+      "kind": "protected_service_operation",
+      "permission": "clinical.alert.handle",
+      "mode": "resolve",
+      "goal": "UC-05",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "governance.candidate.review:read": {
+      "kind": "protected_service_operation",
+      "permission": "governance.candidate.review",
+      "mode": "read",
+      "goal": "UC-06.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "governance.candidate.review:review": {
+      "kind": "protected_service_operation",
+      "permission": "governance.candidate.review",
+      "mode": "review",
+      "goal": "UC-06.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "governance.candidate.activate:activate": {
+      "kind": "protected_service_operation",
+      "permission": "governance.candidate.activate",
+      "mode": "activate",
+      "goal": "UC-06.2",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "report.store_summary.read:read": {
+      "kind": "protected_service_operation",
+      "permission": "report.store_summary.read",
+      "mode": "read",
+      "goal": "UC-07.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "audit.metadata.read:read": {
+      "kind": "protected_service_operation",
+      "permission": "audit.metadata.read",
+      "mode": "read",
+      "goal": "UC-07.2",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "export.clinical:export": {
+      "kind": "protected_service_operation",
+      "permission": "export.clinical",
+      "mode": "export",
+      "goal": "UC-08",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "export.guard_detail:export": {
+      "kind": "protected_service_operation",
+      "permission": "export.guard_detail",
+      "mode": "export",
+      "goal": "UC-09.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "export.guard_summary:export": {
+      "kind": "protected_service_operation",
+      "permission": "export.guard_summary",
+      "mode": "export",
+      "goal": "UC-09.2",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "governance.candidate.generate:generate": {
+      "kind": "protected_service_operation",
+      "permission": "governance.candidate.generate",
+      "mode": "generate",
+      "goal": "UC-10",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "collaboration.assignment.write:read": {
+      "kind": "protected_service_operation",
+      "permission": "collaboration.assignment.write",
+      "mode": "read",
+      "goal": "UC-11.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "collaboration.assignment.write:write": {
+      "kind": "protected_service_operation",
+      "permission": "collaboration.assignment.write",
+      "mode": "write",
+      "goal": "UC-11.1",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "collaboration.assignment.review:review": {
+      "kind": "protected_service_operation",
+      "permission": "collaboration.assignment.review",
+      "mode": "review",
+      "goal": "UC-11.2",
+      "source": "DES-AUTHZ-002 section 3"
+    },
+    "control.compile": {
+      "kind": "internal_contract_point",
+      "permission": null,
+      "meaning": "纯离线编译调用，不是新业务权限；后续Web生成仍需本店管理授权"
+    },
+    "system.release.verify": {
+      "kind": "internal_contract_point",
+      "permission": null,
+      "meaning": "发布入口登记/安全门禁，不是业务账号可调用端点"
+    },
+    "system.persistence.query": {
+      "kind": "internal_contract_point",
+      "permission": null,
+      "meaning": "已授权应用服务调用的持久层查询/命令执行边界，不授予业务权限"
+    },
+    "system.identity.password.persist": {
+      "kind": "internal_contract_point",
+      "permission": null,
+      "meaning": "既有身份基础设施的口令保存边界，不新增管理创建/重置账号权限"
+    },
+    "system.alert.publish": {
+      "kind": "internal_contract_point",
+      "permission": null,
+      "meaning": "仅处理已持久事件的Outbox发布"
+    },
+    "system.alert.consume": {
+      "kind": "internal_contract_point",
+      "permission": null,
+      "meaning": "仅消费已授权路由事件并保存去重收据"
+    },
+    "system.alert.recover": {
+      "kind": "internal_contract_point",
+      "permission": null,
+      "meaning": "仅恢复本地待发事件，不产生医生决定"
+    }
+  },
+  "providers": {
+    "compiler_floor_comparator": {
+      "authority": "从严格解析后的定义与独立只读FloorSpec逐项计算；不读取输入自报的通过布尔值。",
+      "implemented_by_this_proposal": false
+    },
+    "compiler_structure_validator": {
+      "authority": "从实际JSON结构、引用图和三必需部分计算；缺项不得由隐藏默认值补齐。",
+      "implemented_by_this_proposal": false
+    },
+    "authorization_entry": {
+      "authority": "当前已验证会话及受保护操作登记；按服务端目标关联、行谓词和字段投影判定，不先加载无权正文。",
+      "implemented_by_this_proposal": false
+    },
+    "policy_template_service": {
+      "authority": "应用服务在同一操作边界固定的生效策略和记录原模板/实际目标版本；历史模板不替代当前授权。",
+      "implemented_by_this_proposal": false
+    },
+    "clinical_change_service": {
+      "authority": "医生服务依据当前目标、允许的写投影及拟持久化差异构造；不采信请求自报已通过。",
+      "implemented_by_this_proposal": false
+    },
+    "suggestion_decision_service": {
+      "authority": "已保存建议与接诊的真实关联、服务器当前状态和真实医生决定；不把客户端传入的来源当已保存来源。",
+      "implemented_by_this_proposal": false
+    },
+    "governance_activation_service": {
+      "authority": "同店管理服务核真实批准/手动启用步骤、版本内容摘要及当前生效指针。",
+      "implemented_by_this_proposal": false
+    },
+    "audit_export_service": {
+      "authority": "授权后构造必需留痕计划和完整文件释放门；写前只能描述设施及计划，不能证实未来commit。",
+      "implemented_by_this_proposal": false
+    },
+    "release_gate": {
+      "authority": "构建/发布阶段的实际路由登记及安全检查报告；静态报告不证明运行权限已实现。",
+      "implemented_by_this_proposal": false
+    },
+    "persistence_adapter": {
+      "authority": "实际参数绑定/口令表示及日志脱敏边界，不从普通主诉含引号推断SQL注入。",
+      "implemented_by_this_proposal": false
+    },
+    "operation_recovery_service": {
+      "authority": "服务端规范mode/target/业务输入/期望版本摘要、数据库OperationResult竞争及本地恢复设施。",
+      "implemented_by_this_proposal": false
+    },
+    "outbox_receipt_service": {
+      "authority": "服务端Outbox/租约/事件关联/消费者收据的真实状态；消息自报成功不构成持久事实。",
+      "implemented_by_this_proposal": false
+    },
+    "commit_result_observer": {
+      "authority": "提交返回及必要核对后的可确认持久结果；超时/断连保留unknown，不把未确认说成回滚或成功。",
+      "implemented_by_this_proposal": false
+    }
+  },
+  "phase_registry": [
+    "candidate",
+    "authorization",
+    "clinical_change",
+    "decision_change",
+    "reception_change",
+    "activation",
+    "read",
+    "export",
+    "release",
+    "persistence",
+    "delivery"
+  ],
+  "v0_1_to_v0_2_mapping": {
+    "authority": "parent technical ruling in this task; no new business decision",
+    "unchanged": "old v0.1 demand/package files remain untouched; checker and failure_class strings retained",
+    "changed": [
+      {
+        "id": "SR-04",
+        "add_phases": [
+          "decision_change"
+        ],
+        "reason": "existing decline retention is a decision write, not formal clinical mutation"
+      },
+      {
+        "id": "SR-09",
+        "add_phases": [
+          "reception_change",
+          "decision_change"
+        ],
+        "reason": "existing reception and decline idempotency cannot be named clinical_change"
+      }
+    ],
+    "legacy_input_policy": "new v0.2 FloorSpec/input must explicitly carry these phases; do not silently supply them for old input"
+  },
+  "type_contract": {
+    "allowed_fact_types": [
+      "boolean",
+      "integer",
+      "string",
+      "array"
+    ],
+    "coercion": false,
+    "integer_accepts_boolean": false,
+    "number_note": "integer仅JSON整数值；拒绝true/false、浮点、数字字符串；不把服务异常序列化为null后放行。",
+    "string_note": "enum严格字符串相等；非enum字符串至少一字符；引用/摘要的更细校验由登记提供者负责。",
+    "array_note": "仅登记元素类型；此提案数组事实为string数组，拒绝嵌套对象/混合类型。",
+    "missing_or_unknown_fact": "静态引用未知名/错phase/错类型即编译失败；运行必需事实缺失拒绝为上下文/设施故障，不自动临床告警。"
+  },
+  "condition_language": {
+    "operators": [
+      "present",
+      "eq",
+      "in",
+      "all",
+      "any"
+    ],
+    "forms": [
+      {
+        "op": "present",
+        "fact": "registered_name"
+      },
+      {
+        "op": "eq",
+        "fact": "registered_scalar",
+        "value": "same exact scalar type"
+      },
+      {
+        "op": "in",
+        "fact": "registered_scalar",
+        "values": [
+          "nonempty homogeneous literals of same exact scalar type"
+        ]
+      },
+      {
+        "op": "all|any",
+        "args": [
+          "nonempty valid nodes"
+        ]
+      }
+    ],
+    "extra_keys": "reject",
+    "present_semantics": "只检已登记且当phase可用的严格类型事实存在；false和整数0也是存在；null/错类型不是有效present。",
+    "eq_in_types": [
+      "boolean",
+      "integer",
+      "string"
+    ],
+    "arrays_in_eq_in": "reject; in表示单个标量事实是否属于字面量数组，不定义对运行数组的隐式any。",
+    "after_commit_fact_in_precondition": "reject",
+    "floor_dispatch": "mandatory checker按固定operation/phase无条件调度；拒绝候选when/条件包裹、删phase或改失败类别来旁路底线。",
+    "additional_rule": "只能引用已登记checker、其允许phase和当阶段可用typed facts；不创建新handler。"
+  },
+  "event_boundary": {
+    "compiler_failure": "candidate_validation_failure/report only; no clinical alert",
+    "clinical_alert": "only confirmed evaluated active clinical guard hit; not schema/auth/missing facility/decision/reception fault",
+    "failure_class_note": "保持SR行的机械failure_class；具体事件分类还必须按phase和实际执行结果，不把字符串guard_hit_when_evaluated直接当已命中。"
+  },
+  "runtime_integration_notes": [
+    "本批只编译元数据和约束，不加载runtime handler，也不接受请求自报可信事实。",
+    "clinical_change仅正式诊疗/用药/采纳；decision_change仅不采纳；reception_change仅UC01写入。",
+    "回放已有OperationResult不重做临床/决定状态转换；当前授权始终执行，病历重读仍有必需读取审计。",
+    "after_commit_obligations不是新增phase，也不是写前条件；事实观察unknown须按需规未知结果路径核对。",
+    "发布/消费/恢复是内部受限接入点，不增加三角色以外的业务角色或任意后台临床读取权。"
+  ],
+  "sources": [
+    {
+      "path": "04_设计与控制文件/01_控制文件格式与生成校验设计.md",
+      "section": "2,3.1,4,5"
+    },
+    {
+      "path": "03_需求规格说明书.md",
+      "section": "4.5 SR-01..10; 7-8; NFR04-06"
+    },
+    {
+      "path": "04_设计与控制文件/02_权限矩阵与字段投影.md",
+      "section": "3-5; 20 keys/29 modes"
+    },
+    {
+      "path": "04_设计与控制文件/控制文件/01_演示需求输入_v0.1.json",
+      "section": "safety_redlines"
+    },
+    {
+      "path": "04_设计与控制文件/控制文件/02_控制包候选_v0.1.json",
+      "section": "safety_redlines, authorization.bindings, rule_language"
+    },
+    {
+      "path": "10_验收证据/07_控制包编译与安全校验/01_执行计划与范围.md",
+      "section": "1-4"
+    }
+  ]
+}

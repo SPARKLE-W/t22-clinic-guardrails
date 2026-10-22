@@ -1,0 +1,381 @@
+{
+  "version": "0.2",
+  "srs": {
+    "version": "1.0",
+    "sha256": "FE95C5BF2495B763EA2C7075C46CBE5D367F7F82401E2E1818EF81BF9243DAE8"
+  },
+  "safety_redlines": [
+    {
+      "id": "SR-01",
+      "version": "0.1",
+      "checker": "scope_and_projection",
+      "phases": [
+        "candidate",
+        "authorization"
+      ],
+      "source": [
+        "FR-05",
+        "SR-01"
+      ],
+      "failure_class": "security_refusal",
+      "may_weaken": false
+    },
+    {
+      "id": "SR-02",
+      "version": "0.1",
+      "checker": "referenced_template",
+      "phases": [
+        "candidate",
+        "clinical_change"
+      ],
+      "source": [
+        "FR-02",
+        "SR-02"
+      ],
+      "failure_class": "guard_hit_when_evaluated",
+      "may_weaken": false
+    },
+    {
+      "id": "SR-03",
+      "version": "0.1",
+      "checker": "append_only_medication",
+      "phases": [
+        "candidate",
+        "clinical_change"
+      ],
+      "source": [
+        "FR-04",
+        "SR-03"
+      ],
+      "failure_class": "guard_hit_when_evaluated",
+      "may_weaken": false
+    },
+    {
+      "id": "SR-04",
+      "version": "0.1",
+      "checker": "human_adoption_and_retention",
+      "phases": [
+        "candidate",
+        "clinical_change",
+        "decision_change"
+      ],
+      "source": [
+        "FR-06",
+        "SR-04"
+      ],
+      "failure_class": "guard_hit_when_evaluated",
+      "may_weaken": false
+    },
+    {
+      "id": "SR-05",
+      "version": "0.1",
+      "checker": "manual_approval_content_binding",
+      "phases": [
+        "candidate",
+        "activation"
+      ],
+      "source": [
+        "FR-01",
+        "SR-05"
+      ],
+      "failure_class": "governance_refusal",
+      "may_weaken": false
+    },
+    {
+      "id": "SR-06",
+      "version": "0.1",
+      "checker": "audit_and_authorized_export",
+      "phases": [
+        "candidate",
+        "read",
+        "clinical_change",
+        "export",
+        "decision_change",
+        "reception_change"
+      ],
+      "source": [
+        "FR-08",
+        "SR-06"
+      ],
+      "failure_class": "audit_or_export_fault",
+      "may_weaken": false
+    },
+    {
+      "id": "SR-07",
+      "version": "0.1",
+      "checker": "registered_permission_entry",
+      "phases": [
+        "candidate",
+        "release",
+        "authorization"
+      ],
+      "source": [
+        "FR-05.4",
+        "SR-07"
+      ],
+      "failure_class": "security_refusal",
+      "may_weaken": false
+    },
+    {
+      "id": "SR-08",
+      "version": "0.1",
+      "checker": "credential_and_parameterized_query",
+      "phases": [
+        "candidate",
+        "release",
+        "persistence"
+      ],
+      "source": [
+        "NFR-06",
+        "SR-08"
+      ],
+      "failure_class": "security_refusal",
+      "may_weaken": false
+    },
+    {
+      "id": "SR-09",
+      "version": "0.1",
+      "checker": "durable_alert_and_idempotency",
+      "phases": [
+        "candidate",
+        "clinical_change",
+        "delivery",
+        "decision_change",
+        "reception_change"
+      ],
+      "source": [
+        "NFR-05",
+        "SR-09"
+      ],
+      "failure_class": "recovery_fault",
+      "may_weaken": false
+    },
+    {
+      "id": "SR-10",
+      "version": "0.1",
+      "checker": "mandatory_control_sections",
+      "phases": [
+        "candidate"
+      ],
+      "source": [
+        "FR-01",
+        "SR-10"
+      ],
+      "failure_class": "candidate_validation_failure",
+      "may_weaken": false
+    }
+  ],
+  "coding_standards": [
+    {
+      "id": "CS-01",
+      "obligations": [
+        "registered_permission_entry",
+        "server_projections"
+      ]
+    },
+    {
+      "id": "CS-02",
+      "obligations": [
+        "parameterized_queries",
+        "password_hashing",
+        "no_raw_credentials_or_request_bodies_in_audit"
+      ]
+    },
+    {
+      "id": "CS-03",
+      "obligations": [
+        "clinical_audit_atomic_transaction",
+        "required_commit_before_success",
+        "no_required_audit_after_response"
+      ]
+    },
+    {
+      "id": "CS-04",
+      "obligations": [
+        "append_only_medication",
+        "trusted_actor_and_time"
+      ]
+    },
+    {
+      "id": "CS-05",
+      "obligations": [
+        "no_executable_controls",
+        "no_arbitrary_object_or_file_selectors"
+      ]
+    },
+    {
+      "id": "CS-06",
+      "obligations": [
+        "stable_event_ids",
+        "outbox_receipt_deduplication",
+        "publish_confirmation_not_handling"
+      ]
+    }
+  ],
+  "quality_gates": {
+    "status": "targets_not_results",
+    "required_sections": [
+      "safety_redlines",
+      "coding_standards",
+      "quality_gates"
+    ],
+    "protected_endpoint_scan": {
+      "missing_permission": "block_release",
+      "negative_sample_required": true
+    },
+    "coverage": {
+      "minimum_percent": 80,
+      "measurement_kind": "to_be_declared_before_measurement"
+    },
+    "effective_code_lines": {
+      "minimum": 3200,
+      "maximum": 4800,
+      "counting_scope": "to_be_declared"
+    },
+    "all_tests_pass": true,
+    "all_error_codes_and_negative_scenarios_accounted": true,
+    "data": {
+      "stores": 5,
+      "pets_approx": 6000,
+      "records_approx": 20000
+    },
+    "load": {
+      "concurrency": 360,
+      "duration_seconds": 600,
+      "p95_ms_max": 280,
+      "throughput_per_minute_min": 800,
+      "authorized_failures_max": 0,
+      "timing_end": "complete_response_received",
+      "report_separately": [
+        "reception",
+        "query",
+        "clinical_write",
+        "guard_check",
+        "export"
+      ]
+    },
+    "extension_per_example": {
+      "rule_files_max": 1,
+      "modules_max": 1,
+      "person_days_max": 1,
+      "both_rule_and_template_examples_required": true
+    },
+    "browser": {
+      "os": "Windows",
+      "families": [
+        "Edge",
+        "Chrome"
+      ],
+      "minimum_screen_resolution": [
+        1366,
+        768
+      ],
+      "window": "maximized",
+      "zoom_percent": 100,
+      "actual_viewport": "record_during_test"
+    },
+    "evidence_required": [
+      "transaction_audit_faults",
+      "queue_recovery",
+      "retry_and_redelivery",
+      "restart",
+      "clinical_csv_completeness",
+      "authorization_and_projection",
+      "real_AI_process"
+    ]
+  },
+  "templates": {
+    "version": "template-0.2",
+    "source": [
+      "FR-02",
+      "C-06",
+      "C-07"
+    ],
+    "reception": {
+      "required": [
+        "pet_id",
+        "species",
+        "complaint",
+        "doctor_id"
+      ],
+      "optional": [
+        "pet_name"
+      ],
+      "server_owned": [
+        "encounter_id",
+        "store_id",
+        "receptionist_id",
+        "created_at"
+      ],
+      "owner_fixed_after_creation": true,
+      "pet_id_immutable_after_creation": true,
+      "field_types": {
+        "pet_id": "reference",
+        "species": "text",
+        "complaint": "text",
+        "doctor_id": "reference",
+        "pet_name": "text"
+      }
+    },
+    "clinical": {
+      "required": [
+        "diagnosis"
+      ],
+      "optional": [
+        "examination"
+      ],
+      "type": "versioned_text_fields",
+      "medication": {
+        "optional_when_no_medication": true,
+        "all_or_none": [
+          "drug",
+          "amount",
+          "unit"
+        ],
+        "value_type": "nonempty_text",
+        "storage": "append_only",
+        "correction_requires": [
+          "original_entry_ref",
+          "reason"
+        ],
+        "pharmacology_thresholds": null
+      },
+      "adoption": {
+        "requires": [
+          "saved_suggestion_ref",
+          "reason",
+          "trusted_doctor"
+        ],
+        "state_from": "pending",
+        "state_to": "adopted",
+        "decline_reason_required": false,
+        "source_preserved": true,
+        "direct_AI_write": false
+      },
+      "first_record_still_requires_diagnosis": true,
+      "historic_interpretation": "referenced_version",
+      "field_types": {
+        "diagnosis": "text",
+        "examination": "text"
+      },
+      "extra_fields": []
+    }
+  },
+  "collaboration": {
+    "source": [
+      "FR-03",
+      "C-04"
+    ],
+    "owner_role": "manager",
+    "scope": "own_store",
+    "dimensions": [
+      "content_generation",
+      "data_entry",
+      "human_decision"
+    ],
+    "missing_evidence": "not_comparable",
+    "changed_version": "compare_again",
+    "manual_review_required": true,
+    "clinical_text_visible": false
+  }
+}

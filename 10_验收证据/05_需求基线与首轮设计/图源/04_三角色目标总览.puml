@@ -1,0 +1,48 @@
+@startuml
+left to right direction
+actor "前台账号" as Front
+actor "医生账号" as Doctor
+actor "管理账号" as Manager
+rectangle "VetRules系统" {
+  usecase "UC-01.1 接待建档" as U011
+  usecase "UC-01.2 查看接待资料" as U012
+  usecase "UC-01.3 更正接待资料" as U013
+  usecase "UC-01.4 标记误建接诊" as U014
+  usecase "UC-02.1 查询接诊病历" as U021
+  usecase "UC-02.2 记录或更正诊疗" as U022
+  usecase "UC-03 追加处方与用药更正" as U03
+  usecase "UC-04.1 采纳建议入病历" as U041
+  usecase "UC-04.2 登记不采纳建议" as U042
+  usecase "UC-05 查看并处理病历告警" as U05
+  usecase "UC-08 导出病历" as U08
+  usecase "UC-09.1 导出护栏命中明细" as U091
+  usecase "UC-06.1 审批规则与模板候选" as U061
+  usecase "UC-06.2 手动启用获批候选" as U062
+  usecase "UC-07.1 查看本店汇总" as U071
+  usecase "UC-07.2 检索本店脱敏审计" as U072
+  usecase "UC-09.2 导出护栏命中汇总" as U092
+  usecase "UC-10 生成并提交控制文件候选" as U10
+  usecase "UC-11.1 维护人机分工登记" as U111
+  usecase "UC-11.2 人工复核分工差异" as U112
+}
+Front -- U011
+Front -- U012
+Front -- U013
+Front -- U014
+Doctor -- U021
+Doctor -- U022
+Doctor -- U03
+Doctor -- U041
+Doctor -- U042
+Doctor -- U05
+Doctor -- U08
+Doctor -- U091
+Manager -- U061
+Manager -- U062
+Manager -- U071
+Manager -- U072
+Manager -- U092
+Manager -- U10
+Manager -- U111
+Manager -- U112
+@enduml

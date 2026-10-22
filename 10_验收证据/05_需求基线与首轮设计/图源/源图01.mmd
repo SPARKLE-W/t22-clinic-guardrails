@@ -1,0 +1,8 @@
+flowchart LR
+    accTitle: VetRules业务上下文与用户边界
+    accDescr: 只有前台医生管理三个内部角色登录。宠物主人通过前台提供信息，建议源仅提供待人工决定的建议。
+    Owner[宠物主人：信息提供者] -.线下提供到院信息.-> Front[前台账号]
+    Front -->|本店该前台接待资料| Vet["VetRules系统\n界面、服务、存储与消息处理"]
+    Doctor[医生账号] -->|本店该医生负责病历及告警| Vet
+    Manager[管理账号] -->|本店治理、汇总、脱敏元数据| Vet
+    Suggestion[建议来源：方案待定] -.仅提供建议，无病历写权限.-> Vet

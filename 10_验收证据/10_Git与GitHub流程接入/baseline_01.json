@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "args": [
+        "check"
+      ],
+      "exit_code": 0,
+      "seconds": 1.31
+    },
+    {
+      "args": [
+        "makemigrations",
+        "--check",
+        "--dry-run"
+      ],
+      "exit_code": 0,
+      "seconds": 0.736
+    },
+    {
+      "args": [
+        "test",
+        "tests",
+        "governance",
+        "clinic",
+        "--noinput",
+        "-v",
+        "2"
+      ],
+      "exit_code": 0,
+      "seconds": 26.989
+    }
+  ]
+}

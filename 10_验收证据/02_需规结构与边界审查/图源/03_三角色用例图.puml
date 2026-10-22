@@ -1,0 +1,33 @@
+@startuml
+left to right direction
+actor "前台账号" as Front
+actor "医生账号" as Doctor
+actor "管理账号" as Manager
+rectangle "VetRules系统" {
+  usecase "UC-01 接待建档" as U1
+  usecase "UC-02 查询与记录诊疗" as U2
+  usecase "UC-03 追加处方与更正" as U3
+  usecase "UC-04 登记AI建议处理" as U4
+  usecase "UC-05 处理病历告警" as U5
+  usecase "UC-06 审批并启用规则与模板" as U6
+  usecase "UC-07 查看统计与脱敏审计" as U7
+  usecase "UC-08 导出病历" as U8
+  usecase "UC-09 导出护栏命中\n医生明细 / 管理脱敏汇总" as U9
+  usecase "UC-10 生成控制文件" as U10
+  usecase "UC-11 维护人机分工登记" as U11
+  usecase "UC-12 队列恢复补发\n内部恢复场景" as U12
+}
+Front -- U1
+Doctor -- U2
+Doctor -- U3
+Doctor -- U4
+Doctor -- U5
+Doctor -- U8
+Doctor -- U9
+Manager -- U6
+Manager -- U7
+Manager -- U9
+Manager -- U10
+Manager -- U11
+note bottom of U12 : 由队列恢复/重试触发，不新增业务账号
+@enduml

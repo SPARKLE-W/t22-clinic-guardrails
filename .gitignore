@@ -1,0 +1,48 @@
+# Local credentials, environments, databases and runtime output
+.env
+.env.*
+!.env.example
+private/
+.cache/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.log
+*.key
+*.pem
+*.sqlite*
+*.db
+.DS_Store
+Thumbs.db
+~$*
+.superpowers/
+
+# Course originals and full transcript copies remain in the local archive
+/T22_门诊护栏规则_学生版任务书.docx
+/大作业要求（完整汇总）.docx
+/00_来源摘录/01_T22任务书_文本摘录.md
+/00_来源摘录/02_完整汇总_文本摘录.md
+/00_来源摘录/05_第一次课文字稿_换行段号定位副本.md
+
+# Large/raw historical runs and generated previews remain local
+**/原始结果/
+**/试导/
+**/定稿导出/
+*.jsonl
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.zip
+*.exe
+*.dll
+*.docx
+!/03_需求规格说明书.docx
+
+# Retain the latest regression evidence and version-control evidence
+!/10_验收证据/09_接诊归属与读取权限/原始结果/
+/10_验收证据/09_接诊归属与读取权限/原始结果/*
+!/10_验收证据/09_接诊归属与读取权限/原始结果/full_final_01.json
+!/10_验收证据/09_接诊归属与读取权限/原始结果/full_final_01.txt
+!/10_验收证据/09_接诊归属与读取权限/原始结果/http_clinic_01.json

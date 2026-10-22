@@ -1,0 +1,23 @@
+stateDiagram-v2
+    accTitle: 告警业务处理与消息投递的两个维度
+    accDescr: 业务维度由医生处理决定，传输维度由发送确认决定，传输成功不会关闭业务告警。
+    state "同一告警的两个维度" as Alert {
+    state "业务处理维度" as Business {
+        state "未处理并持续提示" as Open
+        state "已记录处理结果" as Done
+        [*] --> Open
+        Open --> Done: 获准医生提交结果并保存成功
+        Open --> Open: 无权或保存失败
+    }
+    --
+    state "消息投递维度" as Delivery {
+        state "持久待发" as Queued
+        state "待核对或重试" as Uncertain
+        state "已确认送达" as Delivered
+        [*] --> Queued
+        Queued --> Delivered: 收到可靠确认
+        Queued --> Uncertain: 不可用或结果不明
+        Uncertain --> Delivered: 核对或重试确认
+        Uncertain --> Uncertain: 仍不可用或结果不明
+    }
+    }
