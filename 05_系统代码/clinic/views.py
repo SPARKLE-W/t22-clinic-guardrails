@@ -83,3 +83,10 @@ def alerts(request):
 @protected(writes.ALERT, ['POST'])
 def resolve(request, alert_id):
     return JsonResponse(writes.resolve(request.user.pk, request.headers.get('Idempotency-Key'), _body(request), str(alert_id)))
+
+
+@protected('clinical.read', ['GET'])
+def alert_encounter(request, alert_id):
+    if request.GET:
+        raise DomainError('INPUT_FIELDS_INVALID', 422)
+    return JsonResponse(writes.alert_encounter(request.user.pk, str(alert_id)))

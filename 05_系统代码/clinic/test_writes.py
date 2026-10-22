@@ -265,3 +265,38 @@ class ClinicalWriteTests(ClinicFixture):
             self.assertEqual(503, response.status_code)
         alert.refresh_from_db()
         self.assertIsNone(alert.handled_at)
+
+    def test_record_filtered_alert_refusal_keeps_real_parent_and_record_index(self):
+        ref = self.create()['encounter_ref']
+        record = self.record_fixture(ref)
+        from .models import AuditTarget
+        client = Client()
+        for actor in [self.foreign, self.front, self.manager]:
+            client.force_login(actor)
+            response = client.get('/api/clinical/alerts', {'record_ref': str(record.pk)})
+            self.assertEqual(403, response.status_code)
+            event = AuditEvent.objects.filter(actor=actor, action='clinical.alert.handle').latest('created_at')
+            self.assertEqual(actor.store_id, event.store_id)
+            self.assertEqual(str(ref), str(event.target))
+            self.assertTrue(AuditTarget.objects.filter(event=event, target=record.pk, kind='record').exists())
+
+    def test_alert_opens_its_actual_encounter_even_before_first_record(self):
+        from .models import Alert
+        for index in range(2):
+            ref = self.create()['encounter_ref']
+            self.assertEqual(422, self.post(ref, {}).status_code)
+            alert = Alert.objects.get(hit__evaluation__encounter_id=ref)
+            client = Client()
+            client.force_login(self.doctor)
+            url = '/api/clinical/alerts/' + str(alert.pk) + '/encounter'
+            response = client.get(url)
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(ref, response.json()['reception']['encounter_ref'])
+            self.assertIsNone(response.json()['clinical'])
+            for actor in [self.front, self.manager, self.foreign, self.doctor2]:
+                client.force_login(actor)
+                self.assertEqual(403, client.get(url).status_code)
+                event = AuditEvent.objects.filter(actor=actor).latest('created_at')
+                self.assertEqual('clinical.read', event.action)
+                self.assertEqual(str(ref), str(event.target))
+                self.assertEqual(actor.store_id, event.store_id)

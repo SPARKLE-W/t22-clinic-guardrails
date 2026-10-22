@@ -6,7 +6,7 @@ from governance.services import DomainError, _check_candidate, _uuid, require, w
 from vetcontrols.compiler import _digest, _normalize
 from .guards import evaluate
 from .models import Alert, AlertOutbox, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, GuardHit
-from .services import _clinical, _object, _own, _refusal, _template, _text
+from .services import _clinical, _object, _own, _refusal, _template, _text, read
 
 WRITE = 'clinical.diagnosis.write'
 ALERT = 'clinical.alert.handle'
@@ -116,15 +116,24 @@ def _alert_item(alert):
             'handled_at': alert.handled_at.isoformat() if alert.handled_at else None}
 
 
-def alert_refusal(actor_id, error, ref):
+def alert_refusal(actor_id, error, ref=None, permission=ALERT, record_ref=None):
     try:
-        alert = Alert.objects.select_related('hit__evaluation').filter(pk=_uuid(ref)).first()
+        alert = Alert.objects.select_related('hit__evaluation').filter(pk=_uuid(ref)).first() if ref else None
+        record = ClinicalRecord.objects.filter(pk=_uuid(record_ref)).first() if record_ref else None
     except DomainError:
-        alert = None
+        alert, record = None, None
     with transaction.atomic():
-        event = _refusal(actor_id, ALERT, error, str(alert.hit.evaluation.encounter_id) if alert else None)
+        encounter_ref = str(alert.hit.evaluation.encounter_id) if alert else str(record.encounter_id) if record else None
+        event = _refusal(actor_id, permission, error, encounter_ref)
         if alert:
             AuditTarget.objects.create(event=event, target=alert.pk, kind='alert')
+
+
+def alert_encounter(actor_id, ref):
+    alert = Alert.objects.select_related('hit__evaluation').filter(pk=_uuid(ref)).first()
+    if not alert:
+        raise DomainError('TARGET_UNAVAILABLE', 403)
+    return read(actor_id, clinical=True, ref=str(alert.hit.evaluation.encounter_id))
 
 
 def alerts(actor_id, query):

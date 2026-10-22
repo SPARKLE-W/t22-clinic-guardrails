@@ -32,7 +32,13 @@ async function doctorAlertsRefresh(){
   $('alert-count').textContent=pendingCount?'有 '+pendingCount+' 条未处理告警':'暂无未处理告警';
   for(const item of result.items){
     const panel=node('div');panel.className='history-entry';
-    panel.append(node('p',item.rule_ref+' · 命中字段：'+item.hit_field+'\n'+(item.handling_state==='handled'?'已处理':'待处理')+' · 事件 '+item.event_ref));
+    const fieldName=({diagnosis:'诊断说明',examination:'检查说明'})[item.hit_field]||item.hit_field;
+    panel.append(node('p',item.rule_ref+' · 命中字段：'+fieldName+'\n'+(item.handling_state==='handled'?'已处理':'待处理')));
+    const open=node('button','查看对应接诊');open.className='secondary';open.onclick=async()=>{
+      open.disabled=true;
+      try{const context=await api('/api/clinical/alerts/'+item.alert_ref+'/encounter');clinicRender(context);open.textContent='接诊：'+(context.reception.pet_name||context.reception.species);$('clinic-detail').scrollIntoView({block:'start'});}
+      catch(error){notice(error.message,true);}finally{open.disabled=false;}
+    };panel.append(open);
     if(item.handling_state==='handled')panel.append(node('p',item.handling_result+' · 处理账号 '+item.handler_ref));
     else{
       const input=node('textarea');input.maxLength=2000;input.setAttribute('aria-label','实际处理结果');input.placeholder='填写核对及实际处理结果';

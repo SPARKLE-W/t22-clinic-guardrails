@@ -1,0 +1,42 @@
+Creating test database for alias 'default' ('t22_app_test')...
+Found 1 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: rest_framework
+  Apply all migrations: auth, clinic, contenttypes, governance, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying governance.0001_initial... OK
+  Applying clinic.0001_initial... OK
+  Applying sessions.0001_initial...test_assigned_doctor_can_record_diagnosis (clinic.test_writes.ClinicalWriteTests.test_assigned_doctor_can_record_diagnosis) ... FAIL
+
+======================================================================
+FAIL: test_assigned_doctor_can_record_diagnosis (clinic.test_writes.ClinicalWriteTests.test_assigned_doctor_can_record_diagnosis)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_writes.py", line 17, in test_assigned_doctor_can_record_diagnosis
+    self.assertEqual(200, response.status_code)
+AssertionError: 200 != 404
+
+----------------------------------------------------------------------
+Ran 1 test in 0.099s
+
+FAILED (failures=1)
+Destroying test database for alias 'default' ('t22_app_test')...
+ OK
+System check identified no issues (0 silenced).

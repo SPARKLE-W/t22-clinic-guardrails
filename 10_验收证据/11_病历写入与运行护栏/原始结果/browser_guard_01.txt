@@ -1,0 +1,56 @@
+Emulating viewport: {"deviceScaleFactor":1,"isMobile":false,"hasTouch":false,"isLandscape":false,"width":1366,"height":768}
+## Latest page snapshot
+uid=10_0 RootWebArea "门诊护栏 · 治理工作台" url="http://127.0.0.1:18730/"
+  uid=10_1 banner
+    uid=10_2 heading "门诊护栏" level="1"
+    uid=10_3 "规则与模板 · 人工审阅 · 版本留存"
+    uid=10_4 "A店（演示） · a_doctor "
+    uid=10_5 button "退出登录"
+  uid=10_6 main
+    uid=10_7 status atomic live="polite" relevant="additions text"
+      uid=17_0 "本次提交被护栏拦截，病历未改变。请查看告警；再次点击提交会发起新的一次校验。"
+    uid=10_9 complementary
+      uid=10_10 heading "负责接诊的记录" level="2"
+      uid=10_11 button "刷新"
+      uid=15_0 "共 3 次接诊 · 第 1 页"
+      uid=15_1 button "浏览器首诊演示宠物 · 2026/10/22 16:21:41"
+      uid=15_2 button "[误建] 临床写入演示宠物 · 2026/10/22 16:11:38"
+      uid=15_3 button "[误建] 读取权限演示宠物 · 2026/10/22 12:48:08"
+      uid=10_15 button "上一页" disableable disabled
+      uid=10_16 button "下一页" disableable disabled
+      uid=10_17 heading "我的护栏告警" level="2"
+      uid=10_18 button "刷新告警"
+      uid=10_19 paragraph live="polite" relevant="additions text"
+        uid=17_1 "有 1 条未处理告警"
+      uid=17_2 "SR-02 · 命中字段：诊断说明
+已处理"
+      uid=17_3 button "查看对应接诊"
+      uid=17_4 "已核对缺项，原阻断记录保留 · 处理账号 2"
+      uid=17_5 "SR-02 · 命中字段：诊断说明
+已处理"
+      uid=17_6 button "查看对应接诊"
+      uid=17_7 "浏览器页面核对完成，缺项的原始阻断留痕继续保留 · 处理账号 2"
+      uid=17_8 "SR-02 · 命中字段：诊断说明
+待处理"
+      uid=17_9 button "查看对应接诊"
+      uid=17_10 textbox "实际处理结果" multiline
+      uid=17_11 button "登记处理结果"
+    uid=16_0 heading "浏览器首诊演示宠物 · 本次接诊" level="2"
+    uid=16_1 "接诊编号：2761a92b-f838-4f6f-8412-6e4d1309c2d3
+宠物编号：a4aba8bd-1c65-4b76-97ef-5188db9c31a2
+接待账号：3 · 接诊医生：2
+时间：2026/10/22 16:21:41"
+    uid=16_2 heading "种类" level="3"
+    uid=16_3 "猫"
+    uid=16_4 heading "本次主诉" level="3"
+    uid=16_5 "合成页面验证，不用于真实诊疗"
+    uid=16_6 heading "尚无正式病历" level="3"
+    uid=16_7 form
+      uid=16_8 heading "填写正式病历" level="3"
+      uid=16_9 "诊断说明（必填）"
+      uid=16_10 textbox "诊断说明（必填）" multiline required value="   "
+      uid=16_11 "检查说明（可选）"
+      uid=16_12 textbox "检查说明（可选）" multiline
+      uid=16_13 button "提交正式病历"
+    uid=16_14 DisclosureTriangle "接待资料更正历史" expandable
+

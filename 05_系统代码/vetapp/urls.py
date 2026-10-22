@@ -18,4 +18,5 @@ urlpatterns = [
     path('api/clinical/encounters/<uuid:encounter_id>/diagnosis', clinic.diagnosis('record')),
     path('api/clinical/encounters/<uuid:encounter_id>/diagnosis/corrections', clinic.diagnosis('correct')),
     path('api/clinical/alerts', clinic.alerts), path('api/clinical/alerts/<uuid:alert_id>/resolution', clinic.resolve),
+    path('api/clinical/alerts/<uuid:alert_id>/encounter', clinic.alert_encounter),
 ]

@@ -1,5 +1,7 @@
 # Preserve existing evidence and frozen baseline bytes, including line endings.
 * -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 .github/** text eol=lf
+# Raw terminal/browser evidence retains original control characters and spacing.
+10_验收证据/**/原始结果/** -whitespace
 *.docx binary
 *.pdf binary
