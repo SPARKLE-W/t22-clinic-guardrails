@@ -1,4 +1,4 @@
-{
+﻿{
   "stage": "14_frontend_ui_browser",
   "date": "2026-10-23",
   "environment": {
@@ -27,7 +27,7 @@
     "frontend_guardrails": {
       "script": "05_系统代码/frontend/tests/guardrails.test.cjs",
       "result": "ok",
-      "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "HTTP 200 unparseable keeps pending key", "clinical page 51 control", "misregistered medication correction", "late route response discarded", "copy-ref data-value and event handler", "management summary five counts and both groups", "malformed HTTP 200 summary never becomes a true zero", "export filename and reference parsing"],
+      "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "HTTP 200 unparseable keeps pending key", "clinical page 51 control", "misregistered medication correction", "late route response discarded", "copy-ref data-value and event handler", "management summary five counts and both groups", "malformed HTTP 200 summary never becomes a true zero", "export filename and reference parsing", "partial dates and unverified metadata"],
       "note": "Node VM with synthetic data; not a full browser or database integration test"
     },
     "ux_followup": {
@@ -90,3 +90,4 @@
     "review_dir": "10_验收证据/14_前端界面与浏览器验证/00_评审"
   }
 }
+
