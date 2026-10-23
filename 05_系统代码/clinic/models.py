@@ -113,6 +113,38 @@ class AlertOutbox(models.Model):
     alert = models.OneToOneField(Alert, on_delete=models.PROTECT)
     state = models.CharField(max_length=16, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
+    claim_token = models.UUIDField(null=True)
+    lease_until = models.DateTimeField(null=True)
+    next_attempt_at = models.DateTimeField(null=True)
+    attempt_count = models.PositiveIntegerField(default=0)
+    last_error_code = models.CharField(max_length=40, blank=True)
+    publisher_confirmed_at = models.DateTimeField(null=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['state','next_attempt_at'])]
+        constraints = [models.CheckConstraint(condition=models.Q(state__in=['pending','uncertain','published','delivered']),name='outbox_delivery_state')]
+
+
+class DeliveryAttempt(models.Model):
+    id = models.UUIDField(primary_key=True, editable=False)
+    event = models.ForeignKey(AlertOutbox, on_delete=models.PROTECT)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True)
+    outcome = models.CharField(max_length=20, default='claimed')
+
+
+class DeliveryReceipt(models.Model):
+    event = models.OneToOneField(AlertOutbox, on_delete=models.PROTECT, primary_key=True)
+    first_received_at = models.DateTimeField(auto_now_add=True)
+    last_received_at = models.DateTimeField(auto_now_add=True)
+    received_count = models.PositiveIntegerField(default=1)
+
+
+class DeliveryRejection(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    normalized_reason = models.CharField(max_length=40)
+    body_digest = models.CharField(max_length=64)
 
 
 class MedicationEntry(models.Model):

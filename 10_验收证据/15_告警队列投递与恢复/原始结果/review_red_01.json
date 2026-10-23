@@ -1,0 +1,11 @@
+{
+  "arguments": [
+    "test",
+    "clinic.test_delivery_rabbit.RabbitDeliveryTests.test_live_connection_without_confirm_has_bounded_publish_deadline",
+    "--noinput",
+    "-v2"
+  ],
+  "test_database": "t22_app_mq_test",
+  "exit_code": 1,
+  "wall_seconds": 20.876
+}

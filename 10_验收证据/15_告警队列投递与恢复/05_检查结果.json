@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "count": 8,
+  "checks": [
+    {
+      "check": "完整132项无跳过",
+      "passed": true
+    },
+    {
+      "check": "最终两项真实节点停复",
+      "passed": true
+    },
+    {
+      "check": "确认持续缺失先有真实失败",
+      "passed": true
+    },
+    {
+      "check": "Python及迁移语法",
+      "passed": true
+    },
+    {
+      "check": "内部传输JSON契约语法",
+      "passed": true
+    },
+    {
+      "check": "13_前端对接与接口交接.md本地链接",
+      "passed": true
+    },
+    {
+      "check": "16_告警队列投递与恢复.md本地链接",
+      "passed": true
+    },
+    {
+      "check": "未改前端与HTTP入口",
+      "passed": true
+    }
+  ]
+}

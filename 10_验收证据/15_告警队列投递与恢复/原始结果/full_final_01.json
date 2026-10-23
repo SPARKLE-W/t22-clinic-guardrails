@@ -1,0 +1,13 @@
+{
+  "arguments": [
+    "test",
+    "tests",
+    "governance",
+    "clinic",
+    "--noinput",
+    "-v2"
+  ],
+  "test_database": "t22_app_mq_test",
+  "exit_code": 0,
+  "wall_seconds": 69.383
+}

@@ -1,0 +1,322 @@
+Creating test database for alias 'default' ('t22_app_mq_test')...
+Found 15 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: rest_framework
+  Apply all migrations: auth, clinic, contenttypes, governance, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying governance.0001_initial... OK
+  Applying clinic.0001_initial... OK
+  Applying clinic.0002_alert_alertoutbox_clinicalcheck_guardhit_alert_hit... OK
+  Applying clinic.0003_clinicalcheck_original_version_and_more... OK
+  Applying clinic.0004_medicationentry... OK
+  Applying clinic.0005_suggestion_suggestiondecision_and_more... OK
+  Applying sessions.0001_initial...test_claim_expires_and_old_token_cannot_overwrite_new_owner (clinic.test_delivery.DeliveryTests.test_claim_expires_and_old_token_cannot_overwrite_new_owner) ... ERROR
+test_concurrent_claims_have_one_current_owner (clinic.test_delivery.DeliveryTests.test_concurrent_claims_have_one_current_owner) ... ERROR
+test_confirm_is_not_delivery_and_wire_has_no_clinical_fields (clinic.test_delivery.DeliveryTests.test_confirm_is_not_delivery_and_wire_has_no_clinical_fields) ... ERROR
+test_connection_failure_keeps_original_event_pending (clinic.test_delivery.DeliveryTests.test_connection_failure_keeps_original_event_pending) ... ERROR
+test_connection_loss_after_send_remains_uncertain (clinic.test_delivery.DeliveryTests.test_connection_loss_after_send_remains_uncertain) ... ERROR
+test_consumer_commits_receipt_before_acknowledging (clinic.test_delivery.DeliveryTests.test_consumer_commits_receipt_before_acknowledging) ... ERROR
+test_delivered_receipt_wins_over_late_publisher_failure (clinic.test_delivery.DeliveryTests.test_delivered_receipt_wins_over_late_publisher_failure) ... ERROR
+test_delivery_does_not_prevent_independent_doctor_handling (clinic.test_delivery.DeliveryTests.test_delivery_does_not_prevent_independent_doctor_handling) ... ERROR
+test_duplicate_consumption_reuses_receipt_without_handling_alert (clinic.test_delivery.DeliveryTests.test_duplicate_consumption_reuses_receipt_without_handling_alert) ... ERROR
+test_inspection_command_has_only_transport_metadata (clinic.test_delivery.DeliveryTests.test_inspection_command_has_only_transport_metadata) ... ERROR
+test_invalid_message_is_recorded_without_retaining_raw_body (clinic.test_delivery.DeliveryTests.test_invalid_message_is_recorded_without_retaining_raw_body) ... ERROR
+test_publisher_db_failure_leaves_lease_for_recovery (clinic.test_delivery.DeliveryTests.test_publisher_db_failure_leaves_lease_for_recovery) ... ERROR
+test_receipt_db_failure_does_not_ack_or_mark_delivered (clinic.test_delivery.DeliveryTests.test_receipt_db_failure_does_not_ack_or_mark_delivered) ... ERROR
+test_unknown_event_and_mismatched_alert_never_create_receipt (clinic.test_delivery.DeliveryTests.test_unknown_event_and_mismatched_alert_never_create_receipt) ... ERROR
+test_unroutable_is_recoverable_and_not_a_new_clinical_alert (clinic.test_delivery.DeliveryTests.test_unroutable_is_recoverable_and_not_a_new_clinical_alert) ... ERROR
+
+======================================================================
+ERROR: test_claim_expires_and_old_token_cannot_overwrite_new_owner (clinic.test_delivery.DeliveryTests.test_claim_expires_and_old_token_cannot_overwrite_new_owner)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 39, in test_claim_expires_and_old_token_cannot_overwrite_new_owner
+    delivery=self.service();first=delivery.claim_event(self.event.pk)
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_concurrent_claims_have_one_current_owner (clinic.test_delivery.DeliveryTests.test_concurrent_claims_have_one_current_owner)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 159, in test_concurrent_claims_have_one_current_owner
+    delivery=self.service();barrier=Barrier(2)
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_confirm_is_not_delivery_and_wire_has_no_clinical_fields (clinic.test_delivery.DeliveryTests.test_confirm_is_not_delivery_and_wire_has_no_clinical_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 51, in test_confirm_is_not_delivery_and_wire_has_no_clinical_fields
+    delivery=self.service();token=delivery.claim_event(self.event.pk);conn,channel=self.transport()
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_connection_failure_keeps_original_event_pending (clinic.test_delivery.DeliveryTests.test_connection_failure_keeps_original_event_pending)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 89, in test_connection_failure_keeps_original_event_pending
+    delivery=self.service();token=delivery.claim_event(self.event.pk)
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_connection_loss_after_send_remains_uncertain (clinic.test_delivery.DeliveryTests.test_connection_loss_after_send_remains_uncertain)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 78, in test_connection_loss_after_send_remains_uncertain
+    delivery=self.service();token=delivery.claim_event(self.event.pk);conn,channel=self.transport()
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_consumer_commits_receipt_before_acknowledging (clinic.test_delivery.DeliveryTests.test_consumer_commits_receipt_before_acknowledging)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 97, in test_consumer_commits_receipt_before_acknowledging
+    delivery=self.service();conn,channel=self.transport()
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_delivered_receipt_wins_over_late_publisher_failure (clinic.test_delivery.DeliveryTests.test_delivered_receipt_wins_over_late_publisher_failure)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 130, in test_delivered_receipt_wins_over_late_publisher_failure
+    delivery=self.service();token=delivery.claim_event(self.event.pk)
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_delivery_does_not_prevent_independent_doctor_handling (clinic.test_delivery.DeliveryTests.test_delivery_does_not_prevent_independent_doctor_handling)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 191, in test_delivery_does_not_prevent_independent_doctor_handling
+    delivery=self.service();delivery.record_receipt(self.wire(),str(self.event.pk))
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_duplicate_consumption_reuses_receipt_without_handling_alert (clinic.test_delivery.DeliveryTests.test_duplicate_consumption_reuses_receipt_without_handling_alert)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 120, in test_duplicate_consumption_reuses_receipt_without_handling_alert
+    delivery=self.service()
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_inspection_command_has_only_transport_metadata (clinic.test_delivery.DeliveryTests.test_inspection_command_has_only_transport_metadata)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'alert_delivery'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 183, in test_inspection_command_has_only_transport_metadata
+    call_command('alert_delivery',inspect=str(self.event.pk),stdout=output)
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'alert_delivery'
+
+======================================================================
+ERROR: test_invalid_message_is_recorded_without_retaining_raw_body (clinic.test_delivery.DeliveryTests.test_invalid_message_is_recorded_without_retaining_raw_body)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 144, in test_invalid_message_is_recorded_without_retaining_raw_body
+    delivery=self.service();conn,channel=self.transport()
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_publisher_db_failure_leaves_lease_for_recovery (clinic.test_delivery.DeliveryTests.test_publisher_db_failure_leaves_lease_for_recovery)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 173, in test_publisher_db_failure_leaves_lease_for_recovery
+    delivery=self.service();token=delivery.claim_event(self.event.pk);conn,_=self.transport()
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_receipt_db_failure_does_not_ack_or_mark_delivered (clinic.test_delivery.DeliveryTests.test_receipt_db_failure_does_not_ack_or_mark_delivered)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 109, in test_receipt_db_failure_does_not_ack_or_mark_delivered
+    delivery=self.service();conn,channel=self.transport()
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_unknown_event_and_mismatched_alert_never_create_receipt (clinic.test_delivery.DeliveryTests.test_unknown_event_and_mismatched_alert_never_create_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 137, in test_unknown_event_and_mismatched_alert_never_create_receipt
+    delivery=self.service()
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+======================================================================
+ERROR: test_unroutable_is_recoverable_and_not_a_new_clinical_alert (clinic.test_delivery.DeliveryTests.test_unroutable_is_recoverable_and_not_a_new_clinical_alert)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 67, in test_unroutable_is_recoverable_and_not_a_new_clinical_alert
+    delivery=self.service();token=delivery.claim_event(self.event.pk);conn,channel=self.transport()
+             ^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_delivery.py", line 25, in service
+    return import_module('clinic.delivery')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\importlib\__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'clinic.delivery'
+
+----------------------------------------------------------------------
+Ran 15 tests in 1.839s
+
+FAILED (errors=15)
+Destroying test database for alias 'default' ('t22_app_mq_test')...
+ OK
+System check identified no issues (0 silenced).
