@@ -1,0 +1,10 @@
+{
+  "arguments": [
+    "makemigrations",
+    "--check",
+    "--dry-run"
+  ],
+  "test_database": null,
+  "exit_code": 0,
+  "wall_seconds": 1.055
+}

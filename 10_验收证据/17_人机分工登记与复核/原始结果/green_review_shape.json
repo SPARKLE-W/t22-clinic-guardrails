@@ -1,0 +1,11 @@
+{
+  "arguments": [
+    "test",
+    "clinic.test_collaboration.WorkDivisionTests.test_review_evidence_wrong_shape_is_input_error",
+    "--noinput",
+    "-v2"
+  ],
+  "test_database": "t22_app_mq_test",
+  "exit_code": 0,
+  "wall_seconds": 4.553
+}

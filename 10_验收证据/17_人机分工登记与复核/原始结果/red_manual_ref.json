@@ -1,0 +1,11 @@
+{
+  "arguments": [
+    "test",
+    "clinic.test_collaboration.WorkDivisionTests.test_manual_reference_rejects_free_text_content",
+    "--noinput",
+    "-v2"
+  ],
+  "test_database": "t22_app_mq_test",
+  "exit_code": 1,
+  "wall_seconds": 5.784
+}

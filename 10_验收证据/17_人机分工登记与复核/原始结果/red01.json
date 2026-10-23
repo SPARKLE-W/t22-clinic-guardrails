@@ -1,0 +1,11 @@
+{
+  "arguments": [
+    "test",
+    "clinic.test_collaboration.WorkDivisionTests.test_saved_system_evidence_compares_separate_dimensions_and_redacts",
+    "--noinput",
+    "-v2"
+  ],
+  "test_database": "t22_app_mq_test",
+  "exit_code": 1,
+  "wall_seconds": 5.774
+}

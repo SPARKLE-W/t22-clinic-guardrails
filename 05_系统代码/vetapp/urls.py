@@ -3,8 +3,12 @@ from governance import views
 from governance.services import GENERATE, REVIEW, ACTIVATE
 from clinic import views as clinic
 from clinic import reports
+from clinic import collaboration
 
 urlpatterns = [
+    path('api/management/work-divisions', collaboration.registry),
+    path('api/management/work-divisions/evidence', collaboration.available_evidence),
+    path('api/management/work-divisions/reviews', collaboration.review_registry),
     path('api/reports/store-summary', reports.store_summary),
     path('api/clinical/encounters/<uuid:encounter_id>/suggestions', clinic.suggestion_list),
     path('api/clinical/suggestions/<uuid:suggestion_id>/adoption', clinic.suggestion_decision('adopt')),

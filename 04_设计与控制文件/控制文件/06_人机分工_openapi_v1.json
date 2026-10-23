@@ -1,0 +1,1042 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "T22 work division API",
+    "version": "1.0",
+    "description": "Requires clinic migration0007. Manager own store only. Metadata sources are business event IDs, not AuditEvent IDs. See design19."
+  },
+  "paths": {
+    "/api/management/work-divisions": {
+      "get": {
+        "operationId": "listWorkDivisions",
+        "responses": {
+          "200": {
+            "description": "Committed and audited result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "403": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "405": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "409": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "422": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "503": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "work_item_ref",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stage_ref",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "plan_version_ref",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actual_version_ref",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "comparison_state",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "saveWorkDivision",
+        "responses": {
+          "200": {
+            "description": "Committed and audited result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Assignment"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "403": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "405": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "409": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "422": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "503": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/management/work-divisions/evidence": {
+      "get": {
+        "operationId": "listWorkEvidence",
+        "responses": {
+          "200": {
+            "description": "Committed and audited result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "403": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "405": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "409": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "422": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "503": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "work_item_ref",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stage_ref",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/management/work-divisions/reviews": {
+      "post": {
+        "operationId": "reviewWorkDivision",
+        "responses": {
+          "200": {
+            "description": "Committed and audited result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Assignment"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "403": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "405": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "409": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "422": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          },
+          "503": {
+            "description": "See design19 error codes; CSRF denial can be HTML."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRFToken",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SaveRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "work_item_ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stage_ref": {
+            "type": "string",
+            "enum": [
+              "content_generation",
+              "clinical_entry",
+              "medication_entry",
+              "reception_entry",
+              "suggestion_decision",
+              "rule_review",
+              "rule_activation",
+              "alert_handling"
+            ]
+          },
+          "plan_version_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "actual_version_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "plan_dimensions": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "content_generation": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "human",
+                  "ai",
+                  "demo",
+                  "rule_engine",
+                  "unknown",
+                  null
+                ]
+              },
+              "data_entry": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "frontdesk",
+                  "doctor",
+                  "manager",
+                  null
+                ]
+              },
+              "human_decision": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "doctor",
+                  "manager",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "content_generation",
+              "data_entry",
+              "human_decision"
+            ]
+          },
+          "source_event_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 100,
+            "uniqueItems": true
+          },
+          "manual_actual_evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "dimension": {
+                  "enum": [
+                    "content_generation",
+                    "data_entry",
+                    "human_decision"
+                  ]
+                },
+                "value": {
+                  "type": "string"
+                },
+                "source_ref": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "dimension",
+                "value",
+                "source_ref"
+              ]
+            },
+            "maxItems": 30
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "work_item_ref",
+          "stage_ref",
+          "plan_version_ref",
+          "actual_version_ref",
+          "plan_dimensions",
+          "source_event_refs",
+          "manual_actual_evidence",
+          "reason"
+        ]
+      },
+      "ReviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "work_item_ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stage_ref": {
+            "type": "string",
+            "enum": [
+              "content_generation",
+              "clinical_entry",
+              "medication_entry",
+              "reception_entry",
+              "suggestion_decision",
+              "rule_review",
+              "rule_activation",
+              "alert_handling"
+            ]
+          },
+          "plan_version_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "actual_version_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "redacted_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "conclusion": {
+            "enum": [
+              "confirmed_consistent",
+              "confirmed_difference",
+              "needs_followup"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "work_item_ref",
+          "stage_ref",
+          "plan_version_ref",
+          "actual_version_ref",
+          "redacted_evidence",
+          "conclusion",
+          "reason"
+        ]
+      },
+      "ExecutionMetadata": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_event_ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stage_ref": {
+            "enum": [
+              "content_generation",
+              "clinical_entry",
+              "medication_entry",
+              "reception_entry",
+              "suggestion_decision",
+              "rule_review",
+              "rule_activation",
+              "alert_handling"
+            ]
+          },
+          "actor_ref": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "actor_role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "result": {
+            "type": "string"
+          },
+          "dimensions": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "content_generation": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "human",
+                  "ai",
+                  "demo",
+                  "rule_engine",
+                  "unknown",
+                  null
+                ]
+              },
+              "data_entry": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "frontdesk",
+                  "doctor",
+                  "manager",
+                  null
+                ]
+              },
+              "human_decision": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "doctor",
+                  "manager",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "content_generation",
+              "data_entry",
+              "human_decision"
+            ]
+          }
+        },
+        "required": [
+          "source_event_ref",
+          "stage_ref",
+          "actor_ref",
+          "actor_role",
+          "occurred_at",
+          "result",
+          "dimensions"
+        ]
+      },
+      "Comparison": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "enum": [
+              "consistent",
+              "pending_review",
+              "not_comparable"
+            ]
+          },
+          "missing_dimensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "differences": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "dimension": {
+                  "type": "string"
+                },
+                "planned": {
+                  "type": "string"
+                },
+                "actual": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "dimension",
+                "planned",
+                "actual"
+              ]
+            }
+          }
+        },
+        "required": [
+          "state",
+          "missing_dimensions",
+          "differences"
+        ]
+      },
+      "Assignment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "work_item_ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stage_ref": {
+            "type": "string",
+            "enum": [
+              "content_generation",
+              "clinical_entry",
+              "medication_entry",
+              "reception_entry",
+              "suggestion_decision",
+              "rule_review",
+              "rule_activation",
+              "alert_handling"
+            ]
+          },
+          "plan_version_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "actual_version_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "plan_dimensions": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "content_generation": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "human",
+                  "ai",
+                  "demo",
+                  "rule_engine",
+                  "unknown",
+                  null
+                ]
+              },
+              "data_entry": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "frontdesk",
+                  "doctor",
+                  "manager",
+                  null
+                ]
+              },
+              "human_decision": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "doctor",
+                  "manager",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "content_generation",
+              "data_entry",
+              "human_decision"
+            ]
+          },
+          "source_event_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "actual_execution_metadata": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExecutionMetadata"
+            }
+          },
+          "manual_evidence_provenance": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "dimension": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "source_ref": {
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "manager_declaration"
+                },
+                "recorded_by": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "dimension",
+                "value",
+                "source_ref",
+                "kind",
+                "recorded_by"
+              ]
+            }
+          },
+          "comparison": {
+            "$ref": "#/components/schemas/Comparison"
+          },
+          "maintenance_history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "plan_version_ref": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "actual_version_ref": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "actor_ref": {
+                  "type": "integer"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "plan_dimensions": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "content_generation": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "human",
+                        "ai",
+                        "demo",
+                        "rule_engine",
+                        "unknown",
+                        null
+                      ]
+                    },
+                    "data_entry": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "frontdesk",
+                        "doctor",
+                        "manager",
+                        null
+                      ]
+                    },
+                    "human_decision": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "doctor",
+                        "manager",
+                        null
+                      ]
+                    }
+                  },
+                  "required": [
+                    "content_generation",
+                    "data_entry",
+                    "human_decision"
+                  ]
+                },
+                "source_event_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "actual_execution_metadata": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExecutionMetadata"
+                  }
+                },
+                "manual_evidence_provenance": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "dimension": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "source_ref": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "const": "manager_declaration"
+                      },
+                      "recorded_by": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "dimension",
+                      "value",
+                      "source_ref",
+                      "kind",
+                      "recorded_by"
+                    ]
+                  }
+                },
+                "comparison": {
+                  "$ref": "#/components/schemas/Comparison"
+                }
+              },
+              "required": [
+                "plan_version_ref",
+                "actual_version_ref",
+                "actor_ref",
+                "created_at",
+                "reason",
+                "plan_dimensions",
+                "source_event_refs",
+                "actual_execution_metadata",
+                "manual_evidence_provenance",
+                "comparison"
+              ]
+            }
+          },
+          "review_history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "plan_version_ref": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "actual_version_ref": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "actor_ref": {
+                  "type": "integer"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "conclusion": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "plan_version_ref",
+                "actual_version_ref",
+                "actor_ref",
+                "created_at",
+                "reason",
+                "conclusion"
+              ]
+            }
+          }
+        },
+        "required": [
+          "work_item_ref",
+          "stage_ref",
+          "plan_version_ref",
+          "actual_version_ref",
+          "plan_dimensions",
+          "source_event_refs",
+          "actual_execution_metadata",
+          "manual_evidence_provenance",
+          "comparison",
+          "maintenance_history",
+          "review_history"
+        ]
+      },
+      "AssignmentList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Assignment"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "page_size": {
+            "const": 50
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total"
+        ]
+      },
+      "EvidenceList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "work_item_ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stage_ref": {
+            "enum": [
+              "content_generation",
+              "clinical_entry",
+              "medication_entry",
+              "reception_entry",
+              "suggestion_decision",
+              "rule_review",
+              "rule_activation",
+              "alert_handling"
+            ]
+          },
+          "source_event_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "actual_execution_metadata": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExecutionMetadata"
+            }
+          }
+        },
+        "required": [
+          "work_item_ref",
+          "stage_ref",
+          "source_event_refs",
+          "actual_execution_metadata"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sessionid"
+      }
+    }
+  }
+}
