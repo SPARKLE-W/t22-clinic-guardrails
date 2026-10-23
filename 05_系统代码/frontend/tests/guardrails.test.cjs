@@ -300,6 +300,14 @@ const session = (c, role, store, username) => {
     results.push('F-01 copy-ref uses data-value, one handler case, empty data-ref does not report success');
   }
 
+  {
+    const c = context();
+    assert.equal(run(c, `exportFilename('attachment; filename="clinic.csv"')`), 'clinic.csv');
+    assert.equal(run(c, `exportFilename("attachment; filename*=UTF-8''%E7%97%85%E5%8E%86.csv")`), '病历.csv');
+    assert.deepEqual(JSON.parse(run(c, `JSON.stringify(refsFromText('11111111-1111-4111-8111-111111111111, 22222222-2222-4222-8222-222222222222'))`)), ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222']);
+    results.push('F-04 export filename and reference parsing');
+  }
+
   console.log(JSON.stringify({ ok: true, results }, null, 2));
 })().catch((e) => {
   console.error(e.stack || e);
