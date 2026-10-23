@@ -12,7 +12,10 @@ const state = {
   session: null,
   sidebar: null,
   route: null,
+  lastFocus: null,
   range: 'all',
+  receptionPage: 1,
+  clinicalPage: 1,
   alertFilter: 'unhandled',
   selectedCandidate: '',
   auditFilters: { record_ref: '', operator_ref: '' },
@@ -317,6 +320,7 @@ function toast(message, kind = 'ok', detail = '') {
 }
 
 function openModal({ title, subtitle = '', body = '', foot = '', wide = false, kind = '', draftKey = '' }) {
+  state.lastFocus = document.activeElement;
   state.modal = { kind, draftKey };
   state.reloadLatest = null;
   modalRoot.innerHTML = `
@@ -353,13 +357,38 @@ function openModal({ title, subtitle = '', body = '', foot = '', wide = false, k
 }
 
 function closeModal() {
+  const last = state.lastFocus;
   state.modal = null;
   state.reloadLatest = null;
+  state.lastFocus = null;
   modalRoot.innerHTML = '';
   document.body.style.overflow = '';
+  if (last && last.isConnected && typeof last.focus === 'function') last.focus();
+}
+function modalFocusables() {
+  return $$('a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), [tabindex]:not([tabindex="-1"])', modalRoot)
+    .filter((el) => el.getClientRects().length > 0);
 }
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && modalRoot.innerHTML) closeModal();
+  if (!modalRoot.innerHTML) return;
+  if (e.key === 'Escape') { closeModal(); return; }
+  if (e.key !== 'Tab') return;
+  const focusables = modalFocusables();
+  if (!focusables.length) return;
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  if (!modalRoot.contains(document.activeElement)) {
+    e.preventDefault();
+    first.focus();
+    return;
+  }
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
 });
 
 function modalError(message) {
@@ -611,6 +640,7 @@ function renderShell() {
   const sb = state.sidebar || {};
   root.innerHTML = `
   <div class="app">
+    <button class="skip-link" type="button" data-action="skip-main">跳到主要内容</button>
     <header class="masthead">
       <div class="brand" style="display:flex;align-items:center;gap:11px">
         <span class="mark">护</span>
@@ -634,7 +664,7 @@ function renderShell() {
           <span>会话 8 小时</span>
         </div>
       </aside>
-      <main class="main"><div class="page" id="view"></div></main>
+      <main class="main"><div class="page" id="view" tabindex="-1"></div></main>
     </div>
   </div>`;
 }
@@ -656,6 +686,10 @@ function updateShell() {
 async function enterApp() {
   state.bootError = null;
   state.receptionPage = 1;
+  state.clinicalPage = 1;
+  state.range = 'all';
+  state.alertFilter = 'unhandled';
+  state.auditFilters = { record_ref: '', operator_ref: '' };
   state.selectedCandidate = '';
   await loadSidebar();
   renderShell();
@@ -694,6 +728,8 @@ function setActiveNav() {
       (key === 'governance' && route.name === 'governance') ||
       (key === 'audit' && route.name === 'audit');
     a.classList.toggle('on', on);
+    if (on) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
   });
 }
 
@@ -809,7 +845,7 @@ async function viewReceptions(view) {
         <h1>接诊台</h1>
         <p class="lede">仅显示 ${esc(state.session.store_name)} 中由当前账号接待的资料。前台读取范围内不含诊断、检查与处方正文。</p>
       </div>
-      <div class="head-side"><div class="head-actions"><a class="btn primary" href="#/receptions/new">新建接诊</a></div></div>
+      <div class="head-side"><div class="head-actions"><button class="btn ghost" data-action="reload">刷新</button><a class="btn primary" href="#/receptions/new">新建接诊</a></div></div>
     </header>
     <div class="toolbar">
       <div class="seg" role="group" aria-label="时间范围">
@@ -824,7 +860,7 @@ async function viewReceptions(view) {
     </div>
     <div class="sheet list">
       <div class="list-head"><span>宠物</span><span>主诉</span><span>接诊医生</span><span>建档时间</span><span>状态</span><span>打开</span></div>
-      ${rows || `<div class="list-empty"><b>当前范围暂无接待记录</b><p>可以切换时间范围，或新建一次接诊。</p></div>`}
+      ${rows || `<div class="list-empty"><b>当前范围暂无接待记录</b><p>可以切换时间范围，或新建一次接诊。</p><div style="margin-top:14px"><a class="btn" href="#/receptions/new">新建接诊</a></div></div>`}
     </div>
     ${pages > 1 ? `<div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:12px">
       <button class="btn sm ghost" data-action="reception-page" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>上一页</button>
@@ -1067,9 +1103,12 @@ async function viewClinicalList(view) {
   const params = {};
   const tr = rangeParam(state.range);
   if (tr) params.time_range = tr;
+  if (state.clinicalPage > 1) params.page = String(state.clinicalPage);
   const data = await api('/api/clinical/encounters' + (Object.keys(params).length ? '?' + qs(params) : ''));
   const items = data.items || [];
   const total = data.total != null ? data.total : items.length;
+  const page = data.page || 1;
+  const pages = Math.max(1, Math.ceil(total / (data.page_size || 50)));
 
   const rows = items.map((item) => {
     const r = item.reception;
@@ -1083,7 +1122,7 @@ async function viewClinicalList(view) {
         <div class="row-sub">接诊 ${esc(shortRef(r.encounter_ref, 8))}${c ? ' · 病历 ' + esc(shortRef(c.record_ref, 8)) : ''}</div>
       </div>
       <div class="row-mid">${esc(r.complaint || '')}</div>
-      <div class="row-time"><b>${esc(fmtTime(r.created_at))}</b>建档</div>
+      <div class="row-time"><b>${esc(fmtTime(r.created_at))}</b></div>
       <div class="row-status">${chip(st.label, st.kind)}${meds ? chip(meds + ' 条用药', 'muted') : ''}${adopts ? chip('采纳 ' + adopts, 'muted') : ''}</div>
       <div class="row-arrow">→</div>
     </a>`;
@@ -1093,7 +1132,7 @@ async function viewClinicalList(view) {
     <header class="page-head">
       <div>
         <h1>诊疗队列</h1>
-        <p class="lede">仅显示 ${esc(state.session.store_name)} 由当前账号负责接诊的临床内容。未处理的护栏告警持续保留，查看不会自动标记完成。</p>
+        <p class="lede">仅显示本店由当前账号负责接诊的临床内容。告警持续保留，查看不会自动标记完成。</p>
       </div>
       <div class="head-side"><div class="head-actions">
         <button class="btn ghost sm" data-action="reload">刷新</button>
@@ -1104,13 +1143,18 @@ async function viewClinicalList(view) {
       <div class="seg" role="group" aria-label="时间范围">
         ${['today', '7d', 'all'].map((r) => `<button type="button" class="${state.range === r ? 'on' : ''}" data-action="range" data-range="${r}">${r === 'today' ? '今日' : r === '7d' ? '近 7 天' : '全部'}</button>`).join('')}
       </div>
-      <span class="count">共 ${total} 条接诊 · 每人每页 50 条</span>
+      <span class="count">共 ${total} 条接诊 · 第 ${page} / ${pages} 页</span>
     </div>
     <div class="sheet list clinical">
       <div class="list-head"><span>宠物</span><span>主诉</span><span>建档时间</span><span>状态</span><span>打开</span></div>
       ${rows || `<div class="list-empty"><b>当前范围暂无接诊</b><p>前台建档并由本账号负责后，会出现在这里。</p></div>`}
     </div>
-    <footer class="page-foot"><span>接诊归属固定 · 只读取本人负责范围 · 读取已记录审计</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
+    ${pages > 1 ? `<div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:12px">
+      <button class="btn sm ghost" data-action="clinical-page" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>上一页</button>
+      <span class="count">第 ${page} / ${pages} 页</span>
+      <button class="btn sm ghost" data-action="clinical-page" data-page="${page + 1}" ${page >= pages ? 'disabled' : ''}>下一页</button>
+    </div>` : ''}
+    <footer class="page-foot"><span>接诊归属固定 · 只读取本人负责范围 · 读取已记录审计</span><span>第 ${page} 页</span></footer>
   </div>`;
 }
 
@@ -2252,8 +2296,10 @@ document.addEventListener('click', async (e) => {
       }
       case 'relogin': location.reload(); return;
       case 'reload': await renderRoute(); return;
-      case 'range': state.range = btn.dataset.range; state.receptionPage = 1; await renderRoute(); return;
+      case 'range': state.range = btn.dataset.range; state.receptionPage = 1; state.clinicalPage = 1; await renderRoute(); return;
       case 'reception-page': state.receptionPage = Number(btn.dataset.page) || 1; await renderRoute(); return;
+      case 'clinical-page': state.clinicalPage = Number(btn.dataset.page) || 1; await renderRoute(); return;
+      case 'skip-main': { const target = $('#view'); if (target) { target.focus(); target.scrollIntoView({ block: 'start' }); } return; }
       case 'alert-filter': state.alertFilter = btn.dataset.filter; await renderRoute(); return;
       case 'audit-reset': state.auditFilters = { record_ref: '', operator_ref: '' }; await renderRoute(); return;
       case 'regen-pet': {
