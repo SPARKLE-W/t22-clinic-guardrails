@@ -2081,7 +2081,7 @@ function openGenerateCandidate() {
           <span class="file-name" id="definition-file-name">未选择文件</span>
         </div>
         <div class="file-alt">没有文件？<button class="btn-link" type="button" data-action="example-definition">载入本店演示定义</button></div>
-        <div class="definition-summary" id="definition-summary">尚未载入定义。选择 JSON 文件，或载入本店演示定义；这里会先显示这次要生成什么。</div>
+        <div class="definition-summary" id="definition-summary">尚未载入定义。选择 JSON 或演示定义，这里会显示本次生成内容。</div>
         <p class="hint">导入规则与模板，不导入病历内容。</p>
       </div>
       <details class="details" style="margin:10px 0 12px"><summary>查看或编辑定义 JSON<em id="definition-size"></em></summary><div class="inner"><textarea id="definition-json" name="definition" style="min-height:180px" placeholder="粘贴定义 JSON，或选择文件"></textarea></div></details>
@@ -2102,7 +2102,7 @@ function updateDefinitionSummary() {
   if (size) size.textContent = raw ? raw.length + ' 字符' : '';
   box.classList.remove('bad');
   if (!raw) {
-    box.textContent = '尚未载入定义。选择 JSON 文件，或载入本店演示定义；这里会先显示这次要生成什么。';
+    box.textContent = '尚未载入定义。选择 JSON 或演示定义，这里会显示本次生成内容。';
     return;
   }
   let d;
