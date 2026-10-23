@@ -1,0 +1,25 @@
+Creating test database for alias 'default'...
+
+......................................................................Clinical export generation failed
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\clinical-exports\05_ϵͳ����\clinic\exports.py", line 109, in clinical
+    clinical = _clinical(encounter, templates)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+KeyError: 'synthetic corrupt template'
+.............................................................................................................
+----------------------------------------------------------------------
+Ran 179 tests in 70.560s
+
+OK
+Destroying test database for alias 'default'...
+
+Found 179 test(s).
+System check identified no issues (0 silenced).
