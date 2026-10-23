@@ -206,6 +206,44 @@ const session = (c, role, store, username) => {
     results.push('R4 clinical queue exposes next-page control for total 51');
   }
 
+  {
+    const c = context();
+    assert.ok(run(c, `loadingView('合成','list')`).includes('sk-list'));
+    assert.ok(run(c, `loadingView('合成','detail')`).includes('sk-sheet'));
+  }
+
+  {
+    const c = context();
+    session(c, 'doctor', 'A', 'a_doctor');
+    run(c, `api=async()=>({items:[{alert_ref:'a1',handling_state:'unhandled',rule_ref:'SR-01',hit_field:'reason'},{alert_ref:'a2',handling_state:'handled',rule_ref:'SR-02',hit_field:'amount'}]});`);
+    await run(c, `viewAlerts(nodes.view)`);
+    const html = run(c, 'nodes.view.innerHTML');
+    assert.ok(html.includes('待处理<span class="seg-count">1</span>'));
+    assert.ok(html.includes('显示 1 / 2 条'));
+    results.push('alert tabs expose unhandled/handled/all counts');
+  }
+
+  {
+    const c = context();
+    session(c, 'manager', 'A', 'a_manager');
+    run(c, `api=async()=>({items:[
+      {event_at:'2026-10-23T10:00:00+08:00',operator_ref:1,operator_role:'manager',action:'identity.login',outcome:'success',target_ref:null},
+      {event_at:'2026-10-23T10:01:00+08:00',operator_ref:2,operator_role:'doctor',action:'record.write',outcome:'refused',normalized_reason:'PERMISSION_DENIED',target_ref:null},
+      {event_at:'2026-10-23T10:02:00+08:00',operator_ref:2,operator_role:'doctor',action:'record.write',outcome:'validation_failed',normalized_reason:'INPUT_INVALID',target_ref:null}
+    ]});`);
+    await run(c, `viewAudit(nodes.view)`);
+    let html = run(c, 'nodes.view.innerHTML');
+    assert.ok(html.includes('成功<span class="seg-count">1</span>'));
+    assert.ok(html.includes('拒绝<span class="seg-count">1</span>'));
+    assert.ok(html.includes('校验失败<span class="seg-count">1</span>'));
+    assert.ok(html.includes('显示 3 / 3 条'));
+    run(c, `state.auditOutcome='refused';`);
+    await run(c, `viewAudit(nodes.view)`);
+    html = run(c, 'nodes.view.innerHTML');
+    assert.ok(html.includes('显示 1 / 3 条'));
+    results.push('audit tabs expose success/refused/validation counts and filter');
+  }
+
   console.log(JSON.stringify({ ok: true, results }, null, 2));
 })().catch((e) => {
   console.error(e.stack || e);

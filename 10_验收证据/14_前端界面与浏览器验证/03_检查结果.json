@@ -30,6 +30,14 @@
       "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "HTTP 200 unparseable keeps pending key", "clinical page 51 control", "misregistered medication correction", "late route response discarded"],
       "note": "Node VM with synthetic data; not a full browser or database integration test"
     },
+    "ux_followup": {
+      "copy_full_reference": true,
+      "list_skeleton": true,
+      "alert_tab_counts": true,
+      "audit_tab_counts": true,
+      "zoom_200_equivalent": "683x384 viewport, no horizontal overflow",
+      "branch": "feat/frontend-ux"
+    },
     "session_endpoint": "anonymous/{authenticated:false}; authenticated minimal identity; logout returns anonymous",
     "asset_traversal": "GET /app/assets/../../vetapp/settings.py -> 404",
     "static_entry_csrf": "GET /app sets csrftoken cookie",
