@@ -1,0 +1,17 @@
+Creating test database for alias 'default'...
+F
+======================================================================
+FAIL: test_own_store_counts_groups_and_redaction (clinic.test_reports.StoreSummaryTests.test_own_store_counts_groups_and_redaction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\alert-delivery-recovery\05_系统代码\clinic\test_reports.py", line 41, in test_own_store_counts_groups_and_redaction
+    self.assertEqual(200, response.status_code)
+AssertionError: 200 != 404
+
+----------------------------------------------------------------------
+Ran 1 test in 0.235s
+
+FAILED (failures=1)
+Destroying test database for alias 'default'...
+Found 1 test(s).
+System check identified no issues (0 silenced).

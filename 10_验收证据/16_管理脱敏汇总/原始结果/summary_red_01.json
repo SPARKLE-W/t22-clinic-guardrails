@@ -1,0 +1,11 @@
+{
+  "arguments": [
+    "test",
+    "clinic.test_reports.StoreSummaryTests.test_own_store_counts_groups_and_redaction",
+    "--noinput",
+    "-v1"
+  ],
+  "test_database": "t22_app_mq_test",
+  "exit_code": 1,
+  "wall_seconds": 9.326
+}
