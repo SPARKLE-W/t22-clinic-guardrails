@@ -1,0 +1,71 @@
+Creating test database for alias 'default' ('t22_app_mq_test')...
+Found 17 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: rest_framework
+  Apply all migrations: auth, clinic, contenttypes, governance, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying governance.0001_initial... OK
+  Applying clinic.0001_initial... OK
+  Applying clinic.0002_alert_alertoutbox_clinicalcheck_guardhit_alert_hit... OK
+  Applying clinic.0003_clinicalcheck_original_version_and_more... OK
+  Applying clinic.0004_medicationentry... OK
+  Applying clinic.0005_suggestion_suggestiondecision_and_more... OK
+  Applying clinic.0006_deliveryattempt_deliveryreceipt_deliveryrejection_and_more... OK
+  Applying clinic.0007_workdivision_workdivisionrevision_workdivisionreview_and_more... OK
+  Applying clinic.0008_exportrequest... OK
+  Applying sessions.0001_initial...test_corrections_medication_and_adopted_only_remain_reconstructable (clinic.test_exports.ClinicalExportTests.test_corrections_medication_and_adopted_only_remain_reconstructable) ... ok
+test_cross_store_refusal_is_queryable_only_by_requesting_store (clinic.test_exports.ClinicalExportTests.test_cross_store_refusal_is_queryable_only_by_requesting_store) ... ok
+test_empty_range_and_csv_special_characters_are_reversible (clinic.test_exports.ClinicalExportTests.test_empty_range_and_csv_special_characters_are_reversible) ... ok
+test_explicit_authorized_record_is_complete_and_audited (clinic.test_exports.ClinicalExportTests.test_explicit_authorized_record_is_complete_and_audited) ... ok
+test_frontdesk_manager_and_empty_purpose_cannot_export (clinic.test_exports.ClinicalExportTests.test_frontdesk_manager_and_empty_purpose_cannot_export) ... ok
+test_generation_or_audit_failure_yields_no_csv (clinic.test_exports.ClinicalExportTests.test_generation_or_audit_failure_yields_no_csv) ... Clinical export generation failed
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\clinical-exports\05_系统代码\clinic\exports.py", line 109, in clinical
+    clinical = _clinical(encounter, templates)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+KeyError: 'synthetic corrupt template'
+ok
+test_malformed_scope_and_time_range_do_not_create_export (clinic.test_exports.ClinicalExportTests.test_malformed_scope_and_time_range_do_not_create_export) ... ok
+test_manager_audit_can_find_export_by_record_without_seeing_content (clinic.test_exports.ClinicalExportTests.test_manager_audit_can_find_export_by_record_without_seeing_content) ... ok
+test_one_unavailable_record_rejects_entire_explicit_set (clinic.test_exports.ClinicalExportTests.test_one_unavailable_record_rejects_entire_explicit_set) ... ok
+test_time_range_is_complete_not_a_list_page (clinic.test_exports.ClinicalExportTests.test_time_range_is_complete_not_a_list_page) ... ok
+test_audit_failure_prevents_csv (clinic.test_exports.GuardExportTests.test_audit_failure_prevents_csv) ... ok
+test_doctor_detail_contains_only_authorized_hit_metadata (clinic.test_exports.GuardExportTests.test_doctor_detail_contains_only_authorized_hit_metadata) ... ok
+test_filters_and_repeated_downloads_are_individually_audited (clinic.test_exports.GuardExportTests.test_filters_and_repeated_downloads_are_individually_audited) ... ok
+test_handling_state_summary_combines_different_handling_times (clinic.test_exports.GuardExportTests.test_handling_state_summary_combines_different_handling_times) ... ok
+test_manager_summary_has_counts_without_case_identifiers (clinic.test_exports.GuardExportTests.test_manager_summary_has_counts_without_case_identifiers) ... ok
+test_roles_and_case_scope_are_enforced (clinic.test_exports.GuardExportTests.test_roles_and_case_scope_are_enforced) ... ok
+test_summary_excludes_another_store_and_rejects_clinical_filters (clinic.test_exports.GuardExportTests.test_summary_excludes_another_store_and_rejects_clinical_filters) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 2.163s
+
+OK
+Destroying test database for alias 'default' ('t22_app_mq_test')...
+ OK
+System check identified no issues (0 silenced).
