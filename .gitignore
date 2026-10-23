@@ -118,6 +118,12 @@ Thumbs.db
 !/10_验收证据/19_后端综合验收/原始结果/restart_before_01.json
 !/10_验收证据/19_后端综合验收/原始结果/restart_after_01.json
 !/10_验收证据/19_后端综合验收/原始结果/restart_api_01.json
+!/10_验收证据/19_后端综合验收/原始结果/restart_before_db_01.json
+!/10_验收证据/19_后端综合验收/原始结果/restart_after_db_01.json
+!/10_验收证据/19_后端综合验收/原始结果/mq_recovery_prepare_01.json
+!/10_验收证据/19_后端综合验收/原始结果/mq_recovery_down_01.json
+!/10_验收证据/19_后端综合验收/原始结果/mq_recovery_after_01.json
+!/10_验收证据/19_后端综合验收/原始结果/export_sql_diag_01.txt
 
 !/10_验收证据/14_前端界面与浏览器验证/00_标杆/*.png
 !/10_验收证据/14_前端界面与浏览器验证/00_评审/*.png
