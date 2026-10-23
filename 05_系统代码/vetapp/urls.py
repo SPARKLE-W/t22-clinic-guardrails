@@ -4,8 +4,12 @@ from governance.services import GENERATE, REVIEW, ACTIVATE
 from clinic import views as clinic
 from clinic import reports
 from clinic import collaboration
+from clinic import exports
 
 urlpatterns = [
+    path('api/exports/clinical-records', exports.clinical_records),
+    path('api/exports/alert-hits', exports.alert_hits),
+    path('api/exports/alert-summary', exports.alert_summary),
     path('api/management/work-divisions', collaboration.registry),
     path('api/management/work-divisions/evidence', collaboration.available_evidence),
     path('api/management/work-divisions/reviews', collaboration.review_registry),

@@ -1,0 +1,71 @@
+Creating test database for alias 'default'...
+.F...E....
+======================================================================
+ERROR: test_generation_or_audit_failure_yields_no_csv (clinic.test_exports.ClinicalExportTests.test_generation_or_audit_failure_yields_no_csv)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\clinical-exports\05_系统代码\clinic\test_exports.py", line 104, in test_generation_or_audit_failure_yields_no_csv
+    response = self.download(payload)
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\clinical-exports\05_系统代码\clinic\test_exports.py", line 25, in download
+    return self.client.post(self.url, json.dumps(payload), content_type='application/json')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\test\client.py", line 1156, in post
+    response = super().post(
+               ^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\test\client.py", line 499, in post
+    return self.generic(
+           ^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\test\client.py", line 671, in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\test\client.py", line 1090, in request
+    self.check_exception(response)
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\test\client.py", line 805, in check_exception
+    raise exc_value
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\clinical-exports\05_系统代码\governance\views.py", line 42, in call
+    return view(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\utils\decorators.py", line 192, in _view_wrapper
+    result = _process_exception(request, e)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\utils\decorators.py", line 190, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\clinical-exports\05_系统代码\clinic\exports.py", line 118, in clinical_records
+    body, ref, count = clinical(request.user.pk, _body(request))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\clinical-exports\05_系统代码\clinic\exports.py", line 89, in clinical
+    clinical = _clinical(encounter, templates)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+KeyError: 'synthetic corrupt template'
+
+======================================================================
+FAIL: test_cross_store_refusal_is_queryable_only_by_requesting_store (clinic.test_exports.ClinicalExportTests.test_cross_store_refusal_is_queryable_only_by_requesting_store)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\worktrees\clinical-exports\05_系统代码\clinic\test_exports.py", line 71, in test_cross_store_refusal_is_queryable_only_by_requesting_store
+    self.assertIn('export.clinical', [item['action'] for item in
+AssertionError: 'export.clinical' not found in []
+
+----------------------------------------------------------------------
+Ran 10 tests in 1.154s
+
+FAILED (failures=1, errors=1)
+Destroying test database for alias 'default'...
+Found 10 test(s).
+System check identified no issues (0 silenced).

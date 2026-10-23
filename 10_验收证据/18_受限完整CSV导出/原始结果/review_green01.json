@@ -1,0 +1,11 @@
+{
+  "arguments": [
+    "test",
+    "clinic.test_exports",
+    "--noinput",
+    "-v2"
+  ],
+  "test_database": "t22_app_mq_test",
+  "exit_code": 0,
+  "wall_seconds": 7.59
+}
