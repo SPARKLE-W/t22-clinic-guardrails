@@ -56,6 +56,9 @@
       "copy_ref_fixed": true,
       "clinic_ui_cleanup": true,
       "real_guard_blocked_browser": true,
+      "work_divisions": true,
+      "csv_exports": true,
+      "shared_18730_upgraded": true,
       "zoom_200_equivalent": "683x384 viewport, no horizontal overflow",
       "branch": "feat/frontend-ux-final",
       "merged_commit": "ffc9438",
@@ -63,7 +66,9 @@
     },
     "merge": {
       "pr8_commit": "b3f58ad",
-      "pr12_commit": "ffc9438"
+      "pr12_commit": "ffc9438",
+      "pr20_commit": "1f9d989",
+      "pr21_commit": "44721dd"
     },
     "session_endpoint": "anonymous/{authenticated:false}; authenticated minimal identity; logout returns anonymous",
     "asset_traversal": "GET /app/assets/../../vetapp/settings.py -> 404",
@@ -147,7 +152,7 @@
     "v2_disposition": "00_评审/主代理处置_v2.md"
   },
   "evidence": {
-    "final_screenshots": 15,
+    "final_screenshots": 17,
     "supplement_screenshots": 2,
     "recording_seconds": 9.1,
     "final_dir": "10_验收证据/14_前端界面与浏览器验证/02_最终界面",
