@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:t22:alert-transport:v1",
+  "title": "T22 internal alert transport; no hospital-role HTTP endpoint",
+  "$ref": "#/$defs/Message",
+  "$defs": {
+    "Message": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_ref", "alert_ref"],
+      "properties": {
+        "event_ref": {"type": "string", "format": "uuid"},
+        "alert_ref": {"type": "string", "format": "uuid"}
+      },
+      "description": "UTF-8 JSON <=512 bytes; persistent AMQP delivery_mode=2; message_id must identify the same event_ref. Neither ID is a clinical body."
+    },
+    "Inspection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_ref", "alert_ref", "state", "attempt_count", "lease_until", "next_attempt_at", "publisher_confirmed_at", "last_error_code", "first_received_at", "last_received_at", "received_count"],
+      "properties": {
+        "event_ref": {"type": "string", "format": "uuid"},
+        "alert_ref": {"type": "string", "format": "uuid"},
+        "state": {"enum": ["pending", "uncertain", "published", "delivered"]},
+        "attempt_count": {"type": "integer", "minimum": 0},
+        "lease_until": {"type": ["string", "null"], "format": "date-time"},
+        "next_attempt_at": {"type": ["string", "null"], "format": "date-time"},
+        "publisher_confirmed_at": {"type": ["string", "null"], "format": "date-time"},
+        "last_error_code": {"type": "string"},
+        "first_received_at": {"type": ["string", "null"], "format": "date-time"},
+        "last_received_at": {"type": ["string", "null"], "format": "date-time"},
+        "received_count": {"type": "integer", "minimum": 0}
+      },
+      "description": "Local operational CLI response only. Published is not delivered; receipt is not doctor handling."
+    }
+  }
+}

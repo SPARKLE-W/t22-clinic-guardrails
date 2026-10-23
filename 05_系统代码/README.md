@@ -1,8 +1,29 @@
 # T22系统代码：控制编译与治理接入
 
-> 2026-10-23。当前包含控制编译、三角色治理/接诊/读取、诊断检查和用药追加及关联更正、对应护栏/告警，以及演示建议读取/采纳/不采纳后端。本机完整回归107项通过。离线编译无需服务；应用需要独立MySQL；当前只持久本地待发，RabbitMQ实际投递/补发仍待接入。
+> 2026-10-23。当前包含控制编译、三角色治理/接诊/读取、诊断检查和用药追加及关联更正、对应护栏/告警、演示建议，以及实际RabbitMQ发布/消费/恢复后端。本机完整回归132项通过，另有2项真实节点停复核对通过；离线编译无需服务，应用需要独立MySQL，队列工作进程另需RabbitMQ及外部配置。新增迁移0006，本批没有迁移或重启另一批前端工作正在使用的应用库/Web进程。
 
 前端安排（2026-10-23）：界面设计留待用户使用工具完成，后续优先开发后端业务与JSON接口，不继续扩展现有页面的布局和样式。现有模板保留作联调入口；实际API、会话/CSRF、示例与待实现项见[前端对接与接口交接](../04_设计与控制文件/13_前端对接与接口交接.md)。本批三个建议接口已有OpenAPI；全系统契约及独立会话恢复接口仍待补齐。
+
+## 告警队列与恢复
+
+部署顺序：在联调停服窗口停止既有Web/队列工作进程，备份后执行 `python manage.py migrate --noinput`（含0006），再启动对应新代码；旧进程与新表结构不能混跑。本批验证使用隔离测试库，尚未对正在使用的t22_app应用库执行0006。
+
+Web护栏拒绝仍只做同事务告警/outbox持久化，不等待RabbitMQ网络发送。后台进程读取仓库外 `T22_MQ_CONFIG` JSON，键为host、port、virtual_host、user、password、queue；host仅本机回环，queue使用 `t22.app.` 前缀。口令使用本机真实配置，不放源码/消息/日志。可执行：
+
+```powershell
+$env:T22_MQ_CONFIG = 'C:/你的私密目录/app-mq.json'
+python manage.py alert_delivery --once --batch-size 100
+python manage.py alert_delivery --phase publish --once
+python manage.py alert_delivery --phase consume --once
+python manage.py alert_delivery --inspect 传输事件UUID
+python manage.py alert_delivery --interval 5
+```
+
+不带once时持续轮询，Ctrl+C停止；不会安装系统服务。发布阶段由同机短生命周期子进程执行并受10秒等待上限约束，子进程不接数据库，超时仍保留同一事件供恢复。只读inspect不需要连接RabbitMQ，返回传输元数据；它是内部维护命令，不开放管理查看临床告警或公开重发API。
+
+published只是取得发布确认；持久消费收据存在后才是delivered。消息仅event_ref/alert_ref及AMQP message_id，不含临床正文；重复消费不新增告警，不替医生处理。具体协议、运行状态、异常和机器契约见[16队列设计](../04_设计与控制文件/16_告警队列投递与恢复.md)及[第十五阶段](../10_验收证据/15_告警队列投递与恢复/02_本批结果.md)。
+
+完整含MQ的回归须启动RabbitMQ并设置T22_MQ_CONFIG；不提供配置时10项真实队列测试会明确跳过，不能当作完整通过。CI已增加RabbitMQ服务和临时配置，含真实队列回归。为不干扰另一批工作，本机证据运行器仅将TEST.NAME改为t22_app_mq_test（账号需此独立库权限），正常产品配置不改，也不flush应用库或另一批测试库。
 
 ## 演示建议接口
 

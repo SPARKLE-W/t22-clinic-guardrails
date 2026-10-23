@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "tests": 2,
+  "failures": 0,
+  "actions": [
+    {
+      "action": "stop_rabbit",
+      "exit_code": 0,
+      "seconds": 4.827
+    },
+    {
+      "action": "start_rabbit",
+      "exit_code": 0,
+      "seconds": 34.204
+    },
+    {
+      "action": "start_rabbit",
+      "exit_code": 0,
+      "seconds": 0.144
+    },
+    {
+      "action": "stop_rabbit",
+      "exit_code": 0,
+      "seconds": 4.749
+    },
+    {
+      "action": "start_rabbit",
+      "exit_code": 0,
+      "seconds": 32.801
+    },
+    {
+      "action": "start_rabbit",
+      "exit_code": 0,
+      "seconds": 0.145
+    }
+  ],
+  "test_database": "t22_app_mq_test",
+  "note": "实际停止/启动本任务Rabbit节点；不停止共享MySQL或前端Web服务；不清空历史队列。"
+}
