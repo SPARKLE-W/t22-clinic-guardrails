@@ -1846,7 +1846,7 @@ async function openReceptionCorrect(id, prefill = {}) {
   openModal({
     kind: 'reception-correct',
     title: '更正接待资料',
-    subtitle: `接诊 ${shortRef(id, 8)} · 提交后生成 v${latest.version + 1}，原版本保留`,
+    subtitle: '提交后生成新版本，原记录保留',
     draftKey: 'reception-correct:' + id,
     body: `<form id="modal-form" data-form="reception-correct" data-draft="reception-correct:${esc(id)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
@@ -1891,7 +1891,7 @@ async function openReceptionMisreg(id) {
 function openDiagnosisFirst(id) {
   openModal({
     title: '填写首次诊断',
-    subtitle: '提交成功生成正式病历 v1；诊断为空会被护栏阻断',
+    subtitle: '填写诊断后生成病历',
     draftKey: 'diagnosis-first:' + id,
     body: `<form id="modal-form" data-form="diagnosis-first" data-draft="diagnosis-first:${esc(id)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
@@ -1915,7 +1915,7 @@ async function openDiagnosisCorrect(id, prefill = {}) {
   openModal({
     kind: 'diagnosis-correct',
     title: '更正诊断与检查',
-    subtitle: `基于 v${current.version} 追加新版本，旧版本保留`,
+    subtitle: '保存后生成新版本，原记录保留',
     draftKey: 'diagnosis-correct:' + id,
     body: `<form id="modal-form" data-form="diagnosis-correct" data-draft="diagnosis-correct:${esc(id)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
@@ -1939,7 +1939,7 @@ async function openDiagnosisCorrect(id, prefill = {}) {
 function openMedicationAppend(id) {
   openModal({
     title: '追加用药',
-    subtitle: '追加为独立条目；不覆盖既有用药',
+    subtitle: '新增一条用药，不覆盖原记录',
     draftKey: 'med-append:' + id,
     body: `<form id="modal-form" data-form="med-append" data-draft="med-append:${esc(id)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
@@ -1962,7 +1962,7 @@ async function openMedicationCorrect(id, entryRef, prefill = {}) {
   openModal({
     kind: 'med-correct',
     title: '更正用药',
-    subtitle: '关联原条目追加，原项保留',
+    subtitle: '关联原用药，保留原条目',
     draftKey: 'med-correct:' + entryRef,
     body: `<form id="modal-form" data-form="med-correct" data-draft="med-correct:${esc(entryRef)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
@@ -2000,7 +2000,7 @@ async function openAdopt(id, suggestionRef) {
   openModal({
     wide: true,
     title: '采纳建议并写入',
-    subtitle: '采纳会生成新版本或首次病历，并经过当前护栏；建议原文保留',
+    subtitle: '采纳后写入病历，建议原文保留',
     draftKey: 'adopt:' + suggestionRef,
     body: `<form id="modal-form" data-form="adopt" data-draft="adopt:${esc(suggestionRef)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
@@ -2071,7 +2071,7 @@ function openGenerateCandidate() {
   openModal({
     wide: true,
     title: '生成候选',
-    subtitle: '只导入规则、字段和模板定义，不导入真实病历或诊断正文；生成后仍需提交、审批和手动启用',
+    subtitle: '只导入规则和模板，不导入病历内容',
     body: `<form id="modal-form" data-form="generate-candidate" novalidate>
       <div class="field">
         <span class="field-label">控制定义 <b style="color:var(--rust)">*</b></span>
