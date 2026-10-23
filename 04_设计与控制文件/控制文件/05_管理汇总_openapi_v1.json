@@ -1,0 +1,304 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "T22 管理脱敏汇总",
+    "version": "1.0.0",
+    "description": "本批单端点契约，不是全系统OpenAPI。仅管理本店聚合，不返回临床或身份明细。"
+  },
+  "paths": {
+    "/api/reports/store-summary": {
+      "get": {
+        "operationId": "readStoreSummary",
+        "description": "先限当前有效管理账号门店再聚合。无time_range表示全部时间；半开区间。接诊按建档时间，命中告警按校验时间；状态为读取时状态。成功必须持久写审计。",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "time_range",
+            "in": "query",
+            "required": false,
+            "description": "JSON序列化并URL编码。from/to须带时区，from < to。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "from",
+                    "to"
+                  ],
+                  "properties": {
+                    "from": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "to": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "group_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "rule",
+                "handling_state"
+              ],
+              "default": "rule"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "R-SUMMARY；真实空集合为零；无分页、不提供下钻。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "time_range",
+                    "encounter_created_count",
+                    "error_marked_count",
+                    "hit_count",
+                    "alert_count",
+                    "unhandled_count",
+                    "grouped_counts"
+                  ],
+                  "properties": {
+                    "time_range": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "from",
+                        "to"
+                      ],
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "to": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "nullable": true
+                    },
+                    "encounter_created_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "error_marked_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "hit_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "alert_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "unhandled_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "grouped_counts": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "group_by",
+                            "items"
+                          ],
+                          "properties": {
+                            "group_by": {
+                              "type": "string",
+                              "enum": [
+                                "rule"
+                              ]
+                            },
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "rule_ref",
+                                  "hit_count",
+                                  "alert_count",
+                                  "unhandled_count"
+                                ],
+                                "properties": {
+                                  "rule_ref": {
+                                    "type": "string"
+                                  },
+                                  "hit_count": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "alert_count": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "unhandled_count": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "group_by",
+                            "items"
+                          ],
+                          "properties": {
+                            "group_by": {
+                              "type": "string",
+                              "enum": [
+                                "handling_state"
+                              ]
+                            },
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "handling_state",
+                                  "alert_count"
+                                ],
+                                "properties": {
+                                  "handling_state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unhandled",
+                                      "handled"
+                                    ]
+                                  },
+                                  "alert_count": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "角色不符",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "非GET",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "字段、分组或时间非法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "数据库或审计结果未确认",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sessionid"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "ok",
+          "error"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "error": {
+            "type": "object",
+            "required": [
+              "code"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
