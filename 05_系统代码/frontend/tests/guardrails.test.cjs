@@ -219,7 +219,7 @@ const session = (c, role, store, username) => {
     await run(c, `viewAlerts(nodes.view)`);
     const html = run(c, 'nodes.view.innerHTML');
     assert.ok(html.includes('待处理<span class="seg-count">1</span>'));
-    assert.ok(html.includes('全部 2 条'));
+    assert.ok(html.includes('显示 1 / 2 条'));
     results.push('alert tabs expose unhandled/handled/all counts');
   }
 

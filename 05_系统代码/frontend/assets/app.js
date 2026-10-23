@@ -1526,7 +1526,7 @@ async function viewAlerts(view) {
       <div class="seg" role="group" aria-label="处理状态">
         ${[['unhandled', '待处理'], ['handled', '已处理'], ['all', '全部']].map(([k, l]) => `<button type="button" class="${state.alertFilter === k ? 'on' : ''}" data-action="alert-filter" data-filter="${k}">${l}<span class="seg-count">${counts[k]}</span></button>`).join('')}
       </div>
-      <span class="count">当前 ${items.length} 条 · 全部 ${counts.all} 条 · 待处理 ${counts.unhandled} 条</span>
+      <span class="count">显示 ${items.length} / ${counts.all} 条</span>
     </div>
     ${cards || '<div class="list-empty"><b>当前筛选下没有告警</b><p>护栏命中才会生成告警；查看病历不会产生告警。</p></div>'}
     <footer class="page-foot"><span>处理告警不会删除命中事件 · 同一告警只登记一次终态</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
