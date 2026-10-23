@@ -212,6 +212,17 @@ const session = (c, role, store, username) => {
     assert.ok(run(c, `loadingView('合成','detail')`).includes('sk-sheet'));
   }
 
+  {
+    const c = context();
+    session(c, 'doctor', 'A', 'a_doctor');
+    run(c, `api=async()=>({items:[{alert_ref:'a1',handling_state:'unhandled',rule_ref:'SR-01',hit_field:'reason'},{alert_ref:'a2',handling_state:'handled',rule_ref:'SR-02',hit_field:'amount'}]});`);
+    await run(c, `viewAlerts(nodes.view)`);
+    const html = run(c, 'nodes.view.innerHTML');
+    assert.ok(html.includes('待处理<span class="seg-count">1</span>'));
+    assert.ok(html.includes('全部 2 条'));
+    results.push('alert tabs expose unhandled/handled/all counts');
+  }
+
   console.log(JSON.stringify({ ok: true, results }, null, 2));
 })().catch((e) => {
   console.error(e.stack || e);

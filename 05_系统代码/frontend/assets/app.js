@@ -1474,9 +1474,14 @@ async function viewClinicalDetail(view, id) {
 }
 
 async function viewAlerts(view) {
-  const params = state.alertFilter === 'all' ? {} : { handling_state: state.alertFilter };
-  const data = await api('/api/clinical/alerts' + (Object.keys(params).length ? '?' + qs(params) : ''));
-  const items = data.items || [];
+  const data = await api('/api/clinical/alerts');
+  const allItems = data.items || [];
+  const counts = {
+    unhandled: allItems.filter((a) => a.handling_state !== 'handled').length,
+    handled: allItems.filter((a) => a.handling_state === 'handled').length,
+    all: allItems.length
+  };
+  const items = state.alertFilter === 'all' ? allItems : allItems.filter((a) => a.handling_state === state.alertFilter);
   const cards = items.map((a) => {
     const handled = a.handling_state === 'handled';
     const ruleText = RULE_TEXT[a.rule_ref] || '规则命中，请核对对应字段。';
@@ -1519,9 +1524,9 @@ async function viewAlerts(view) {
     </header>
     <div class="toolbar">
       <div class="seg" role="group" aria-label="处理状态">
-        ${[['unhandled', '待处理'], ['handled', '已处理'], ['all', '全部']].map(([k, l]) => `<button type="button" class="${state.alertFilter === k ? 'on' : ''}" data-action="alert-filter" data-filter="${k}">${l}</button>`).join('')}
+        ${[['unhandled', '待处理'], ['handled', '已处理'], ['all', '全部']].map(([k, l]) => `<button type="button" class="${state.alertFilter === k ? 'on' : ''}" data-action="alert-filter" data-filter="${k}">${l}<span class="seg-count">${counts[k]}</span></button>`).join('')}
       </div>
-      <span class="count">共 ${items.length} 条</span>
+      <span class="count">当前 ${items.length} 条 · 全部 ${counts.all} 条 · 待处理 ${counts.unhandled} 条</span>
     </div>
     ${cards || '<div class="list-empty"><b>当前筛选下没有告警</b><p>护栏命中才会生成告警；查看病历不会产生告警。</p></div>'}
     <footer class="page-foot"><span>处理告警不会删除命中事件 · 同一告警只登记一次终态</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
