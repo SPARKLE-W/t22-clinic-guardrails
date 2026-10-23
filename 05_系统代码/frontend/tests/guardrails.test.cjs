@@ -16,6 +16,7 @@ function makeNode() {
     get childNodes() { return this.innerHTML ? [{ __html: this.innerHTML }] : []; },
     querySelector: () => null,
     replaceChildren(...nodes) { this.innerHTML = nodes.map((n) => n.__html || '').join(''); },
+    appendChild() {},
     addEventListener() {},
     getClientRects() { return []; },
     focus() {}
@@ -27,13 +28,15 @@ function context(storage = new Map()) {
     root: makeNode(), 'modal-root': makeNode(), 'toast-root': makeNode(),
     view: makeNode(), main: makeNode()
   };
+  const captured = [];
+  const handlers = {};
   const document = {
     cookie: '', body: { style: {} },
     getElementById: (id) => nodes[id] || null,
     querySelector: (sel) => sel === '#view' ? nodes.view : sel === '.main' ? nodes.main : null,
     querySelectorAll: () => [],
     createElement: () => makeNode(),
-    addEventListener() {}
+    addEventListener: (name, fn) => { handlers[name] = fn; }
   };
   const sessionStorage = {
     setItem(k, v) { storage.set(k, String(v)); sessionStorage[k] = String(v); },
@@ -43,8 +46,9 @@ function context(storage = new Map()) {
   for (const [k, v] of storage) sessionStorage[k] = v;
   const c = vm.createContext({
     document, window: { crypto, addEventListener() {} }, crypto,
+    navigator: { clipboard: { writeText: async (v) => { captured.push(v); } } },
     location: { hash: '' }, history: { replaceState() {} },
-    sessionStorage,
+    sessionStorage, captured, handlers,
     FormData: class {
       constructor(data) { this.data = data; }
       forEach(fn) { Object.entries(this.data).forEach(([k, v]) => fn(v, k)); }
@@ -242,6 +246,58 @@ const session = (c, role, store, username) => {
     html = run(c, 'nodes.view.innerHTML');
     assert.ok(html.includes('显示 1 / 3 条'));
     results.push('audit tabs expose success/refused/validation counts and filter');
+  }
+
+  {
+    const c = context();
+    session(c, 'manager', 'A', 'a_manager');
+    run(c, `state.summaryRange='all'; state.summaryGroup='rule'; api=async()=>({
+      time_range:null, encounter_created_count:12, error_marked_count:2, hit_count:7, alert_count:6, unhandled_count:3,
+      grouped_counts:{group_by:'rule', items:[{rule_ref:'SR-02',hit_count:4,alert_count:3,unhandled_count:1}]}
+    });`);
+    await run(c, `viewSummary(nodes.view)`);
+    let html = run(c, 'nodes.view.innerHTML');
+    assert.ok(html.includes('本店汇总'));
+    assert.ok(html.includes('建档接诊'));
+    assert.ok(html.includes('12'));
+    assert.ok(html.includes('SR-02'));
+    assert.ok(html.includes('按规则'));
+    run(c, `state.summaryGroup='handling_state'; api=async()=>({time_range:null, encounter_created_count:0,error_marked_count:0,hit_count:0,alert_count:0,unhandled_count:0, grouped_counts:{group_by:'handling_state', items:[{handling_state:'unhandled',alert_count:0}]}});`);
+    await run(c, `viewSummary(nodes.view)`);
+    html = run(c, 'nodes.view.innerHTML');
+    assert.ok(html.includes('按处理状态'));
+    assert.ok(html.includes('未处理'));
+    results.push('management summary renders five counts and both grouping modes');
+  }
+
+  {
+    const c = context();
+    session(c, 'manager', 'A', 'a_manager');
+    for (const payload of [{}, { encounter_created_count: 0 }, {
+      time_range: null, encounter_created_count: 0, error_marked_count: 0,
+      hit_count: 0, alert_count: 0, unhandled_count: 0,
+      grouped_counts: { group_by: 'rule', items: [{ rule_ref: 'SR-02', hit_count: 'bad', alert_count: 0, unhandled_count: 0 }] }
+    }]) {
+      run(c, `api=async()=>(${JSON.stringify(payload)});`);
+      let error;
+      try { await run(c, 'viewSummary(nodes.view)'); } catch (e) { error = e; }
+      assert.equal(error && error.code, 'UNPARSEABLE');
+      assert.ok(!run(c, 'nodes.view.innerHTML').includes('空集合是真实零'));
+    }
+    results.push('malformed HTTP 200 summary never becomes a true zero');
+  }
+
+  {
+    const c = context();
+    const full = '11111111-2222-4333-8444-555555555555';
+    assert.ok(run(c, `copyRef('${full}', '候选编号')`).includes(`data-value="${full}"`));
+    assert.equal((source.match(/case 'copy-ref'/g) || []).length, 1);
+    await run(c, `handlers.click({ target: { closest: () => ({ dataset: { action: 'copy-ref', value: '${full}' } }) } })`);
+    assert.equal(run(c, 'captured[0]'), full);
+    const before = run(c, 'captured.length');
+    await run(c, `handlers.click({ target: { closest: () => ({ dataset: { action: 'copy-ref', ref: '${full}' } }) } })`);
+    assert.equal(run(c, 'captured.length'), before);
+    results.push('F-01 copy-ref uses data-value, one handler case, empty data-ref does not report success');
   }
 
   console.log(JSON.stringify({ ok: true, results }, null, 2));

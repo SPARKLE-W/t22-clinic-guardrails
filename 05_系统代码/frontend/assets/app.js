@@ -21,6 +21,8 @@ const state = {
   selectedCandidate: '',
   auditFilters: { record_ref: '', operator_ref: '' },
   auditOutcome: 'all',
+  summaryRange: 'all',
+  summaryGroup: 'rule',
   modal: null,
   reloadLatest: null,
   bootError: null
@@ -100,7 +102,9 @@ const RULE_TEXT = {
 };
 const FIELD_TEXT = {
   diagnosis: '诊断', examination: '检查', reason: '更正 / 采纳理由', amount: '剂量', unit: '单位',
-  drug: '药品', original_entry_ref: '关联原条目', content_digest: '内容摘要', template: '字段模板'
+  drug: '药品', original_entry_ref: '关联原条目', content_digest: '内容摘要', template: '字段模板',
+  complaint: '主诉', doctor_id: '接诊医生', pet_id: '宠物编号', species: '物种', pet_name: '宠物昵称',
+  append_only: '只追加'
 };
 
 /* ---------------- 工具 ---------------- */
@@ -346,7 +350,7 @@ async function write(path, body, options = {}) {
     const retryable = e.code === 'NETWORK' || e.code === 'UNPARSEABLE' || e.status === 0 || e.status === 408 || e.status === 429 || e.status >= 500;
     if (!retryable) endOp(ctx);
     if (e.status === 409 && wasPending) {
-      e.message = '上次提交结果未确认，已沿用同一幂等键防止重复；服务端拒绝重复或版本已变。请刷新核对最新记录后再重新提交。';
+      e.message = '提交结果还没确认。请刷新核对最新记录，再决定是否重试。';
     }
     throw e;
   }
@@ -379,7 +383,7 @@ function routeAllowed(route) {
   const allowed = {
     frontdesk: ['receptions'],
     doctor: ['clinical', 'alerts'],
-    manager: ['governance', 'audit']
+    manager: ['governance', 'summary', 'audit']
   }[role] || [];
   return allowed.includes(route.name);
 }
@@ -428,7 +432,7 @@ function openModal({ title, subtitle = '', body = '', foot = '', wide = false, k
   document.body.style.overflow = 'hidden';
   if (draftKey && pendingFor(draftKey)) {
     const bodyEl = $('.modal-body', modalRoot);
-    bodyEl.insertAdjacentHTML('afterbegin', '<div class="pending-note">上次提交结果未确认；本次沿用同一幂等键，服务端会拒绝重复或版本已变。请先核对最新记录。</div>');
+    bodyEl.insertAdjacentHTML('afterbegin', '<div class="pending-note">上次提交结果还没确认。请先核对最新记录，避免重复提交。</div>');
   }
   if (draftKey) {
     const form = $('form[data-draft]', modalRoot);
@@ -572,29 +576,56 @@ function textareaHtml(name, value, opts = {}) {
 function renderLogin() {
   state.renderSeq++;
   closeModal();
-  const notice = state.bootError ? `<div class="login-error">无法核对会话：${esc(state.bootError.message)} 仍可直接尝试登录。</div>` : '';
+  const notice = state.bootError ? `<div class="login-error">暂时无法连接工作台，请稍后重试。</div>` : '';
+  const today = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date());
   root.innerHTML = `
   <div class="login">
     <section class="login-brand">
       <div class="login-top">
         <span class="mark">护</span>
-        <span class="brand-text"><b>门诊护栏</b><small>CLINIC GUARDRAILS</small></span>
+        <span class="brand-text"><b>门诊护栏</b><small>宠物门诊 · 内部工作台</small></span>
       </div>
-      <div class="login-quote">
-        <p class="login-title">让每一次写入都有边界，<br>让每一次读取都有留痕。</p>
-        <p class="login-line">接诊、病历、用药与治理共用一个受控工作台。前台只写接待，医生只写本人接诊，管理只读治理与脱敏审计；更正保留原项，阻断不写病历。</p>
-        <ol class="principles">
-          <li class="principle"><b>01</b><div><strong>角色边界</strong><span>字段与数据范围由账号、门店和接待/接诊归属判定，页面隐藏按钮不代替服务端鉴权。</span></div></li>
-          <li class="principle"><b>02</b><div><strong>版本不可覆盖</strong><span>更正生成新版本，原项与旧版本保留；历史按当时模板解释。</span></div></li>
-          <li class="principle"><b>03</b><div><strong>阻断即留痕</strong><span>护栏命中时病历不改变，校验事件与告警保留，由负责医生核对处理。</span></div></li>
-        </ol>
+      <div class="login-hero">
+        <div class="login-art" aria-hidden="true">
+          <svg viewBox="0 0 520 280" role="presentation">
+            <circle class="art-wash" cx="118" cy="132" r="92"/>
+            <circle class="art-soft" cx="390" cy="118" r="72"/>
+            <g class="art-line">
+              <path d="M96 62 82 22l42 20"/>
+              <path d="M150 52l20-32 22 38"/>
+              <path d="M76 76c52-34 118-24 138 26 20 50-10 92-64 98-54 6-96-28-96-70 0-24 8-42 22-54Z"/>
+              <path d="M112 116c5 5 11 5 16 0M142 116c5 5 11 5 16 0"/>
+              <path d="m132 132-4 6h8Z" fill="currentColor" stroke="none"/>
+              <path d="M122 142c4 4 10 4 14 0"/>
+              <path d="M108 132H84M108 140H84M156 132h24M156 140h24"/>
+              <circle cx="390" cy="126" r="58"/>
+              <path d="M342 100c-28-8-42 18-30 50 8 22 28 24 40 8M438 100c28-8 42 18 30 50-8 22-28 24-40 8"/>
+              <path d="M370 116c4 4 10 4 14 0M398 116c4 4 10 4 14 0"/>
+              <ellipse cx="390" cy="142" rx="22" ry="15"/>
+              <path d="m390 136-5 5h10Z" fill="currentColor" stroke="none"/>
+              <path d="M390 148v5M380 152c3 5 17 5 20 0"/>
+              <path d="M238 66c10-12 28-8 28 6 0 12-16 20-28 28-12-8-28-16-28-28 0-14 18-18 28-6Z"/>
+              <path d="M238 82v26M228 94h20" class="art-cross"/>
+            </g>
+            <g class="art-paws">
+              <path d="M64 230c0-6 5-11 11-11s11 5 11 11-5 11-11 11-11-5-11-11Z"/>
+              <path d="M54 214c0-4 3-7 7-7s7 3 7 7-3 7-7 7-7-3-7-7ZM73 210c0-4 3-7 7-7s7 3 7 7-3 7-7 7-7-3-7-7ZM88 218c0-4 3-7 7-7s7 3 7 7-3 7-7 7-7-3-7-7Z"/>
+              <path d="M430 226c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9Z"/>
+              <path d="M421 212c0-3 3-6 6-6s6 3 6 6-3 6-6 6-6-3-6-6ZM437 208c0-3 3-6 6-6s6 3 6 6-3 6-6 6-6-3-6-6ZM451 215c0-3 3-6 6-6s6 3 6 6-3 6-6 6-6-3-6-6Z"/>
+            </g>
+          </svg>
+        </div>
+        <h1 class="login-title">把每一次接诊，<br>记得更清楚。</h1>
+        <p class="login-date">${esc(today)} · 门诊工作中</p>
+        <p class="login-line">从接待到病历，从用药到复查。让门店里的每一份就诊记录都完整、清楚、找得到。</p>
+        <div class="login-tags"><span>接诊记录</span><span>用药留痕</span><span>复查可查</span></div>
       </div>
-      <div class="login-foot"><span>T22 · 门店内部工作台</span><span>授权账号登录</span></div>
+      <div class="login-foot"><span>T22 · 门店内部工作台</span><span>仅限授权账号使用</span></div>
     </section>
     <section class="login-side">
       <div class="login-card">
-        <h1>登录工作台</h1>
-        <p class="hint">使用门店分配的内部账号。宠物主人没有登录端。</p>
+        <h2>登录工作台</h2>
+        <p class="hint">使用门店分配的账号继续。</p>
         ${notice}
         <form class="login-form" data-form="login" novalidate>
           <div class="field">
@@ -608,7 +639,7 @@ function renderLogin() {
           <div class="login-error hide" id="login-error" role="alert"></div>
           <button class="btn primary" type="submit">登录</button>
         </form>
-        <p class="login-notice">会话 Cookie 为 HttpOnly，页面不保存口令。登录后按当前账号重新核验角色与数据范围；读取和写入都会记录审计事件。</p>
+        <p class="login-help">忘记密码请联系门店管理员。</p>
       </div>
     </section>
   </div>`;
@@ -662,8 +693,9 @@ function navConfig() {
     ];
   }
   return [
-    { key: 'governance', num: '01', label: '治理台', href: '#/governance' },
-    { key: 'audit', num: '02', label: '脱敏审计', href: '#/audit' }
+    { key: 'governance', num: '01', label: '规则管理', href: '#/governance' },
+    { key: 'summary', num: '02', label: '本店汇总', href: '#/summary' },
+    { key: 'audit', num: '03', label: '操作记录', href: '#/audit' }
   ];
 }
 
@@ -686,9 +718,9 @@ function railListHtml() {
     const sb = state.sidebar || {};
     const items = Array.isArray(sb.items) ? sb.items.slice(0, 5) : [];
     return `
-      <div class="rail-title">治理摘要 <span>GEN ${esc(sb.generation ?? '—')}</span></div>
+      <div class="rail-title">规则概览 <span>版本 ${esc(sb.generation ?? '—')}</span></div>
       <div class="rail-list">
-        <div class="case-mini"><b>当前生效</b><p>${sb.active_candidate_ref ? shortRef(sb.active_candidate_ref) : '尚无生效候选'}</p><time>候选 ${items.length} 个</time></div>
+        <div class="case-mini"><b>当前规则</b><p>${sb.active_candidate_ref ? shortRef(sb.active_candidate_ref) : '尚未启用规则'}</p><time>候选 ${items.length} 条</time></div>
         ${items.map((c) => `<a class="case-mini ${state.selectedCandidate === c.candidate_ref ? 'on' : ''}" href="#/governance/${esc(c.candidate_ref)}">
           <b><i class="${c.state === 'approved' ? '' : c.state === 'rejected' ? 'err' : 'wait'}"></i>${esc(CANDIDATE_STATES[c.state] || c.state)} · ${esc(c.version || '')}</b>
           <p>${esc(shortRef(c.candidate_ref))}</p><time>${esc(fmtTime(c.created_at))}</time>
@@ -735,7 +767,7 @@ function renderShell() {
     <header class="masthead">
       <div class="brand" style="display:flex;align-items:center;gap:11px">
         <span class="mark">护</span>
-        <span class="brand-text"><b>门诊护栏</b><small>CLINIC GUARDRAILS</small></span>
+        <span class="brand-text"><b>门诊护栏</b><small>宠物门诊工作台</small></span>
       </div>
       <div class="mast-meta">
         <span class="store">${esc(s.store_name || s.store_ref)}</span>
@@ -751,8 +783,8 @@ function renderShell() {
         <nav class="rail-nav">${navHtml()}</nav>
         <div class="rail-block">${railListHtml()}</div>
         <div class="rail-foot">
-          <span id="rail-policy">${s.role === 'manager' ? '生效 ' + esc(sb.generation ?? '—') : '受控读取'}</span>
-          <span>会话 8 小时</span>
+          <span id="rail-policy">${s.role === 'manager' ? '规则版本 ' + esc(sb.generation ?? '—') : '门诊工作中'}</span>
+          <span>${esc(new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric', weekday: 'short' }).format(new Date()))}</span>
         </div>
       </aside>
       <main class="main"><div class="page" id="view" tabindex="-1"></div></main>
@@ -770,8 +802,8 @@ function updateShell() {
   if (store) store.textContent = state.session.store_name || state.session.store_ref;
   const policy = $('#rail-policy');
   if (policy) policy.textContent = state.session.role === 'manager'
-    ? '生效 ' + ((state.sidebar && state.sidebar.generation) ?? '—')
-    : '受控读取';
+    ? '规则版本 ' + ((state.sidebar && state.sidebar.generation) ?? '—')
+    : '门诊工作中';
 }
 
 async function enterApp() {
@@ -783,6 +815,8 @@ async function enterApp() {
   state.alertFilter = 'unhandled';
   state.auditFilters = { record_ref: '', operator_ref: '' };
   state.auditOutcome = 'all';
+  state.summaryRange = 'all';
+  state.summaryGroup = 'rule';
   state.selectedCandidate = '';
   purgeForeignDrafts();
   await loadSidebar();
@@ -820,6 +854,7 @@ function setActiveNav() {
       (key === 'clinical' && route.name === 'clinical') ||
       (key === 'alerts' && route.name === 'alerts') ||
       (key === 'governance' && route.name === 'governance') ||
+      (key === 'summary' && route.name === 'summary') ||
       (key === 'audit' && route.name === 'audit');
     a.classList.toggle('on', on);
     if (on) a.setAttribute('aria-current', 'page');
@@ -858,10 +893,17 @@ function viewError(e) {
   const message = e instanceof ApiError ? e.message : (e && e.message) || '页面暂无法载入。';
   const title = e && e.status === 403 ? '无权读取该目标' : e && e.status === 401 ? '登录已失效' : '页面暂无法载入';
   const action = e && e.status === 401 ? '<button class="btn" data-action="relogin">重新登录</button>' : `<button class="btn ghost" data-action="reload">刷新</button><a class="btn ghost" href="${homeFor()}">返回工作区</a>`;
+  const note = e && e.status === 403
+    ? '当前账号没有此操作权限。可以返回工作区，或刷新后重试。'
+    : e && e.status === 401
+      ? '请重新登录后再继续。'
+      : e && e.code === 'UNPARSEABLE'
+        ? '接口返回的数据不完整；请刷新，若持续出现请联系管理员。'
+        : '可以返回工作区，或刷新后重试。';
   return `<div class="view"><section class="error-sheet">
     <div class="error-head"><h1>${esc(title)}</h1><span class="stamp blocked">${e && e.status === 403 ? '拒绝读取' : '未完成'}</span></div>
     <p>${esc(message)}</p>
-    <p class="read-note">服务端已拒绝或未能完成本次读取；页面不展示任何未获准的正文。可以返回工作区，或刷新后重新核对当前账号范围。</p>
+    <p class="read-note">${esc(note)}</p>
     <div class="error-actions">${action}</div>
   </section></div>`;
 }
@@ -894,6 +936,7 @@ async function renderRoute() {
     else if (route.name === 'alerts') await viewAlerts(target);
     else if (route.name === 'governance' && !route.id) await viewGovernance(target);
     else if (route.name === 'governance') await viewGovernance(target, route.id);
+    else if (route.name === 'summary') await viewSummary(target);
     else if (route.name === 'audit') await viewAudit(target);
     else target.innerHTML = viewError(new Error('未知页面。'));
   } catch (e) {
@@ -953,7 +996,7 @@ async function viewReceptions(view) {
     <header class="page-head">
       <div>
         <h1>接诊台</h1>
-        <p class="lede">仅显示 ${esc(state.session.store_name)} 中由当前账号接待的资料。前台读取范围内不含诊断、检查与处方正文。</p>
+        <p class="lede">今天由你接待的宠物。点开记录查看接待资料与版本。</p>
       </div>
       <div class="head-side"><div class="head-actions"><button class="btn ghost" data-action="reload">刷新</button><a class="btn primary" href="#/receptions/new">新建接诊</a></div></div>
     </header>
@@ -962,8 +1005,8 @@ async function viewReceptions(view) {
         ${['today', '7d', 'all'].map((r) => `<button type="button" class="${state.range === r ? 'on' : ''}" data-action="range" data-range="${r}">${r === 'today' ? '今日' : r === '7d' ? '近 7 天' : '全部'}</button>`).join('')}
       </div>
       <form class="lookup" data-form="lookup-reception" novalidate>
-        <label for="lookup-ref">按完整编号定位</label>
-        <input id="lookup-ref" name="ref" placeholder="粘贴完整 UUID（36 位）" autocomplete="off">
+        <label for="lookup-ref">按编号查找</label>
+        <input id="lookup-ref" name="ref" placeholder="输入宠物编号" autocomplete="off">
         <button class="btn sm" type="submit">定位</button>
       </form>
       <span class="count">共 ${total} 条 · 第 ${page} / ${pages} 页</span>
@@ -977,7 +1020,7 @@ async function viewReceptions(view) {
       <span class="count">第 ${page} / ${pages} 页</span>
       <button class="btn sm ghost" data-action="reception-page" data-page="${page + 1}" ${page >= pages ? 'disabled' : ''}>下一页</button>
     </div>` : ''}
-    <footer class="page-foot"><span>前台只处理本店由其接待的资料 · 读取已记录审计</span><span>第 ${page} 页</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 接待记录可追溯</span><span>第 ${page} 页</span></footer>
   </div>`;
 }
 
@@ -1006,24 +1049,24 @@ async function viewNewReception(view) {
     <header class="page-head">
       <div>
         <h1>建立接诊</h1>
-        <p class="lede">先确认宠物身份，再填写物种、主诉和接诊医生。接待资料一经建立即固定归属，后续更正保留原版本。</p>
+        <p class="lede">先确认宠物身份，再记录本次到院情况。</p>
       </div>
-      <div class="head-side"><div class="head-actions"><button class="btn primary" type="submit" form="new-reception-form" ${noDoctor ? 'disabled' : ''}>建立接诊</button><span class="stamp">归属固定</span></div></div>
+      <div class="head-side"><div class="head-actions"><button class="btn primary" type="submit" form="new-reception-form" ${noDoctor ? 'disabled' : ''}>建立接诊</button><span class="stamp">前台</span></div></div>
     </header>
     <div class="detail-grid">
       <form id="new-reception-form" class="sheet form-sheet" data-form="new-reception" data-draft="new-reception" novalidate>
-        ${pending ? `<div class="pending-note">上次建立接诊的结果未确认；本次沿用同一幂等键，服务端会拒绝重复或内容冲突。请先回接诊台核对，再决定是否重试。</div>` : ''}
+        ${pending ? `<div class="pending-note">上次建立接诊的结果还没确认。请先回接诊台核对，避免重复建档。</div>` : ''}
         <div class="form-grid">
           <div class="field wide">
             <span class="field-label">宠物身份 <b style="color:var(--rust)">*</b></span>
             <div class="choice-row">
               <label class="choice ${identity === 'new' ? 'on' : ''}">
                 <input type="radio" name="identity" value="new" ${identity === 'new' ? 'checked' : ''}>
-                <b>新宠物</b><span>由系统生成本店宠物编号，建立新的身份档案。</span>
+                <b>新宠物</b><span>第一次到店的宠物。</span>
               </label>
               <label class="choice ${identity === 'known' ? 'on' : ''}">
                 <input type="radio" name="identity" value="known" ${identity === 'known' ? 'checked' : ''}>
-                <b>已知宠物</b><span>输入已有编号并核验可关联，不返回历史病历。</span>
+                <b>已知宠物</b><span>之前来过，用宠物编号找到档案。</span>
               </label>
             </div>
           </div>
@@ -1032,9 +1075,9 @@ async function viewNewReception(view) {
             <label for="f-pet_ref">新宠物编号</label>
             <div class="input-row">
               <input id="f-pet_ref" name="pet_ref" class="mono" type="text" value="${esc(petRef)}" readonly>
-              <button class="btn sm ghost" type="button" data-action="regen-pet">重新生成</button>
+              <button class="btn sm ghost" type="button" data-action="regen-pet">换一个</button>
             </div>
-            <p class="hint">编号由浏览器生成并提交，作为本店宠物档案标识；不包含主人信息。</p>
+            <p class="hint">自动生成，无需手动填写。</p>
           </div>
 
           <div class="field wide ${identity === 'known' ? '' : 'hide'}" id="known-pet-block">
@@ -1053,36 +1096,35 @@ async function viewNewReception(view) {
           </div>
 
           <div class="field">
-            <label for="f-pet_name">宠物名称（可选）</label>
+            <label for="f-pet_name">宠物昵称（可选）</label>
             <input id="f-pet_name" name="pet_name" type="text" maxlength="100" value="${esc(petName)}" placeholder="现场称呼，可留空">
           </div>
 
           <div class="field wide">
             <label for="f-complaint">主诉 <b style="color:var(--rust)">*</b><span class="char-count" id="complaint-count">${complaint.length} / 10000</span></label>
-            <textarea id="f-complaint" name="complaint" maxlength="10000" placeholder="记录到院时的主要诉求，不写诊断结论">${esc(complaint)}</textarea>
+            <textarea id="f-complaint" name="complaint" maxlength="10000" placeholder="描述宠物这次到院的情况">${esc(complaint)}</textarea>
           </div>
 
           <div class="field wide">
             <label for="f-doctor_ref">接诊医生 <b style="color:var(--rust)">*</b></label>
             <select id="f-doctor_ref" name="doctor_ref" ${noDoctor ? 'disabled' : ''}>
-              ${doctors.map((d) => `<option value="${esc(d.doctor_ref)}" ${String(d.doctor_ref) === String(doctorRef) ? 'selected' : ''}>${esc(d.display_name)} · 账号 #${esc(d.doctor_ref)}</option>`).join('')}
+              ${doctors.map((d) => `<option value="${esc(d.doctor_ref)}" ${String(d.doctor_ref) === String(doctorRef) ? 'selected' : ''}>${esc(d.display_name)}</option>`).join('')}
             </select>
-            <p class="hint">${noDoctor ? '本店暂无可用接诊医生，暂时不能建档。' : '列表来自本店当前有效医生账号，提交时由服务端再次核验。'}</p>
+            <p class="hint">${noDoctor ? '本店暂无可用接诊医生，暂时不能建档。' : '选择本次接诊的医生。'}</p>
           </div>
         </div>
         <div class="form-actions">
           <button class="btn primary" type="submit" ${noDoctor ? 'disabled' : ''}>建立接诊</button>
           <a class="btn ghost" href="#/receptions">取消</a>
-          <span class="form-note">提交成功后生成接待记录 v1，并记录审计事件。</span>
+          <span class="form-note">提交后会生成接待记录。</span>
         </div>
       </form>
       <aside class="side">
-        <section class="panel"><div class="panel-head"><span class="panel-label">建档规则</span></div>
+        <section class="panel"><div class="panel-head"><span class="panel-label">小提示</span></div>
           <div class="aside-note"><ol>
-            <li><b>身份先定</b>新宠物生成新编号；已知宠物必须在本店可关联，核验不返回旧病历。</li>
-            <li><b>归属固定</b>建档后接待人与接诊医生固定，复诊或参数修改不能改写历史归属。</li>
-            <li><b>更正留痕</b>资料有误由前台提交更正，生成新版本并保留原版本。</li>
-            <li><b>正文隔离</b>前台不读取临床诊断、检查与处方正文。</li>
+            <li><b>第一次到店</b>选“新宠物”，会自动生成本店编号。</li>
+            <li><b>之前来过</b>选“已知宠物”，输入编号后核验。</li>
+            <li><b>资料有误</b>在接待详情里提交更正，原记录会保留。</li>
           </ol></div>
         </section>
       </aside>
@@ -1111,7 +1153,7 @@ async function viewReceptionDetail(view, id) {
     <header class="page-head">
       <div>
         <h1>${esc(r.pet_name || '未命名宠物')}</h1>
-        <p class="lede">${esc(r.species || '未记录物种')} · 接待资料由 ${esc(state.session.username)} 读取。</p>
+        <p class="lede">${esc(r.species || '未记录物种')} · 本次接诊资料</p>
       </div>
       <div class="head-side">
         <div class="head-meta">
@@ -1142,7 +1184,7 @@ async function viewReceptionDetail(view, id) {
           <div class="block-body">
             <div class="block-head"><h2>接待资料</h2><em>前台可更正；医生只读</em></div>
             <dl class="fields">
-              <div><dt>宠物名称</dt><dd>${esc(r.pet_name || '未填写')}</dd></div>
+              <div><dt>宠物昵称</dt><dd>${esc(r.pet_name || '未填写')}</dd></div>
               <div><dt>物种</dt><dd>${esc(r.species || '—')}</dd></div>
               <div class="wide"><dt>主诉</dt><dd>${esc(r.complaint || '')}</dd></div>
               <div><dt>宠物编号</dt><dd>${refCode(r.pet_ref)}</dd></div>
@@ -1185,18 +1227,18 @@ async function viewReceptionDetail(view, id) {
       </section>
 
       <aside class="side">
-        <section class="panel"><div class="panel-head"><span class="panel-label">前台读取范围</span></div>
-          <div class="panel-body"><p class="read-note">本页只返回接待资料与版本。临床诊断、检查、用药与建议正文由接诊医生范围读取，前台页面不提供入口，直接请求也会被服务端拒绝。</p></div>
+        <section class="panel"><div class="panel-head"><span class="panel-label">本次接待</span></div>
+          <div class="panel-body"><p class="read-note">接待资料由前台维护；诊断、检查与用药由医生记录。</p></div>
         </section>
-        <section class="panel"><div class="panel-head"><span class="panel-label">读取留痕</span></div>
-          <div class="panel-body"><div class="read-line"><i></i><span>encounter.read · 成功</span></div><p class="read-note">本次读取已写入审计事件；审计只记录获准元数据，不复制主诉正文。</p></div>
+        <section class="panel"><div class="panel-head"><span class="panel-label">版本</span></div>
+          <div class="panel-body"><div class="read-line"><i></i><span>已保留 ${vs.length} 个版本</span></div><p class="read-note">更正会生成新版本，原记录仍可核对。</p></div>
         </section>
-        <section class="panel"><div class="panel-head"><span class="panel-label">更正规则</span></div>
-          <div class="panel-body"><p class="read-note">更正必须绑定当前版本并填写理由；提交后生成新版本，旧版本仍可核对。误建标记与更正分开操作，均不删除记录。</p></div>
+        <section class="panel"><div class="panel-head"><span class="panel-label">小提示</span></div>
+          <div class="panel-body"><p class="read-note">资料有误时提交更正并写明原因；误建标记不会删除原记录。</p></div>
         </section>
       </aside>
     </div>
-    <footer class="page-foot"><span>接诊归属固定 · 前台只处理本店由其接待的资料</span><span>${esc(fmtFull(r.created_at))}</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 接待记录可追溯</span><span>${esc(fmtFull(r.created_at))}</span></footer>
   </div>`;
 }
 
@@ -1244,7 +1286,7 @@ async function viewClinicalList(view) {
     <header class="page-head">
       <div>
         <h1>诊疗队列</h1>
-        <p class="lede">仅显示本店由当前账号负责接诊的临床内容。告警持续保留，查看不会自动标记完成。</p>
+        <p class="lede">今天由你负责的接诊。点开记录写病历、处理告警。</p>
       </div>
       <div class="head-side"><div class="head-actions">
         <button class="btn ghost sm" data-action="reload">刷新</button>
@@ -1266,7 +1308,7 @@ async function viewClinicalList(view) {
       <span class="count">第 ${page} / ${pages} 页</span>
       <button class="btn sm ghost" data-action="clinical-page" data-page="${page + 1}" ${page >= pages ? 'disabled' : ''}>下一页</button>
     </div>` : ''}
-    <footer class="page-foot"><span>接诊归属固定 · 只读取本人负责范围 · 读取已记录审计</span><span>第 ${page} 页</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 诊疗记录可追溯</span><span>第 ${page} 页</span></footer>
   </div>`;
 }
 
@@ -1346,7 +1388,7 @@ async function viewClinicalDetail(view, id) {
       <div class="rule"><b>${esc(a.rule_ref)}</b><span>命中 ${esc(FIELD_TEXT[a.hit_field] || a.hit_field)}（${esc(a.hit_field)}）</span></div>
       <p>${a.record_ref ? '关联病历 ' + esc(shortRef(a.record_ref, 8)) : '关联首次写入校验'} · 待处理</p>
       <a class="btn sm danger" href="#/alerts" style="margin-bottom:4px">去告警处理</a>
-    </div>`).join('') : `<p class="read-note">当前没有未处理告警。查看告警或读取病历都不会自动把告警标为已处理。</p>`;
+    </div>`).join('') : `<p class="read-note">当前没有未处理告警。</p>`;
 
   view.innerHTML = `<div class="view">
     <div class="crumbs"><a href="#/clinical">诊疗队列</a><span>/</span>接诊 ${esc(shortRef(r.encounter_ref, 8))}</div>
@@ -1387,7 +1429,7 @@ async function viewClinicalDetail(view, id) {
             <div class="block-head"><h2>接诊资料</h2><em>前台录入 · 临床侧只读</em></div>
             <dl class="fields">
               <div><dt>物种</dt><dd>${esc(r.species || '—')}</dd></div>
-              <div><dt>宠物名称</dt><dd>${esc(r.pet_name || '未填写')}</dd></div>
+              <div><dt>宠物昵称</dt><dd>${esc(r.pet_name || '未填写')}</dd></div>
               <div class="wide"><dt>主诉</dt><dd>${esc(r.complaint || '')}</dd></div>
               <div><dt>宠物编号</dt><dd>${refCode(r.pet_ref)}</dd></div>
               <div><dt>接诊归属</dt><dd>${esc(state.session.username)} · 本店负责</dd></div>
@@ -1405,7 +1447,7 @@ async function viewClinicalDetail(view, id) {
               <div class="exam"><b>检查记录</b><span>${esc(c.examination || '未填写')}</span></div>`
             : `<div class="block-head"><h2>诊断与检查</h2><em>尚无正式病历</em></div>
               <div class="empty-block"><b>${locked ? '误建记录没有正式病历' : '尚无正式病历'}</b>
-                <p>${locked ? '误建记录只允许对已有内容纠错，不能新增独立治疗。' : '首次诊断提交后生成 v1；诊断为空会被护栏阻断，病历不会生成。'}</p>
+                <p>${locked ? '误建记录只允许对已有内容纠错，不能新增独立治疗。' : '填写诊断后生成病历；内容不完整时不会保存。'}</p>
                 ${locked ? '' : `<button class="btn primary" data-action="diagnosis-first" data-id="${esc(r.encounter_ref)}">填写首次诊断</button>`}
               </div>`}
           </div>
@@ -1454,7 +1496,7 @@ async function viewClinicalDetail(view, id) {
             <div class="check"><i class="st ${chain.length ? '' : 'idle'}"></i>用药条目<span>${chain.length}</span></div>
             <div class="check ${recAlerts.some((a) => a.handling_state === 'unhandled') ? 'bad' : ''}"><i class="st ${recAlerts.some((a) => a.handling_state === 'unhandled') ? 'miss' : 'idle'}"></i>本记录未处理告警<span>${recAlerts.filter((a) => a.handling_state === 'unhandled').length}</span></div>
             <div class="check"><i class="st ${adoptions.length ? '' : 'idle'}"></i>已采纳建议<span>${adoptions.length}</span></div>
-            <p class="read-note" style="margin-top:9px">首次诊断须有诊断内容；更正须绑定当前版本并填写理由；护栏命中时病历不改变并生成告警。</p>
+            <p class="read-note" style="margin-top:9px">更正保留原版本；护栏命中不会改写病历。</p>
           </div>
         </section>
 
@@ -1465,13 +1507,9 @@ async function viewClinicalDetail(view, id) {
         <section class="panel"><div class="panel-head"><span class="panel-label">已保存建议</span><span class="panel-count">${suggestions.length}</span></div>
           <div class="panel-body">${suggestionsHtml}</div>
         </section>
-
-        <section class="panel"><div class="panel-head"><span class="panel-label">读取留痕</span></div>
-          <div class="panel-body"><div class="read-line"><i></i><span>clinical.read · 成功</span></div><p class="read-note">本次读取已记录审计目标；审计不复制诊断正文。</p></div>
-        </section>
       </aside>
     </div>
-    <footer class="page-foot"><span>临床读取只向负责医生开放 · 采纳与更正同事务记录责任</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 本次病历可追溯</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
   </div>`;
 }
 
@@ -1491,15 +1529,15 @@ async function viewAlerts(view) {
     return `<article class="alert-card ${handled ? '' : 'unhandled'}">
       <div class="alert-head">
         <span class="rule">${esc(a.rule_ref)}</span>
-        <span class="field">命中字段 ${esc(a.hit_field)}</span>
+        <span class="field">命中：${esc(fieldText)}</span>
         ${handled ? chip('已处理', 'ok') : chip('待处理', 'danger')}
         <span class="when">${handled ? esc(fmtTime(a.handled_at)) : '尚未处理'}</span>
       </div>
       <div class="alert-body">
         <div>
           <div class="txt"><b>${esc(ruleText)}</b>
-            <div class="alert-specific">命中字段 <code>${esc(a.hit_field)}</code>（${esc(fieldText)}）${a.record_ref ? ' · 关联病历 ' + `<code>${esc(shortRef(a.record_ref, 8))}</code>` : ' · 关联首次写入校验'}${handled ? ' · 处理结果：' + esc(a.handling_result || '未填写') : ''}</div>
-            <p class="note">${handled ? '告警已登记处理；命中事件与原始阻断保留。' : '告警列表不展开字段值；打开病历核对被拦内容，再登记处理结果。查看告警不会自动标记完成。'}</p>
+            <div class="alert-specific">命中字段 ${esc(fieldText)}${a.record_ref ? ' · 关联病历 ' + `<code>${esc(shortRef(a.record_ref, 8))}</code>` : ' · 关联首次写入校验'}${handled ? ' · 处理结果：' + esc(a.handling_result || '未填写') : ''}</div>
+            <p class="note">${handled ? '已处理；原始告警保留。' : '为保护病历，列表只显示字段名。请打开病历核对，再登记处理结果。'}</p>
           </div>
           <div class="alert-actions">
             <button class="btn sm" data-action="locate-alert" data-alert="${esc(a.alert_ref)}">打开病历核对</button>
@@ -1520,7 +1558,7 @@ async function viewAlerts(view) {
     <header class="page-head">
       <div>
         <h1>告警队列</h1>
-        <p class="lede">护栏命中的写入事件。未处理告警持续保留；处理须由负责医生登记结果，记录真实账号与时间。</p>
+        <p class="lede">需要你核对的告警。处理后记录处理人和结果。</p>
       </div>
       <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button></div></div>
     </header>
@@ -1531,7 +1569,7 @@ async function viewAlerts(view) {
       <span class="count">显示 ${items.length} / ${counts.all} 条</span>
     </div>
     ${cards || '<div class="list-empty"><b>当前筛选下没有告警</b><p>护栏命中才会生成告警；查看病历不会产生告警。</p></div>'}
-    <footer class="page-foot"><span>处理告警不会删除命中事件 · 同一告警只登记一次终态</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 告警处理可追溯</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
   </div>`;
 }
 
@@ -1567,21 +1605,26 @@ function definitionBody(detail) {
         <div class="block-head"><h2>定义摘要</h2><em>内容摘要 ${esc(shortRef(detail.content_version_ref, 8))}</em></div>
         <p class="definition-meta"><span><b>${redlines.length}</b> 条安全红线</span><span><b>${coding.length}</b> 项编码约束</span><span><b>${Object.keys(projections).length}</b> 组字段投影</span><span>定义 <b>${esc(d.version || '—')}</b></span></p>
         ${diffs.length ? `<p class="note">相对当前生效：${diffs.map((k) => chip(DIFF_LABELS[k] || k, 'warn')).join(' ')}</p>` : ''}
-        <ul class="rule-list" style="margin-top:8px">${redlineRows || '<li>未登记安全红线</li>'}</ul>
-        ${redlines.length && redlines.every((r) => r.may_weaken === false) ? `<p class="note">以上 ${redlines.length} 条均标记为不可削弱；逐条列出便于核对，不再重复挂标签。</p>` : ''}
+        <details class="details" style="margin-top:10px">
+          <summary>查看 ${redlines.length} 条安全红线<em>核对用</em></summary>
+          <div class="inner">
+            <ul class="rule-list">${redlineRows || '<li>未登记安全红线</li>'}</ul>
+            ${redlines.length && redlines.every((r) => r.may_weaken === false) ? `<p class="note">以上 ${redlines.length} 条均标记为不可削弱；逐条列出便于核对，不再重复挂标签。</p>` : ''}
+          </div>
+        </details>
       </div>
     </div>
 
     <div class="block">
       <div class="block-body">
-        <div class="block-head"><h2>字段与模板</h2><em>定义由受信任发行资产编译</em></div>
+        <div class="block-head"><h2>字段与模板</h2><em>本店当前使用的字段范围</em></div>
         <div class="fields">
-          <div><dt>接诊必填</dt><dd>${(reception.required || []).map(esc).join('、') || '—'}</dd></div>
-          <div><dt>接诊可选</dt><dd>${(reception.optional || []).map(esc).join('、') || '—'}</dd></div>
-          <div><dt>临床必填</dt><dd>${(clinical.required || []).map(esc).join('、') || '—'}</dd></div>
-          <div><dt>临床可选</dt><dd>${(clinical.optional || []).map(esc).join('、') || '—'}</dd></div>
-          <div><dt>用药存储</dt><dd>${esc((clinical.medication && clinical.medication.storage) || '—')}</dd></div>
-          <div><dt>更正要求</dt><dd>${((clinical.medication && clinical.medication.correction_requires) || []).map(esc).join('、') || '—'}</dd></div>
+          <div><dt>接诊必填</dt><dd>${(reception.required || []).map((f) => esc(FIELD_TEXT[f] || f)).join('、') || '—'}</dd></div>
+          <div><dt>接诊可选</dt><dd>${(reception.optional || []).map((f) => esc(FIELD_TEXT[f] || f)).join('、') || '—'}</dd></div>
+          <div><dt>临床必填</dt><dd>${(clinical.required || []).map((f) => esc(FIELD_TEXT[f] || f)).join('、') || '—'}</dd></div>
+          <div><dt>临床可选</dt><dd>${(clinical.optional || []).map((f) => esc(FIELD_TEXT[f] || f)).join('、') || '—'}</dd></div>
+          <div><dt>用药存储</dt><dd>${esc(FIELD_TEXT[(clinical.medication && clinical.medication.storage)] || (clinical.medication && clinical.medication.storage) || '—')}</dd></div>
+          <div><dt>更正要求</dt><dd>${((clinical.medication && clinical.medication.correction_requires) || []).map((f) => esc(FIELD_TEXT[f] || f)).join('、') || '—'}</dd></div>
         </div>
         <details class="details" style="margin-top:10px"><summary>展开完整模板定义<em>JSON</em></summary><div class="inner"><pre class="json">${esc(JSON.stringify(templates, null, 2))}</pre></div></details>
       </div>
@@ -1645,7 +1688,7 @@ async function viewGovernance(view, id) {
   let selected = id || state.selectedCandidate || (items[0] && items[0].candidate_ref) || '';
   if (!selected) {
     view.innerHTML = `<div class="view">
-      <header class="page-head"><div><h1>治理台</h1><p class="lede">本店规则与模板的生成、提交、审批和启用是四个独立步骤；批准不会自动启用。</p></div>
+      <header class="page-head"><div><h1>规则管理</h1><p class="lede">生成、提交、审批、启用，每一步都单独记录。</p></div>
       <div class="head-side"><div class="head-actions"><button class="btn primary" data-action="generate-candidate">生成候选</button></div></div></header>
       <div class="list-empty"><b>本店暂无候选</b><p>导入控制定义并生成候选，随后仍需提交、人工审批和手动启用。</p><div style="margin-top:14px"><button class="btn" data-action="generate-candidate">生成候选</button></div></div>
     </div>`;
@@ -1662,14 +1705,14 @@ async function viewGovernance(view, id) {
 
   view.innerHTML = `<div class="view">
     <header class="page-head">
-      <div><h1>治理台</h1><p class="lede">本店候选的生成、提交、审批和启用分别记录。批准绑定具体内容摘要；启用前再次核对生效序号。</p></div>
+      <div><h1>规则管理</h1><p class="lede">候选的生成、审批与启用分别记录；批准不会自动启用。</p></div>
       <div class="head-side"><div class="head-actions"><button class="btn primary" data-action="generate-candidate">生成候选</button></div></div>
     </header>
     <div class="stat-strip">
-      <div class="stat"><b>${esc(list.generation ?? '—')}</b><span>生效序号</span></div>
-      <div class="stat"><b>${list.active_candidate_ref ? esc(shortRef(list.active_candidate_ref, 8)) : '—'}</b><span>当前生效</span></div>
+      <div class="stat"><b>${esc(list.generation ?? '—')}</b><span>规则版本</span></div>
+      <div class="stat"><b>${list.active_candidate_ref ? esc(shortRef(list.active_candidate_ref, 8)) : '—'}</b><span>当前规则</span></div>
       <div class="stat"><b>${esc(displayState)}</b><span>候选状态</span></div>
-      <div class="stat"><b>${(detail.definition_differences || []).length ? detail.definition_differences.length + ' 项' : '无变化'}</b><span>相对生效</span></div>
+      <div class="stat"><b>${(detail.definition_differences || []).length ? detail.definition_differences.length + ' 项' : '无变化'}</b><span>与当前规则</span></div>
     </div>
     <div class="gov-grid">
       <aside class="sheet">
@@ -1686,13 +1729,82 @@ async function viewGovernance(view, id) {
           ${definitionBody(detail)}
           <div class="block"><div class="block-body">
             <div class="block-head"><h2>本次操作</h2><em>每次操作单独填写理由</em></div>
-            <div class="head-actions">${candidateActions(detail)}<button class="btn sm ghost" data-action="copy-ref" data-ref="${esc(detail.candidate_ref)}">复制候选编号</button></div>
+            <div class="head-actions">${candidateActions(detail)}${copyRef(detail.candidate_ref, '候选编号')}</div>
             <p class="note">批准绑定当前内容摘要 ${esc(shortRef(detail.content_version_ref, 8))}；内容变化后原批准不可继续使用。启用需当前生效序号 ${esc(detail.generation)}。</p>
           </div></div>
         </div>
       </section>
     </div>
-    <footer class="page-foot"><span>批准不等于启用 · 不伪造他人审批 · 定义与批准内容绑定</span><span>GEN ${esc(list.generation)}</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 规则变更可追溯</span><span>规则版本 ${esc(list.generation)}</span></footer>
+  </div>`;
+}
+
+async function viewSummary(view) {
+  const params = { group_by: state.summaryGroup };
+  const tr = rangeParam(state.summaryRange);
+  if (tr) params.time_range = tr;
+  const d = await api('/api/reports/store-summary?' + qs(params));
+  const counts = ['encounter_created_count', 'error_marked_count', 'hit_count', 'alert_count', 'unhandled_count'];
+  const validCount = (value) => Number.isSafeInteger(value) && value >= 0;
+  const groupBy = d && d.grouped_counts && d.grouped_counts.group_by;
+  const groups = d && d.grouped_counts && d.grouped_counts.items;
+  const validRange = d && (d.time_range === null || (d.time_range &&
+    typeof d.time_range.from === 'string' && typeof d.time_range.to === 'string' &&
+    Number.isFinite(Date.parse(d.time_range.from)) && Number.isFinite(Date.parse(d.time_range.to))));
+  const validGroups = Array.isArray(groups) && groups.every((g) => g && (
+    groupBy === 'rule'
+      ? typeof g.rule_ref === 'string' && validCount(g.hit_count) && validCount(g.alert_count) && validCount(g.unhandled_count)
+      : ['unhandled', 'handled'].includes(g.handling_state) && validCount(g.alert_count)));
+  if (!d || !counts.every((key) => validCount(d[key])) || !validRange ||
+      groupBy !== state.summaryGroup || !validGroups) {
+    throw new ApiError('UNPARSEABLE', 200, null, '汇总数据不完整，请刷新后重试。');
+  }
+  const rangeLabel = d.time_range
+    ? `${esc(fmtTime(d.time_range.from))} — ${esc(fmtTime(d.time_range.to))}`
+    : '全部时间';
+  const groupsHtml = groups.length ? groups.map((g) => groupBy === 'handling_state'
+    ? `<tr><td>${esc(g.handling_state === 'unhandled' ? '未处理' : '已处理')}</td><td class="num">${esc(g.alert_count)}</td></tr>`
+    : `<tr><td><code>${esc(g.rule_ref)}</code><br><span class="muted">${esc(RULE_TEXT[g.rule_ref] || '规则命中')}</span></td><td class="num">${esc(g.hit_count)}</td><td class="num">${esc(g.alert_count)}</td><td class="num">${esc(g.unhandled_count)}</td></tr>`).join('')
+    : `<tr><td colspan="${groupBy === 'handling_state' ? 2 : 4}"><div class="list-empty"><b>当前范围没有命中或告警</b><p>空集合是真实零，不是接口失败。</p></div></td></tr>`;
+
+  view.innerHTML = `<div class="view">
+    <header class="page-head">
+      <div><h1>本店汇总</h1><p class="lede">本店的接诊与告警概览。数字来自门诊记录，不展示病例明细。</p></div>
+      <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button></div></div>
+    </header>
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="统计时间范围">
+        ${[['all', '全部'], ['today', '今日'], ['7d', '近 7 天']].map(([k, l]) => `<button type="button" class="${state.summaryRange === k ? 'on' : ''}" data-action="summary-range" data-range="${k}">${l}</button>`).join('')}
+      </div>
+      <div class="seg" role="group" aria-label="告警分组">
+        ${[['rule', '按规则'], ['handling_state', '按处理状态']].map(([k, l]) => `<button type="button" class="${state.summaryGroup === k ? 'on' : ''}" data-action="summary-group" data-group="${k}">${l}</button>`).join('')}
+      </div>
+      <span class="count">${rangeLabel} · 只读</span>
+    </div>
+    <div class="stat-strip summary-stats">
+      <div class="stat"><b>${esc(d.encounter_created_count)}</b><span>建档接诊</span></div>
+      <div class="stat"><b>${esc(d.error_marked_count)}</b><span>误建</span></div>
+      <div class="stat"><b>${esc(d.hit_count)}</b><span>命中</span></div>
+      <div class="stat"><b>${esc(d.alert_count)}</b><span>告警</span></div>
+      <div class="stat"><b>${esc(d.unhandled_count)}</b><span>未处理</span></div>
+    </div>
+    <div class="detail-grid summary-grid">
+      <section class="sheet">
+        <header class="sheet-head">
+          <div><h2 class="sheet-title">${groupBy === 'handling_state' ? '按处理状态' : '按规则'}</h2><span class="sheet-sub">STORE SUMMARY · 当前状态 · 不可下钻</span></div>
+          <span class="stamp">只读</span>
+        </header>
+        <div class="table-wrap"><table class="table summary-table">
+          <thead>${groupBy === 'handling_state' ? '<tr><th>处理状态</th><th class="num">告警数</th></tr>' : '<tr><th>规则</th><th class="num">命中</th><th class="num">告警</th><th class="num">未处理</th></tr>'}</thead>
+          <tbody>${groupsHtml}</tbody>
+        </table></div>
+      </section>
+      <aside class="side">
+        <section class="panel"><div class="panel-head"><span class="panel-label">统计说明</span></div><div class="panel-body"><p class="read-note">接诊按建档时间，告警按校验时间；未处理/已处理是当前状态。</p></div></section>
+        <section class="panel"><div class="panel-head"><span class="panel-label">范围</span></div><div class="panel-body"><p class="read-note">只显示本店汇总，不提供病例或告警明细。</p></div></section>
+      </aside>
+    </div>
+    <footer class="page-foot"><span>门诊护栏 · 本店经营概览</span><span>${esc(rangeLabel)}</span></footer>
   </div>`;
 }
 
@@ -1714,19 +1826,19 @@ async function viewAudit(view) {
   const rows = items.map((e) => `<tr>
     <td class="nowrap"><code>${esc(fmtFull(e.event_at))}</code></td>
     <td class="nowrap">${e.operator_ref ? '#' + esc(e.operator_ref) : '—'} <span class="muted">/ ${esc(ROLES[e.operator_role] || e.operator_role || '—')}</span></td>
-    <td class="nowrap">${esc(ACTIONS[e.action] || e.action)}<br><code>${esc(e.action)}</code></td>
+    <td class="nowrap" title="${esc(e.action)}">${esc(ACTIONS[e.action] || e.action)}</td>
     <td class="nowrap"><span class="out-${esc(e.outcome)}">${esc(OUTCOMES[e.outcome] || e.outcome)}</span>${e.normalized_reason && e.normalized_reason !== 'COMPLETED' ? `<br><code>${esc(e.normalized_reason)}</code>` : ''}</td>
     <td>${e.target_ref ? refCode(e.target_ref, 8) : '—'}</td>
   </tr>`).join('');
 
   view.innerHTML = `<div class="view">
     <header class="page-head">
-      <div><h1>脱敏审计</h1><p class="lede" style="max-width:64ch">最近 100 条获准事件元数据。只含账号、动作、结果、原因与目标编号，不含临床正文或自由理由。</p></div>
+      <div><h1>操作记录</h1><p class="lede">本店最近的访问与操作记录。</p></div>
       <div class="head-side"><span class="chip muted">只读</span></div>
     </header>
     <form class="toolbar" data-form="audit" novalidate>
-      <div class="field" style="min-width:260px"><label for="audit-record">按病历编号</label><input id="audit-record" name="record_ref" class="mono" type="text" value="${esc(f.record_ref)}" placeholder="UUID（可选）" autocomplete="off"></div>
-      <div class="field" style="min-width:200px"><label for="audit-operator">按操作者编号</label><input id="audit-operator" name="operator_ref" class="mono" type="text" value="${esc(f.operator_ref)}" placeholder="数字（可选）" autocomplete="off"></div>
+      <div class="field" style="min-width:260px"><label for="audit-record">病历编号</label><input id="audit-record" name="record_ref" class="mono" type="text" value="${esc(f.record_ref)}" placeholder="输入病历编号（可选）" autocomplete="off"></div>
+      <div class="field" style="min-width:200px"><label for="audit-operator">操作者</label><input id="audit-operator" name="operator_ref" class="mono" type="text" value="${esc(f.operator_ref)}" placeholder="输入操作者编号（可选）" autocomplete="off"></div>
       <button class="btn primary sm" type="submit" style="align-self:flex-end;margin-bottom:2px">查询</button>
       <button class="btn ghost sm" type="button" data-action="audit-reset" style="align-self:flex-end;margin-bottom:2px">重置</button>
       <span class="count">共 ${allItems.length} 条</span>
@@ -1739,11 +1851,11 @@ async function viewAudit(view) {
     </div>
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>结果 / 标准原因</th><th>目标</th></tr></thead>
-        <tbody>${rows || '<tr><td colspan="5"><div class="list-empty"><b>没有符合条件的事件</b><p>审计只返回本店范围，最多 100 条。</p></div></td></tr>'}</tbody>
+        <thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>结果</th><th>目标</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="5"><div class="list-empty"><b>没有符合条件的事件</b><p>本店最多显示最近 100 条。</p></div></td></tr>'}</tbody>
       </table>
     </div>
-    <footer class="page-foot"><span>元数据只读 · 不含临床正文 · 事件不可在此修改</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 访问记录可追溯</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
   </div>`;
 }
 
@@ -1761,14 +1873,14 @@ async function openReceptionCorrect(id, prefill = {}) {
   openModal({
     kind: 'reception-correct',
     title: '更正接待资料',
-    subtitle: `接诊 ${shortRef(id, 8)} · 提交后生成 v${latest.version + 1}，原版本保留`,
+    subtitle: '提交后生成新版本，原记录保留',
     draftKey: 'reception-correct:' + id,
     body: `<form id="modal-form" data-form="reception-correct" data-draft="reception-correct:${esc(id)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
       <input type="hidden" name="original_version_ref" value="${esc(latest.version_ref)}">
       <div class="form-grid">
         ${fieldWrap('物种', 'species', inputHtml('species', species, { maxlength: 100 }), '必填，最多 100 字。', true)}
-        ${fieldWrap('宠物名称', 'pet_name', inputHtml('pet_name', petName, { maxlength: 100 }), '可选，最多 100 字。')}
+        ${fieldWrap('宠物昵称', 'pet_name', inputHtml('pet_name', petName, { maxlength: 100 }), '可选，最多 100 字。')}
         <div class="field wide"><label for="f-complaint">主诉 <b style="color:var(--rust)">*</b></label>${textareaHtml('complaint', complaint, { maxlength: 10000 })}</div>
         <div class="field wide"><label for="f-reason">更正理由 <b style="color:var(--rust)">*</b></label>${textareaHtml('reason', reason, { maxlength: 2000, placeholder: '说明需要更正的内容与依据' })}<p class="hint">理由与操作账号一并保留，可在版本链核对。</p></div>
       </div>
@@ -1806,7 +1918,7 @@ async function openReceptionMisreg(id) {
 function openDiagnosisFirst(id) {
   openModal({
     title: '填写首次诊断',
-    subtitle: '提交成功生成正式病历 v1；诊断为空会被护栏阻断',
+    subtitle: '填写诊断后生成病历',
     draftKey: 'diagnosis-first:' + id,
     body: `<form id="modal-form" data-form="diagnosis-first" data-draft="diagnosis-first:${esc(id)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
@@ -1830,7 +1942,7 @@ async function openDiagnosisCorrect(id, prefill = {}) {
   openModal({
     kind: 'diagnosis-correct',
     title: '更正诊断与检查',
-    subtitle: `基于 v${current.version} 追加新版本，旧版本保留`,
+    subtitle: '保存后生成新版本，原记录保留',
     draftKey: 'diagnosis-correct:' + id,
     body: `<form id="modal-form" data-form="diagnosis-correct" data-draft="diagnosis-correct:${esc(id)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
@@ -1854,7 +1966,7 @@ async function openDiagnosisCorrect(id, prefill = {}) {
 function openMedicationAppend(id) {
   openModal({
     title: '追加用药',
-    subtitle: '追加为独立条目；不覆盖既有用药',
+    subtitle: '新增一条用药，不覆盖原记录',
     draftKey: 'med-append:' + id,
     body: `<form id="modal-form" data-form="med-append" data-draft="med-append:${esc(id)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
@@ -1863,7 +1975,7 @@ function openMedicationAppend(id) {
         ${fieldWrap('剂量', 'amount', inputHtml('amount', '', { maxlength: 256, placeholder: '如 1' }), '', true)}
         ${fieldWrap('单位', 'unit', inputHtml('unit', '', { maxlength: 100, placeholder: '如 片、ml' }), '', true)}
       </div>
-      <p class="note">须已有正式病历。追加后通过受控读取刷新用药链，响应本身不内嵌正文。</p>
+      <p class="note">有正式病历后才能追加用药。保存后会刷新用药记录。</p>
     </form>`,
     foot: `<button class="btn ghost" data-action="close-modal">取消</button><button class="btn primary" type="submit" form="modal-form">追加</button>`
   });
@@ -1877,7 +1989,7 @@ async function openMedicationCorrect(id, entryRef, prefill = {}) {
   openModal({
     kind: 'med-correct',
     title: '更正用药',
-    subtitle: '关联原条目追加，原项保留',
+    subtitle: '关联原用药，保留原条目',
     draftKey: 'med-correct:' + entryRef,
     body: `<form id="modal-form" data-form="med-correct" data-draft="med-correct:${esc(entryRef)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
@@ -1915,7 +2027,7 @@ async function openAdopt(id, suggestionRef) {
   openModal({
     wide: true,
     title: '采纳建议并写入',
-    subtitle: '采纳会生成新版本或首次病历，并经过当前护栏；建议原文保留',
+    subtitle: '采纳后写入病历，建议原文保留',
     draftKey: 'adopt:' + suggestionRef,
     body: `<form id="modal-form" data-form="adopt" data-draft="adopt:${esc(suggestionRef)}" novalidate>
       <input type="hidden" name="encounter_ref" value="${esc(id)}">
@@ -1969,7 +2081,7 @@ async function openDecline(id, suggestionRef) {
 function openResolveAlert(alertRef) {
   openModal({
     title: '登记告警处理结果',
-    subtitle: '处理人、时间与结果由服务端记录；同一告警只能登记一次',
+    subtitle: '系统会自动记录处理人和时间；同一告警只能登记一次',
     draftKey: 'resolve:' + alertRef,
     body: `<form id="modal-form" data-form="resolve-alert" data-draft="resolve:${esc(alertRef)}" novalidate>
       <input type="hidden" name="alert_ref" value="${esc(alertRef)}">
@@ -1986,7 +2098,7 @@ function openGenerateCandidate() {
   openModal({
     wide: true,
     title: '生成候选',
-    subtitle: '只导入规则、字段和模板定义，不导入真实病历或诊断正文；生成后仍需提交、审批和手动启用',
+    subtitle: '只导入规则和模板，不导入病历内容',
     body: `<form id="modal-form" data-form="generate-candidate" novalidate>
       <div class="field">
         <span class="field-label">控制定义 <b style="color:var(--rust)">*</b></span>
@@ -1996,8 +2108,8 @@ function openGenerateCandidate() {
           <span class="file-name" id="definition-file-name">未选择文件</span>
         </div>
         <div class="file-alt">没有文件？<button class="btn-link" type="button" data-action="example-definition">载入本店演示定义</button></div>
-        <div class="definition-summary" id="definition-summary">尚未载入定义。选择 JSON 文件，或载入本店演示定义；这里会先显示这次要生成什么。</div>
-        <p class="hint">定义中的 scope.store_id 必须等于当前门店；客户端不做信任判断，由服务端编译和校验。</p>
+        <div class="definition-summary" id="definition-summary">尚未载入定义。选择 JSON 或演示定义，这里会显示本次生成内容。</div>
+        <p class="hint">导入规则与模板，不导入病历内容。</p>
       </div>
       <details class="details" style="margin:10px 0 12px"><summary>查看或编辑定义 JSON<em id="definition-size"></em></summary><div class="inner"><textarea id="definition-json" name="definition" style="min-height:180px" placeholder="粘贴定义 JSON，或选择文件"></textarea></div></details>
       <div class="field"><label for="f-reason">生成理由 <b style="color:var(--rust)">*</b></label>${textareaHtml('reason', '', { maxlength: 2000, placeholder: '说明规则或模板调整的来源与目的' })}</div>
@@ -2017,7 +2129,7 @@ function updateDefinitionSummary() {
   if (size) size.textContent = raw ? raw.length + ' 字符' : '';
   box.classList.remove('bad');
   if (!raw) {
-    box.textContent = '尚未载入定义。选择 JSON 文件，或载入本店演示定义；这里会先显示这次要生成什么。';
+    box.textContent = '尚未载入定义。选择 JSON 或演示定义，这里会显示本次生成内容。';
     return;
   }
   let d;
@@ -2434,13 +2546,17 @@ document.addEventListener('click', async (e) => {
       case 'clinical-page': state.clinicalPage = Number(btn.dataset.page) || 1; await renderRoute(); return;
       case 'skip-main': { const target = $('#view'); if (target) { target.focus(); target.scrollIntoView({ block: 'start' }); } return; }
       case 'copy-ref': {
-        try { await copyText(btn.dataset.value || ''); toast('已复制完整编号'); }
+        const value = btn.dataset.value || '';
+        if (!value) { toast('没有可复制的编号', 'err'); return; }
+        try { await copyText(value); toast('已复制完整编号'); }
         catch (e) { toast(e.message || '复制失败', 'err', '可以手动选择编号。'); }
         return;
       }
       case 'alert-filter': state.alertFilter = btn.dataset.filter; await renderRoute(); return;
       case 'audit-reset': state.auditFilters = { record_ref: '', operator_ref: '' }; state.auditOutcome = 'all'; await renderRoute(); return;
       case 'audit-outcome': state.auditOutcome = btn.dataset.outcome || 'all'; await renderRoute(); return;
+      case 'summary-range': state.summaryRange = btn.dataset.range || 'all'; await renderRoute(); return;
+      case 'summary-group': state.summaryGroup = btn.dataset.group === 'handling_state' ? 'handling_state' : 'rule'; await renderRoute(); return;
       case 'regen-pet': {
         const input = $('#f-pet_ref');
         if (input) { input.value = uuid(); const form = input.form; if (form) saveDraft(form.dataset.draft, form); }
@@ -2461,11 +2577,6 @@ document.addEventListener('click', async (e) => {
           line.className = 'verify-line ' + (res.associable ? 'ok' : 'bad');
           line.textContent = res.associable ? '可关联：该编号属于本店宠物，可在本店建档。' : '不可关联：本店没有该宠物编号。';
         } catch (err) { line.className = 'verify-line bad'; line.textContent = err.message; }
-        return;
-      }
-      case 'copy-ref': {
-        try { await navigator.clipboard.writeText(btn.dataset.ref || ''); toast('编号已复制', 'ok'); }
-        catch (err) { toast('复制失败，请手动选择编号。', 'err'); }
         return;
       }
       case 'reception-correct': await openReceptionCorrect(btn.dataset.id); return;
