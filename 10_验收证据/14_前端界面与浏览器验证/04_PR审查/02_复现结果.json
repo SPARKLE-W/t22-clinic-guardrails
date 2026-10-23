@@ -1,0 +1,38 @@
+{
+  "head": "9d059a087ff126d7429eff53746e1efae22066c5",
+  "source_sha256": "8eece20b14223d3c8c61d7ba03b4e3b711a8810ad932226a8f4d913c05fa14ba",
+  "environment": "v24.14.1",
+  "scope": "Exact PR source in isolated Node VM with synthetic API/DOM/storage; no live DB writes.",
+  "results": [
+    {
+      "case": "cross_store_draft_after_logout",
+      "reproduced": true,
+      "detail": "Store B new-reception form renders Store A complaint after real logout handler."
+    },
+    {
+      "case": "uncertain_retry_after_reload",
+      "reproduced": true,
+      "detail": "Input survives in sessionStorage; Idempotency-Key changes on reload. Same-page retry correctly retains its key."
+    },
+    {
+      "case": "unescaped_adopted_examination",
+      "reproduced": true,
+      "detail": "Stored adopted_content.examination reaches innerHTML as an executable img/onerror element, rather than text. VM verifies generated HTML, not event execution."
+    },
+    {
+      "case": "doctor_page_2_inaccessible",
+      "reproduced": true,
+      "detail": "51 total; only first 50 rendered; no next-page or full-reference lookup control on doctor list."
+    },
+    {
+      "case": "marked_encounter_medication_correction_hidden",
+      "reproduced": true,
+      "detail": "Error-marked encounter retains diagnosis correction but removes all linked medication correction controls, contrary to SRS C-07."
+    },
+    {
+      "case": "stale_route_response",
+      "reproduced": true,
+      "detail": "Route remains B, but late A response overwrites body with patient A and A-targeting action buttons."
+    }
+  ]
+}

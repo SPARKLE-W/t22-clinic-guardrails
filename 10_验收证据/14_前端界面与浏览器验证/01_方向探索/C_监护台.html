@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>门诊护栏 · 监护台方向</title>
+<style>
+:root{
+  --bg:#0C1110; --panel:#121917; --panel2:#0F1614; --line:#26322E; --line2:#1B2522;
+  --text:#E6EDE9; --muted:#93A39B; --dim:#6C7C75;
+  --green:#6FE3A8; --green-dim:#1E3A2E; --amber:#F0B24C; --amber-dim:#3A2E17;
+  --rust:#FF7A66; --rust-dim:#3A1E19;
+  --mono:"Cascadia Mono","Consolas",monospace;
+  --sans:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:12px/1.55 var(--sans);overflow:hidden}
+button{font:inherit;cursor:pointer}
+code{font-family:var(--mono)}
+
+.app{height:100vh;display:flex;flex-direction:column}
+.top{height:42px;flex:0 0 42px;display:flex;align-items:center;gap:18px;padding:0 16px;
+  border-bottom:1px solid var(--line);background:var(--panel2)}
+.brand{display:flex;align-items:center;gap:9px;font-size:13px;letter-spacing:.1em}
+.brand i{width:8px;height:8px;background:var(--green);display:block;box-shadow:0 0 0 3px var(--green-dim)}
+.top .ctx{display:flex;gap:16px;color:var(--dim);font:10.5px var(--mono);letter-spacing:.06em}
+.top .ctx b{color:var(--muted);font-weight:400}
+.top .right{margin-left:auto;display:flex;align-items:center;gap:14px;font:10.5px var(--mono);color:var(--dim)}
+.live{display:flex;align-items:center;gap:6px;color:var(--green)}
+.live i{width:5px;height:5px;background:var(--green);border-radius:50%;display:block}
+
+.body{flex:1;display:flex;min-height:0}
+.rail{width:56px;flex:0 0 56px;border-right:1px solid var(--line);background:var(--panel2);
+  display:flex;flex-direction:column;align-items:center;padding-top:10px;gap:4px}
+.rail a{width:40px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  text-decoration:none;color:var(--dim);border:1px solid transparent;font-size:10px}
+.rail a b{font-size:13px;font-weight:400;color:var(--muted)}
+.rail a:hover{border-color:var(--line);color:var(--text)}
+.rail a.on{background:var(--panel);border-color:var(--line);color:var(--green)}
+.rail a.on b{color:var(--green)}
+.rail .badge{margin-top:2px;font:9px var(--mono);color:var(--rust);border:1px solid var(--rust);padding:0 3px}
+.rail .sp{flex:1}
+.rail .ver{font:8.5px var(--mono);color:var(--dim);writing-mode:vertical-rl;letter-spacing:.14em;margin-bottom:12px}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.cmd{height:76px;flex:0 0 76px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:20px;padding:0 20px}
+.cmd .id{font:10px var(--mono);color:var(--dim);letter-spacing:.08em;margin-bottom:4px}
+.cmd h1{margin:0;font-size:20px;letter-spacing:.02em;font-weight:600;display:flex;align-items:center;gap:10px}
+.cmd h1 span{font:10px var(--mono);color:var(--green);border:1px solid var(--green);padding:1px 5px;letter-spacing:.08em}
+.cmd .sub{margin:4px 0 0;color:var(--muted);font-size:11.5px}
+.cmd .stats{margin-left:auto;display:flex;gap:0;border:1px solid var(--line)}
+.stat{padding:7px 14px;border-right:1px solid var(--line);min-width:82px}
+.stat:last-child{border-right:0}
+.stat b{display:block;font:17px/1.1 var(--mono);color:var(--text)}
+.stat span{font-size:9.5px;color:var(--dim);letter-spacing:.1em}
+.stat.warn b{color:var(--rust)}
+.cmd .ops{display:flex;gap:6px;margin-left:8px}
+.btn{background:transparent;border:1px solid var(--line);color:var(--text);padding:6px 12px;font-size:11.5px}
+.btn:hover{border-color:var(--green);color:var(--green)}
+.btn.primary{background:var(--green);border-color:var(--green);color:#08120D;font-weight:600}
+.btn.primary:hover{background:#8AF0BD;color:#08120D}
+.btn.danger{border-color:var(--rust);color:var(--rust)}
+.btn.danger:hover{background:var(--rust);color:#1A0C09}
+.btn.tiny{padding:3px 8px;font-size:10.5px}
+
+.cols{flex:1;display:grid;grid-template-columns:282px minmax(0,1fr) 304px;min-height:0}
+.col{min-height:0;overflow:auto;border-right:1px solid var(--line)}
+.col:last-child{border-right:0}
+.sech{height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+  border-bottom:1px solid var(--line);font:9.5px var(--mono);letter-spacing:.14em;color:var(--dim);background:var(--panel2)}
+.sech .n{color:var(--muted)}
+
+.queue{padding:6px}
+.q{display:block;text-decoration:none;color:var(--text);padding:9px 10px;border:1px solid transparent;border-bottom-color:var(--line2)}
+.q:hover{background:var(--panel);border-color:var(--line)}
+.q.on{background:var(--panel);border-color:var(--green)}
+.q .t{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600}
+.q .t i{width:5px;height:5px;background:var(--green);display:block;flex:0 0 5px}
+.q .t i.w{background:var(--amber)}
+.q .t i.e{background:var(--rust)}
+.q .t time{margin-left:auto;font:9px var(--mono);color:var(--dim);font-weight:400}
+.q p{margin:3px 0 0;color:var(--muted);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q .m{margin-top:4px;font:9px var(--mono);color:var(--dim);letter-spacing:.04em}
+.qfoot{padding:10px 14px;border-top:1px solid var(--line);font:9px var(--mono);color:var(--dim);display:flex;justify-content:space-between}
+
+.rec{padding:0 18px 18px}
+.sec{padding:14px 0;border-bottom:1px solid var(--line2)}
+.sec:last-child{border-bottom:0}
+.sec h2{margin:0 0 10px;font:10px var(--mono);letter-spacing:.14em;color:var(--dim);font-weight:400;display:flex;justify-content:space-between}
+.sec h2 em{font-style:normal;color:var(--muted)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin:0}
+.kv .wide{grid-column:1/-1}
+dt{font:9px var(--mono);letter-spacing:.1em;color:var(--dim);margin-bottom:1px}
+dd{margin:0;font-size:11.5px;color:var(--text);overflow-wrap:anywhere}
+.dx{font-size:14px;line-height:1.75;margin:0;padding:10px 12px;border:1px solid var(--line);background:var(--panel);color:#F2F7F3}
+.exam{margin-top:7px;display:flex;gap:10px;font-size:11px;color:var(--muted)}
+.exam b{color:var(--text);font-weight:600;white-space:nowrap}
+.chain{list-style:none;margin:0;padding:0;font:10.5px var(--mono)}
+.chain li{display:grid;grid-template-columns:16px 1fr auto;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line2);align-items:baseline}
+.chain li:last-child{border-bottom:0}
+.chain .mk{color:var(--green)}
+.chain .mk.c{color:var(--amber)}
+.chain .nm{color:var(--text);font-family:var(--sans);font-size:11.5px}
+.chain .amt{color:var(--muted);margin-left:6px}
+.chain .why{grid-column:2/-1;color:var(--dim);font-size:9.5px;padding-left:0}
+.chain time{color:var(--dim);font-size:9px}
+.timeline{list-style:none;margin:0;padding:0}
+.tl{display:grid;grid-template-columns:34px 1fr auto;gap:8px;padding:5px 0;position:relative}
+.tl .v{font:9.5px var(--mono);color:var(--green);border:1px solid var(--line);display:grid;place-items:center;height:18px}
+.tl p{margin:0;font-size:11px}
+.tl small{color:var(--dim);font-size:9.5px;display:block}
+.tl time{font:9px var(--mono);color:var(--dim)}
+.rec-foot{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap}
+
+.side .box{border-bottom:1px solid var(--line);padding:12px 14px}
+.side .box h3{margin:0 0 9px;font:9.5px var(--mono);letter-spacing:.14em;color:var(--dim);font-weight:400;display:flex;justify-content:space-between}
+.side .box h3 b{color:var(--rust);font-weight:400}
+.check{display:grid;grid-template-columns:1fr auto;gap:6px;padding:5px 0;font-size:11px;border-bottom:1px dashed var(--line2)}
+.check:last-child{border-bottom:0}
+.check span{font:9px var(--mono);color:var(--green)}
+.check.bad span{color:var(--rust)}
+.alert{border:1px solid var(--rust);background:var(--rust-dim);padding:9px 10px;margin-top:9px}
+.alert .h{display:flex;justify-content:space-between;align-items:baseline}
+.alert b{color:var(--rust);font:11px var(--mono)}
+.alert .f{font-size:9.5px;color:#E0A294}
+.alert p{margin:6px 0;font-size:10.5px;color:#F0C4BA;line-height:1.5}
+.alert time{display:block;font:9px var(--mono);color:#C08579;margin-bottom:8px}
+.alert .btn{width:100%;text-align:center}
+.sugg{border:1px solid var(--line);background:var(--panel);padding:9px 10px}
+.sugg .src{font:9px var(--mono);color:var(--amber);letter-spacing:.04em;margin-bottom:5px}
+.sugg p{margin:0 0 3px;font-size:10.8px}
+.sugg p span{color:var(--dim);font-size:9px;margin-right:4px}
+.sugg .row{display:flex;gap:5px;margin-top:8px}
+.audit{font:9px var(--mono);color:var(--dim);line-height:1.8}
+.audit b{color:var(--muted);font-weight:400}
+.foot{height:24px;flex:0 0 24px;border-top:1px solid var(--line);background:var(--panel2);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;font:8.5px var(--mono);color:var(--dim);letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><i></i>门诊护栏</div>
+    <div class="ctx"><span>STORE <b>A店（演示）</b></span><span>ROLE <b>医生</b></span><span>POLICY <b>0.2 / GEN 1</b></span></div>
+    <div class="right">
+      <span class="live"><i></i>SESSION</span>
+      <span>a_doctor</span>
+      <span>09:28:41</span>
+    </div>
+  </header>
+
+  <div class="body">
+    <nav class="rail">
+      <a class="on" href="#"><b>队</b>队列</a>
+      <a href="#"><b>警</b>告警<span class="badge">1</span></a>
+      <span class="sp"></span>
+      <span class="ver">CLINICAL · 1 / 5</span>
+    </nav>
+
+    <main class="main">
+      <header class="cmd">
+        <div>
+          <div class="id">ENCOUNTER 2761a92b-f838-4f6f-8412-6e4d1309c2d3</div>
+          <h1>浏览器首诊演示宠物 <span>正式病历 V1</span></h1>
+          <p class="sub">猫 · 合成页面验证，不用于真实诊疗 · 建档 10-22 16:21</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><b>1</b><span>病历版本</span></div>
+          <div class="stat"><b>4</b><span>用药条目</span></div>
+          <div class="stat warn"><b>1</b><span>未处理告警</span></div>
+          <div class="stat"><b>0</b><span>已采纳建议</span></div>
+        </div>
+        <div class="ops">
+          <button class="btn">更正诊断</button>
+          <button class="btn primary">追加用药</button>
+        </div>
+      </header>
+
+      <div class="cols">
+        <section class="col">
+          <div class="sech"><span>今日接诊</span><span class="n">5</span></div>
+          <div class="queue">
+            <a class="q on" href="#"><div class="t"><i></i>浏览器首诊演示宠物<time>16:21</time></div><p>猫 · 合成页面验证，不用于真实诊疗</p><div class="m">V1 · 4 MED · 1 ALERT</div></a>
+            <a class="q" href="#"><div class="t"><i class="e"></i>临床写入演示宠物<time>16:11</time></div><p>猫 · 仅合成演示，无真实临床用途</p><div class="m">V3 · 0 MED · 误建</div></a>
+            <a class="q" href="#"><div class="t"><i class="w"></i>读取权限演示宠物<time>12:48</time></div><p>猫 · HTTP合成主诉更正，原主诉保留</p><div class="m">NO RECORD · 待诊断</div></a>
+            <a class="q" href="#"><div class="t"><i class="w"></i>建议HTTP闭环宠物<time>09:16</time></div><p>合成演示宠物 · 建议HTTP闭环合成主诉</p><div class="m">NO RECORD · 待诊断</div></a>
+          </div>
+          <div class="qfoot"><span>PAGE 1 / 1</span><span>50 PER PAGE</span></div>
+        </section>
+
+        <section class="col">
+          <div class="sech"><span>临床记录 · RECORD 5a2352c6</span><span class="n">READ ONLY 01</span></div>
+          <div class="rec">
+            <div class="sec">
+              <h2>接诊资料 <em>前台录入</em></h2>
+              <dl class="kv">
+                <div><dt>SPECIES</dt><dd>猫</dd></div>
+                <div><dt>PET NAME</dt><dd>浏览器首诊演示宠物</dd></div>
+                <div class="wide"><dt>COMPLAINT</dt><dd>合成页面验证，不用于真实诊疗</dd></div>
+                <div><dt>PET REF</dt><dd><code>a4aba8bd…31a2</code></dd></div>
+                <div><dt>ATTENDING</dt><dd>a_doctor</dd></div>
+              </dl>
+            </div>
+            <div class="sec">
+              <h2>诊断与检查 <em>V1 · 10-22 16:22</em></h2>
+              <p class="dx">浏览器提交的合成初诊说明，非真实诊疗</p>
+              <div class="exam"><b>检查记录</b><span>浏览器合成检查记录</span></div>
+            </div>
+            <div class="sec">
+              <h2>用药链 <em>原项保留 · 更正关联</em></h2>
+              <ul class="chain">
+                <li><span class="mk">●</span><span><span class="nm">HTTP合成演示药</span><span class="amt">1 演示单位</span></span><time>08:29</time></li>
+                <li><span class="mk c">↳</span><span><span class="nm">HTTP合成演示药</span><span class="amt">2 演示单位</span></span><time>08:29</time><span class="why">关联 5d0c043f · 合成核对更正</span></li>
+                <li><span class="mk">●</span><span><span class="nm">浏览器合成用药</span><span class="amt">1 演示单位</span></span><time>08:32</time></li>
+                <li><span class="mk c">↳</span><span><span class="nm">HTTP合成演示药</span><span class="amt">3 演示单位</span></span><time>08:32</time><span class="why">关联 5d0c043f · 浏览器合成核对更正</span></li>
+              </ul>
+            </div>
+            <div class="sec">
+              <h2>版本留痕 <em>不可覆盖</em></h2>
+              <ol class="timeline">
+                <li class="tl"><span class="v">V1</span><div><p>浏览器提交的合成初诊说明，非真实诊疗</p><small>检查：浏览器合成检查记录</small></div><time>10-22 16:22</time></li>
+              </ol>
+            </div>
+            <div class="rec-foot"><button class="btn tiny">查看完整版本链</button><button class="btn tiny">读取留痕</button></div>
+          </div>
+        </section>
+
+        <aside class="col side">
+          <div class="sech"><span>护栏 · GUARDRAILS</span><span class="n">1 BLOCK</span></div>
+          <div class="box">
+            <h3>本接诊校验</h3>
+            <div class="check">诊断非空<span>PASS</span></div>
+            <div class="check">版本绑定<span>PASS</span></div>
+            <div class="check bad">更正理由<span>SR-03</span></div>
+            <div class="alert">
+              <div class="h"><b>SR-03</b><span class="f">reason</span></div>
+              <p>更正理由缺失或不可核验，本次写入已阻断，病历未改变。</p>
+              <time>1786d9ba · 10-23 08:12</time>
+              <button class="btn danger tiny">定位接诊并处理</button>
+            </div>
+          </div>
+          <div class="box">
+            <h3>已保存建议 <b>1</b></h3>
+            <div class="sugg">
+              <div class="src">SOURCE demo-v1 · 合成演示</div>
+              <p><span>诊断</span>补液后留观，复查脱水程度</p>
+              <p><span>检查</span>体温、毛细血管再充盈时间</p>
+              <div class="row"><button class="btn primary tiny">采纳</button><button class="btn tiny">不采纳</button></div>
+            </div>
+          </div>
+          <div class="box">
+            <h3>读取留痕</h3>
+            <div class="audit"><b>clinical.read · success</b><br>a_doctor → 5a2352c6<br>09:28:41 · 不写正文</div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <footer class="foot">
+    <span>仅显示当前账号获准范围 · 隐藏按钮不代替服务端鉴权</span>
+    <span>LOCAL 1366×768 · EDGE / CHROME</span>
+  </footer>
+</div>
+</body>
+</html>

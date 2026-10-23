@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>门诊护栏 · 临床白方向</title>
+<style>
+:root{
+  --bg:#F4F7F7; --card:#FFFFFF; --ink:#121A1C; --muted:#5F6C72; --line:#E1E8E8;
+  --teal:#0F766E; --teal-deep:#0A5A54; --teal-wash:#EAF4F1; --rust:#B4451F; --rust-wash:#FBEEE8;
+  --amber:#8A5A0B; --amber-wash:#FBF2DE;
+  --sans:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;
+  --mono:"Cascadia Mono","Consolas",monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.6 var(--sans)}
+button{font:inherit;cursor:pointer}
+code{font:11px var(--mono);color:var(--muted)}
+
+.topbar{height:56px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;
+  padding:0 22px;gap:26px;position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;letter-spacing:.02em}
+.logo{width:26px;height:26px;border-radius:8px;background:var(--teal);display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700}
+.topnav{display:flex;gap:4px}
+.topnav a{text-decoration:none;color:var(--muted);padding:6px 12px;border-radius:7px;font-size:13px}
+.topnav a:hover{background:var(--bg);color:var(--ink)}
+.topnav a.on{background:var(--teal-wash);color:var(--teal-deep);font-weight:600}
+.badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:6px;border-radius:9px;background:var(--rust);color:#fff;
+  font:10px/18px var(--mono);text-align:center;vertical-align:1px}
+.user{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.avatar{width:28px;height:28px;border-radius:50%;background:#DDEBE7;color:var(--teal-deep);display:grid;place-items:center;font-size:12px;font-weight:700}
+.user b{color:var(--ink);font-weight:600}
+.logout{border:1px solid var(--line);background:var(--card);color:var(--muted);padding:4px 10px;border-radius:7px;font-size:12px}
+.logout:hover{border-color:var(--ink);color:var(--ink)}
+
+.wrap{padding:18px 22px 30px;max-width:1440px;margin:0 auto}
+.patient{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;
+  align-items:center;gap:16px;box-shadow:0 1px 2px rgba(18,26,28,.04);margin-bottom:16px}
+.pet{width:44px;height:44px;border-radius:12px;background:linear-gradient(180deg,#EAF4F1,#D8EAE4);
+  display:grid;place-items:center;font-size:19px;color:var(--teal-deep);flex:0 0 44px}
+.patient h1{font-size:20px;margin:0 0 3px;letter-spacing:.01em}
+.patient .meta{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;flex-wrap:wrap}
+.dot{width:3px;height:3px;border-radius:50%;background:#B9C6C6;display:inline-block}
+.chips{display:flex;gap:6px;margin-left:14px;flex-wrap:wrap}
+.chip{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.chip.ok{background:var(--teal-wash);color:var(--teal-deep);border-color:#CDE5DF}
+.chip.warn{background:var(--rust-wash);color:var(--rust);border-color:#F0D3C8}
+.chip.busy{background:var(--amber-wash);color:var(--amber);border-color:#EFDDB8}
+.actions{margin-left:auto;display:flex;gap:8px}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 13px;font-size:12.5px}
+.btn:hover{border-color:#B9C6C6;background:#FBFCFC}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+.btn.primary:hover{background:var(--teal-deep)}
+.btn.danger{background:var(--rust);border-color:var(--rust);color:#fff}
+.btn.tiny{padding:3px 9px;font-size:11.5px;border-radius:6px}
+
+.grid{display:grid;grid-template-columns:264px minmax(0,1fr) 318px;gap:16px;align-items:start}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 2px rgba(18,26,28,.04)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.panel-head h2{font-size:12px;margin:0;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.panel-head .n{font:11px var(--mono);color:var(--muted)}
+.queue{padding:6px}
+.q{display:block;text-decoration:none;color:var(--ink);padding:10px;border-radius:9px;border:1px solid transparent}
+.q:hover{background:#F8FBFB}
+.q.on{background:var(--teal-wash);border-color:#CDE5DF}
+.q b{display:flex;align-items:center;gap:7px;font-size:12.8px;font-weight:600}
+.q .led{width:6px;height:6px;border-radius:50%;background:var(--teal);flex:0 0 6px}
+.q .led.wait{background:var(--amber)}
+.q .led.err{background:var(--rust)}
+.q p{margin:3px 0 0 13px;color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q time{display:block;margin:5px 0 0 13px;font:10px var(--mono);color:#8B999E}
+.queue-foot{padding:10px 14px;border-top:1px solid var(--line);font:10.5px var(--mono);color:var(--muted);display:flex;justify-content:space-between}
+
+.record{padding-bottom:6px}
+.tabs{display:flex;gap:2px;padding:10px 14px 0;border-bottom:1px solid var(--line)}
+.tabs a{text-decoration:none;color:var(--muted);font-size:12.5px;padding:6px 11px 10px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:var(--teal-deep);border-bottom-color:var(--teal);font-weight:600}
+.tabs a span{font:10px var(--mono);color:#8B999E;margin-left:4px}
+.sec{padding:14px 18px;border-bottom:1px solid var(--line)}
+.sec:last-child{border-bottom:0}
+.sec h3{font-size:11px;letter-spacing:.1em;color:var(--muted);margin:0 0 9px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline}
+.sec h3 em{font-style:normal;font:10.5px var(--mono);color:#8B999E;letter-spacing:0}
+dl.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 22px;margin:0}
+dl.kv .wide{grid-column:1/-1}
+dt{font-size:10.5px;color:#8B999E;margin-bottom:1px}
+dd{margin:0;font-size:12.5px;overflow-wrap:anywhere}
+.dx{font-size:14.5px;line-height:1.7;margin:0;padding:12px 14px;background:#FAFCFC;border:1px solid var(--line);border-radius:9px}
+.exam{margin-top:9px;font-size:12px;color:var(--muted);display:flex;gap:10px}
+.exam b{color:var(--ink);font-weight:600;white-space:nowrap}
+.meds{margin:0;padding:0;list-style:none}
+.med{display:flex;align-items:baseline;gap:9px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+.med:last-child{border-bottom:0}
+.med .name{font-weight:600}
+.med .amt{font-family:var(--mono);font-size:11.5px}
+.med .when{margin-left:auto;font:10px var(--mono);color:#8B999E;white-space:nowrap}
+.med.corr{padding-left:16px;color:var(--rust)}
+.med.corr .name{color:var(--rust);font-weight:600}
+.med .rel{font:10px var(--mono);color:#8B999E}
+.sec-foot{padding:12px 18px;display:flex;gap:8px;border-top:1px solid var(--line);background:#FBFCFC;border-radius:0 0 12px 12px}
+.link{color:var(--teal-deep);text-decoration:none;font-size:12px}
+.link:hover{text-decoration:underline}
+
+.side{display:flex;flex-direction:column;gap:14px;position:sticky;top:76px}
+.side .panel-head h2{letter-spacing:.04em}
+.checks{padding:8px 14px 12px}
+.check{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;border-bottom:1px dashed var(--line)}
+.check:last-child{border-bottom:0}
+.check .st{width:7px;height:7px;border-radius:50%;background:var(--teal);flex:0 0 7px}
+.check .st.miss{background:var(--rust)}
+.check .st.idle{background:#C3CFCF}
+.check span{margin-left:auto;font:10px var(--mono);color:var(--muted)}
+.alertbox{margin:0 14px 12px;border:1px solid #F0D3C8;background:var(--rust-wash);border-radius:9px;padding:10px 11px}
+.alertbox .r{display:flex;gap:8px;align-items:baseline}
+.alertbox b{color:var(--rust);font:12px var(--mono)}
+.alertbox .f{font-size:11px;color:var(--rust)}
+.alertbox p{margin:6px 0 8px;font-size:11.5px;color:#7A3A25;line-height:1.55}
+.alertbox time{display:block;font:9.5px var(--mono);color:#A06B58;margin-bottom:8px}
+.sugg{padding:0 14px 13px}
+.sugg .src{font-size:10.5px;color:var(--muted);line-height:1.55;padding:0 0 8px;border-bottom:1px dashed var(--line);margin-bottom:8px}
+.sugg .src b{font:10px var(--mono);color:var(--amber);font-weight:400}
+.sugg p{margin:0 0 4px;font-size:12px}
+.sugg p span{color:#8B999E;font-size:10.5px;margin-right:6px}
+.sugg .row{display:flex;gap:6px;margin-top:9px}
+.audit{padding:10px 14px 13px;font-size:11px;color:var(--muted);line-height:1.6}
+.audit b{display:block;color:var(--ink);font:10.5px var(--mono);margin-bottom:2px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">护</span>门诊护栏</div>
+  <nav class="topnav">
+    <a class="on" href="#">诊疗队列</a>
+    <a href="#">告警<span class="badge">1</span></a>
+  </nav>
+  <div class="user">
+    <span>A店（演示）</span>
+    <span class="avatar">D</span>
+    <b>a_doctor</b>
+    <span>医生</span>
+    <button class="logout">退出</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="patient">
+    <div class="pet">猫</div>
+    <div>
+      <h1>浏览器首诊演示宠物</h1>
+      <div class="meta">
+        <span>接诊 2761a92b</span><i class="dot"></i>
+        <span>建档 10-22 16:21</span><i class="dot"></i>
+        <span>医生 a_doctor</span><i class="dot"></i>
+        <span>病历 5a2352c6</span>
+      </div>
+    </div>
+    <div class="chips">
+      <span class="chip ok">正式病历 v1</span>
+      <span class="chip warn">1 条未处理告警</span>
+      <span class="chip">4 条用药</span>
+    </div>
+    <div class="actions">
+      <button class="btn">更正诊断</button>
+      <button class="btn primary">追加用药</button>
+    </div>
+  </section>
+
+  <div class="grid">
+    <aside class="panel">
+      <div class="panel-head"><h2>今日接诊</h2><span class="n">5 条</span></div>
+      <div class="queue">
+        <a class="q on" href="#">
+          <b><i class="led"></i>浏览器首诊演示宠物</b>
+          <p>猫 · 合成页面验证，不用于真实诊疗</p>
+          <time>16:21 · v1</time>
+        </a>
+        <a class="q" href="#">
+          <b><i class="led err"></i>临床写入演示宠物</b>
+          <p>猫 · 仅合成演示，无真实临床用途</p>
+          <time>16:11 · 误建 · v3</time>
+        </a>
+        <a class="q" href="#">
+          <b><i class="led wait"></i>读取权限演示宠物</b>
+          <p>猫 · HTTP合成主诉更正，原主诉保留</p>
+          <time>12:48 · 待诊断</time>
+        </a>
+        <a class="q" href="#">
+          <b><i class="led wait"></i>建议HTTP闭环宠物</b>
+          <p>合成演示宠物 · 建议HTTP闭环合成主诉</p>
+          <time>09:16 · 待诊断</time>
+        </a>
+      </div>
+      <div class="queue-foot"><span>POLICY 0.2</span><span>已审计 5/5</span></div>
+    </aside>
+
+    <section class="panel record">
+      <div class="tabs">
+        <a class="on" href="#">病历</a>
+        <a href="#">用药<span>4</span></a>
+        <a href="#">版本<span>1</span></a>
+        <a href="#">采纳<span>0</span></a>
+      </div>
+
+      <div class="sec">
+        <h3>接诊资料 <em>前台录入 · 只读</em></h3>
+        <dl class="kv">
+          <div><dt>物种</dt><dd>猫</dd></div>
+          <div><dt>宠物名称</dt><dd>浏览器首诊演示宠物</dd></div>
+          <div class="wide"><dt>主诉</dt><dd>合成页面验证，不用于真实诊疗</dd></div>
+          <div><dt>宠物编号</dt><dd><code>a4aba8bd-1c65-4b76-97ef-5188db9c31a2</code></dd></div>
+          <div><dt>接诊归属</dt><dd>a_doctor · 本店负责</dd></div>
+        </dl>
+      </div>
+
+      <div class="sec">
+        <h3>诊断与检查 <em>v1 · 10-22 16:22</em></h3>
+        <p class="dx">浏览器提交的合成初诊说明，非真实诊疗</p>
+        <div class="exam"><b>检查记录</b><span>浏览器合成检查记录</span></div>
+      </div>
+
+      <div class="sec">
+        <h3>最近用药 <em>原项保留，更正关联</em></h3>
+        <ul class="meds">
+          <li class="med"><span class="name">HTTP合成演示药</span><span class="amt">1 演示单位</span><span class="when">10-23 08:29</span></li>
+          <li class="med corr"><span class="rel">↳ 关联</span><span class="name">HTTP合成演示药</span><span class="amt">2 演示单位</span><span class="when">08:29</span></li>
+          <li class="med"><span class="name">浏览器合成用药</span><span class="amt">1 演示单位</span><span class="when">08:32</span></li>
+          <li class="med corr"><span class="rel">↳ 关联</span><span class="name">HTTP合成演示药</span><span class="amt">3 演示单位</span><span class="when">08:32</span></li>
+        </ul>
+      </div>
+
+      <div class="sec-foot">
+        <button class="btn tiny">更正诊断</button>
+        <button class="btn tiny">追加用药</button>
+        <button class="btn tiny">查看完整版本链</button>
+        <a class="link" href="#" style="margin-left:auto;align-self:center">本次读取已审计</a>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="panel">
+        <div class="panel-head"><h2>本接诊护栏</h2><span class="n">POLICY 0.2</span></div>
+        <div class="checks">
+          <div class="check"><i class="st"></i>诊断非空<span>PASS</span></div>
+          <div class="check"><i class="st"></i>更正理由与版本绑定<span>PASS</span></div>
+          <div class="check"><i class="st miss"></i>最近一次更正理由命中<span>SR-03</span></div>
+        </div>
+        <div class="alertbox">
+          <div class="r"><b>SR-03</b><span class="f">命中字段 reason</span></div>
+          <p>更正理由缺失或不可核验，本次写入已阻断，病历未改变。</p>
+          <time>EVENT 1786d9ba · 10-23 08:12</time>
+          <button class="btn danger tiny">定位接诊并处理</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2>已保存建议</h2><span class="n">1 条</span></div>
+        <div class="sugg">
+          <div class="src">来源 <b>demo-v1</b><br>合成演示建议，非真实模型输出，不用于真实诊疗</div>
+          <p><span>诊断</span>补液后留观，复查脱水程度</p>
+          <p><span>检查</span>体温、毛细血管再充盈时间</p>
+          <div class="row"><button class="btn primary tiny">采纳</button><button class="btn tiny">不采纳</button></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2>读取留痕</h2><span class="n">09:28</span></div>
+        <div class="audit"><b>clinical.read · 成功</b>a_doctor · 目标 5a2352c6<br>仅记录获准元数据，不写入诊断正文。</div>
+      </section>
+    </aside>
+  </div>
+</main>
+</body>
+</html>
