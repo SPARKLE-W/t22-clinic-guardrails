@@ -38,6 +38,7 @@
       "manager_summary": true,
       "copy_ref_fixed": true,
       "clinic_ui_cleanup": true,
+      "real_guard_blocked_browser": true,
       "zoom_200_equivalent": "683x384 viewport, no horizontal overflow",
       "branch": "feat/frontend-ux-final",
       "merged_commit": "ffc9438",
