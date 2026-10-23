@@ -206,6 +206,12 @@ const session = (c, role, store, username) => {
     results.push('R4 clinical queue exposes next-page control for total 51');
   }
 
+  {
+    const c = context();
+    assert.ok(run(c, `loadingView('合成','list')`).includes('sk-list'));
+    assert.ok(run(c, `loadingView('合成','detail')`).includes('sk-sheet'));
+  }
+
   console.log(JSON.stringify({ ok: true, results }, null, 2));
 })().catch((e) => {
   console.error(e.stack || e);

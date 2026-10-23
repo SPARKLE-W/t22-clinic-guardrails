@@ -107,6 +107,25 @@ const FIELD_TEXT = {
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const shortRef = (v, n = 8) => (v ? String(v).slice(0, n) : '—');
 const refCode = (v, n = 8) => `<code title="${esc(v)}">${esc(shortRef(v, n))}</code>`;
+const copyRef = (v, label = '完整编号') => {
+  if (!v) return '<code>—</code>';
+  return `<span class="ref-copy"><code title="${esc(v)}">${esc(shortRef(v, 8))}</code><button type="button" class="copy-btn" data-action="copy-ref" data-value="${esc(v)}" aria-label="复制${esc(label)}">复制</button></span>`;
+};
+async function copyText(value) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try { await navigator.clipboard.writeText(value); return; } catch (e) { /* fall through */ }
+  }
+  const ta = document.createElement('textarea');
+  ta.value = value;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  const ok = document.execCommand && document.execCommand('copy');
+  ta.remove();
+  if (!ok) throw new Error('复制失败，请手动选择编号。');
+}
 
 function cookie(name) {
   const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
@@ -806,9 +825,18 @@ function setActiveNav() {
   });
 }
 
-function loadingView(label = '正在读取获准范围') {
+function loadingView(label = '正在读取获准范围', kind = 'detail') {
+  const head = `<div class="sk-head"><div style="flex:1"><div class="sk-title"></div><div class="sk-line" style="width:56%"></div></div><div class="sk-line" style="width:118px;height:28px"></div></div>`;
+  if (kind === 'list') {
+    return `<div class="view" aria-busy="true">
+      ${head}
+      <div class="sk-toolbar"><div class="sk-line" style="width:164px;height:28px"></div><div class="sk-line" style="width:92px;margin-left:auto"></div></div>
+      <div class="sk-list">${Array.from({ length: 6 }).map(() => `<div class="sk-row"><div><div class="sk-line" style="width:34%"></div><div class="sk-line" style="width:22%;margin-top:5px"></div></div><div class="sk-line" style="width:72%"></div><div class="sk-line" style="width:58px"></div><div class="sk-line" style="width:44px"></div></div>`).join('')}</div>
+      <span class="sr-only">${esc(label)}</span>
+    </div>`;
+  }
   return `<div class="view" aria-busy="true">
-    <div class="sk-head"><div style="flex:1"><div class="sk-title"></div><div class="sk-line" style="width:56%"></div></div><div class="sk-line" style="width:118px;height:28px"></div></div>
+    ${head}
     <div class="detail-grid">
       <div class="sk-sheet">
         <div class="sk-line" style="width:30%;height:16px;margin-bottom:18px"></div>
@@ -850,7 +878,8 @@ async function renderRoute() {
   setActiveNav();
   const host = $('#view');
   if (!host) { renderShell(); return renderRoute(); }
-  host.innerHTML = loadingView();
+  const skeletonKind = (!route.id || route.name === 'alerts' || route.name === 'audit') ? 'list' : 'detail';
+  host.innerHTML = loadingView('正在读取获准范围', skeletonKind);
   document.title = '门诊护栏 · ' + (ROLES[state.session.role] || '');
   const target = document.createElement('div');
   target.className = 'page';
@@ -968,6 +997,7 @@ async function viewNewReception(view) {
   const knownRef = draft.known_ref || '';
   const doctorRef = draft.doctor_ref || (doctors[0] ? String(doctors[0].doctor_ref) : '');
   const noDoctor = doctors.length === 0;
+  const pending = pendingFor('new-reception:' + petRef);
 
   view.innerHTML = `<div class="view">
     <div class="crumbs"><a href="#/receptions">接诊台</a><span>/</span>新建接诊</div>
@@ -980,6 +1010,7 @@ async function viewNewReception(view) {
     </header>
     <div class="detail-grid">
       <form id="new-reception-form" class="sheet form-sheet" data-form="new-reception" data-draft="new-reception" novalidate>
+        ${pending ? `<div class="pending-note">上次建立接诊的结果未确认；本次沿用同一幂等键，服务端会拒绝重复或内容冲突。请先回接诊台核对，再决定是否重试。</div>` : ''}
         <div class="form-grid">
           <div class="field wide">
             <span class="field-label">宠物身份 <b style="color:var(--rust)">*</b></span>
@@ -1082,7 +1113,7 @@ async function viewReceptionDetail(view, id) {
       </div>
       <div class="head-side">
         <div class="head-meta">
-          <div class="meta-item"><span>接诊编号</span>${refCode(r.encounter_ref, 8)}</div>
+          <div class="meta-item"><span>接诊编号</span>${copyRef(r.encounter_ref, '接诊编号')}</div>
           <div class="meta-item"><span>建档时间</span><code>${esc(created)}</code></div>
           <div class="meta-item"><span>当前版本</span><code>v${esc(version)}</code></div>
         </div>
@@ -1324,8 +1355,8 @@ async function viewClinicalDetail(view, id) {
       </div>
       <div class="head-side">
         <div class="head-meta">
-          <div class="meta-item"><span>接诊编号</span>${refCode(r.encounter_ref, 8)}</div>
-          <div class="meta-item"><span>病历编号</span>${c ? refCode(c.record_ref, 8) : '<code>—</code>'}</div>
+          <div class="meta-item"><span>接诊编号</span>${copyRef(r.encounter_ref, '接诊编号')}</div>
+          <div class="meta-item"><span>病历编号</span>${c ? copyRef(c.record_ref, '病历编号') : '<code>—</code>'}</div>
           <div class="meta-item"><span>建档时间</span><code>${esc(fmtTime(r.created_at))}</code></div>
         </div>
         <div class="head-actions">
@@ -1469,9 +1500,9 @@ async function viewAlerts(view) {
           </div>
         </div>
         <div class="alert-meta">
-          告警 <code>${esc(shortRef(a.alert_ref, 8))}</code><br>
-          事件 <code>${esc(shortRef(a.event_ref, 8))}</code><br>
-          病历 ${a.record_ref ? `<code>${esc(shortRef(a.record_ref, 8))}</code>` : '（首次写入，尚未生成）'}<br>
+          告警 ${copyRef(a.alert_ref, '告警编号')}<br>
+          事件 ${copyRef(a.event_ref, '事件编号')}<br>
+          病历 ${a.record_ref ? copyRef(a.record_ref, '病历编号') : '（首次写入，尚未生成）'}<br>
           处理人 ${a.handler_ref ? '账号 #' + esc(a.handler_ref) : '—'}
         </div>
       </div>
@@ -2381,6 +2412,11 @@ document.addEventListener('click', async (e) => {
       case 'reception-page': state.receptionPage = Number(btn.dataset.page) || 1; await renderRoute(); return;
       case 'clinical-page': state.clinicalPage = Number(btn.dataset.page) || 1; await renderRoute(); return;
       case 'skip-main': { const target = $('#view'); if (target) { target.focus(); target.scrollIntoView({ block: 'start' }); } return; }
+      case 'copy-ref': {
+        try { await copyText(btn.dataset.value || ''); toast('已复制完整编号'); }
+        catch (e) { toast(e.message || '复制失败', 'err', '可以手动选择编号。'); }
+        return;
+      }
       case 'alert-filter': state.alertFilter = btn.dataset.filter; await renderRoute(); return;
       case 'audit-reset': state.auditFilters = { record_ref: '', operator_ref: '' }; await renderRoute(); return;
       case 'regen-pet': {
