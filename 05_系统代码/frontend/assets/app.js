@@ -893,10 +893,17 @@ function viewError(e) {
   const message = e instanceof ApiError ? e.message : (e && e.message) || '页面暂无法载入。';
   const title = e && e.status === 403 ? '无权读取该目标' : e && e.status === 401 ? '登录已失效' : '页面暂无法载入';
   const action = e && e.status === 401 ? '<button class="btn" data-action="relogin">重新登录</button>' : `<button class="btn ghost" data-action="reload">刷新</button><a class="btn ghost" href="${homeFor()}">返回工作区</a>`;
+  const note = e && e.status === 403
+    ? '当前账号没有此操作权限。可以返回工作区，或刷新后重试。'
+    : e && e.status === 401
+      ? '请重新登录后再继续。'
+      : e && e.code === 'UNPARSEABLE'
+        ? '接口返回的数据不完整；请刷新，若持续出现请联系管理员。'
+        : '可以返回工作区，或刷新后重试。';
   return `<div class="view"><section class="error-sheet">
     <div class="error-head"><h1>${esc(title)}</h1><span class="stamp blocked">${e && e.status === 403 ? '拒绝读取' : '未完成'}</span></div>
     <p>${esc(message)}</p>
-    <p class="read-note">没有权限查看这部分内容。可以返回工作区，或刷新后重试。</p>
+    <p class="read-note">${esc(note)}</p>
     <div class="error-actions">${action}</div>
   </section></div>`;
 }
@@ -1750,7 +1757,7 @@ async function viewSummary(view) {
       : ['unhandled', 'handled'].includes(g.handling_state) && validCount(g.alert_count)));
   if (!d || !counts.every((key) => validCount(d[key])) || !validRange ||
       groupBy !== state.summaryGroup || !validGroups) {
-    throw new ApiError('UNPARSEABLE', 200, null);
+    throw new ApiError('UNPARSEABLE', 200, null, '汇总数据不完整，请刷新后重试。');
   }
   const rangeLabel = d.time_range
     ? `${esc(fmtTime(d.time_range.from))} — ${esc(fmtTime(d.time_range.to))}`

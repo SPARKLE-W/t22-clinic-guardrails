@@ -27,7 +27,7 @@
     "frontend_guardrails": {
       "script": "05_系统代码/frontend/tests/guardrails.test.cjs",
       "result": "ok",
-      "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "HTTP 200 unparseable keeps pending key", "clinical page 51 control", "misregistered medication correction", "late route response discarded", "copy-ref data-value and event handler", "management summary five counts and both groups"],
+      "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "HTTP 200 unparseable keeps pending key", "clinical page 51 control", "misregistered medication correction", "late route response discarded", "copy-ref data-value and event handler", "management summary five counts and both groups", "malformed HTTP 200 summary never becomes a true zero"],
       "note": "Node VM with synthetic data; not a full browser or database integration test"
     },
     "ux_followup": {
