@@ -19,15 +19,15 @@
     "django_check": "pass",
     "full_regression": {
       "command": "python manage.py test tests governance clinic --noinput -v 1",
-      "tests": 133,
+      "tests": 143,
       "result": "OK (skipped=10: real queue tests without local MQ config; CI runs RabbitMQ)",
-      "seconds": 49.444
+      "seconds": 41.574
     },
     "new_test": "governance.tests.GovernanceTests.test_frontend_shell_session_handoff_and_scoped_assets",
     "frontend_guardrails": {
       "script": "05_系统代码/frontend/tests/guardrails.test.cjs",
       "result": "ok",
-      "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "HTTP 200 unparseable keeps pending key", "clinical page 51 control", "misregistered medication correction", "late route response discarded"],
+      "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "HTTP 200 unparseable keeps pending key", "clinical page 51 control", "misregistered medication correction", "late route response discarded", "copy-ref data-value and event handler", "management summary five counts and both groups"],
       "note": "Node VM with synthetic data; not a full browser or database integration test"
     },
     "ux_followup": {
@@ -35,6 +35,8 @@
       "list_skeleton": true,
       "alert_tab_counts": true,
       "audit_tab_counts": true,
+      "manager_summary": true,
+      "copy_ref_fixed": true,
       "zoom_200_equivalent": "683x384 viewport, no horizontal overflow",
       "branch": "feat/frontend-ux-final",
       "merged_commit": "ffc9438",
@@ -78,7 +80,7 @@
     "v2_disposition": "00_评审/主代理处置_v2.md"
   },
   "evidence": {
-    "final_screenshots": 15,
+    "final_screenshots": 16,
     "supplement_screenshots": 2,
     "recording_seconds": 9.1,
     "final_dir": "10_验收证据/14_前端界面与浏览器验证/02_最终界面",

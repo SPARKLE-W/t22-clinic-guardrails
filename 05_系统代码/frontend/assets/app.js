@@ -21,6 +21,8 @@ const state = {
   selectedCandidate: '',
   auditFilters: { record_ref: '', operator_ref: '' },
   auditOutcome: 'all',
+  summaryRange: 'all',
+  summaryGroup: 'rule',
   modal: null,
   reloadLatest: null,
   bootError: null
@@ -379,7 +381,7 @@ function routeAllowed(route) {
   const allowed = {
     frontdesk: ['receptions'],
     doctor: ['clinical', 'alerts'],
-    manager: ['governance', 'audit']
+    manager: ['governance', 'summary', 'audit']
   }[role] || [];
   return allowed.includes(route.name);
 }
@@ -663,7 +665,8 @@ function navConfig() {
   }
   return [
     { key: 'governance', num: '01', label: '治理台', href: '#/governance' },
-    { key: 'audit', num: '02', label: '脱敏审计', href: '#/audit' }
+    { key: 'summary', num: '02', label: '本店汇总', href: '#/summary' },
+    { key: 'audit', num: '03', label: '脱敏审计', href: '#/audit' }
   ];
 }
 
@@ -783,6 +786,8 @@ async function enterApp() {
   state.alertFilter = 'unhandled';
   state.auditFilters = { record_ref: '', operator_ref: '' };
   state.auditOutcome = 'all';
+  state.summaryRange = 'all';
+  state.summaryGroup = 'rule';
   state.selectedCandidate = '';
   purgeForeignDrafts();
   await loadSidebar();
@@ -820,6 +825,7 @@ function setActiveNav() {
       (key === 'clinical' && route.name === 'clinical') ||
       (key === 'alerts' && route.name === 'alerts') ||
       (key === 'governance' && route.name === 'governance') ||
+      (key === 'summary' && route.name === 'summary') ||
       (key === 'audit' && route.name === 'audit');
     a.classList.toggle('on', on);
     if (on) a.setAttribute('aria-current', 'page');
@@ -894,6 +900,7 @@ async function renderRoute() {
     else if (route.name === 'alerts') await viewAlerts(target);
     else if (route.name === 'governance' && !route.id) await viewGovernance(target);
     else if (route.name === 'governance') await viewGovernance(target, route.id);
+    else if (route.name === 'summary') await viewSummary(target);
     else if (route.name === 'audit') await viewAudit(target);
     else target.innerHTML = viewError(new Error('未知页面。'));
   } catch (e) {
@@ -1686,13 +1693,69 @@ async function viewGovernance(view, id) {
           ${definitionBody(detail)}
           <div class="block"><div class="block-body">
             <div class="block-head"><h2>本次操作</h2><em>每次操作单独填写理由</em></div>
-            <div class="head-actions">${candidateActions(detail)}<button class="btn sm ghost" data-action="copy-ref" data-ref="${esc(detail.candidate_ref)}">复制候选编号</button></div>
+            <div class="head-actions">${candidateActions(detail)}${copyRef(detail.candidate_ref, '候选编号')}</div>
             <p class="note">批准绑定当前内容摘要 ${esc(shortRef(detail.content_version_ref, 8))}；内容变化后原批准不可继续使用。启用需当前生效序号 ${esc(detail.generation)}。</p>
           </div></div>
         </div>
       </section>
     </div>
     <footer class="page-foot"><span>批准不等于启用 · 不伪造他人审批 · 定义与批准内容绑定</span><span>GEN ${esc(list.generation)}</span></footer>
+  </div>`;
+}
+
+async function viewSummary(view) {
+  const params = { group_by: state.summaryGroup };
+  const tr = rangeParam(state.summaryRange);
+  if (tr) params.time_range = tr;
+  const d = await api('/api/reports/store-summary?' + qs(params));
+  const groups = (d.grouped_counts && d.grouped_counts.items) || [];
+  const groupBy = (d.grouped_counts && d.grouped_counts.group_by) || state.summaryGroup;
+  const rangeLabel = d.time_range
+    ? `${esc(fmtTime(d.time_range.from))} — ${esc(fmtTime(d.time_range.to))}`
+    : '全部时间';
+  const groupsHtml = groups.length ? groups.map((g) => groupBy === 'handling_state'
+    ? `<tr><td>${esc(g.handling_state === 'unhandled' ? '未处理' : '已处理')}</td><td class="num">${esc(g.alert_count)}</td></tr>`
+    : `<tr><td><code>${esc(g.rule_ref)}</code><br><span class="muted">${esc(RULE_TEXT[g.rule_ref] || '规则命中')}</span></td><td class="num">${esc(g.hit_count)}</td><td class="num">${esc(g.alert_count)}</td><td class="num">${esc(g.unhandled_count)}</td></tr>`).join('')
+    : `<tr><td colspan="${groupBy === 'handling_state' ? 2 : 4}"><div class="list-empty"><b>当前范围没有命中或告警</b><p>空集合是真实零，不是接口失败。</p></div></td></tr>`;
+
+  view.innerHTML = `<div class="view">
+    <header class="page-head">
+      <div><h1>本店汇总</h1><p class="lede">本店脱敏聚合；不含病例、宠物、命中值或正文。建档数含误建与重建，不作去重宠物数。</p></div>
+      <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button></div></div>
+    </header>
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="统计时间范围">
+        ${[['all', '全部'], ['today', '今日'], ['7d', '近 7 天']].map(([k, l]) => `<button type="button" class="${state.summaryRange === k ? 'on' : ''}" data-action="summary-range" data-range="${k}">${l}</button>`).join('')}
+      </div>
+      <div class="seg" role="group" aria-label="告警分组">
+        ${[['rule', '按规则'], ['handling_state', '按处理状态']].map(([k, l]) => `<button type="button" class="${state.summaryGroup === k ? 'on' : ''}" data-action="summary-group" data-group="${k}">${l}</button>`).join('')}
+      </div>
+      <span class="count">${rangeLabel} · 只读聚合</span>
+    </div>
+    <div class="stat-strip summary-stats">
+      <div class="stat"><b>${esc(d.encounter_created_count ?? 0)}</b><span>建档接诊</span></div>
+      <div class="stat"><b>${esc(d.error_marked_count ?? 0)}</b><span>误建</span></div>
+      <div class="stat"><b>${esc(d.hit_count ?? 0)}</b><span>命中</span></div>
+      <div class="stat"><b>${esc(d.alert_count ?? 0)}</b><span>告警</span></div>
+      <div class="stat"><b>${esc(d.unhandled_count ?? 0)}</b><span>未处理</span></div>
+    </div>
+    <div class="detail-grid summary-grid">
+      <section class="sheet">
+        <header class="sheet-head">
+          <div><h2 class="sheet-title">${groupBy === 'handling_state' ? '按处理状态' : '按规则'}</h2><span class="sheet-sub">STORE SUMMARY · 当前状态 · 不可下钻</span></div>
+          <span class="stamp">只读</span>
+        </header>
+        <div class="table-wrap"><table class="table summary-table">
+          <thead>${groupBy === 'handling_state' ? '<tr><th>处理状态</th><th class="num">告警数</th></tr>' : '<tr><th>规则</th><th class="num">命中</th><th class="num">告警</th><th class="num">未处理</th></tr>'}</thead>
+          <tbody>${groupsHtml}</tbody>
+        </table></div>
+      </section>
+      <aside class="side">
+        <section class="panel"><div class="panel-head"><span class="panel-label">口径</span></div><div class="panel-body"><p class="read-note">接诊与校验各按自身事实时间筛选；未处理/已处理是读取时状态，不表示期间处理次数。消息重试和投递尝试不增加命中或告警数。</p></div></section>
+        <section class="panel"><div class="panel-head"><span class="panel-label">边界</span></div><div class="panel-body"><p class="read-note">本页只显示服务端聚合，不提供病例/告警下钻，也不读取医生列表估算。读取成功会写入审计。</p></div></section>
+      </aside>
+    </div>
+    <footer class="page-foot"><span>本店聚合 · 不含病例明细 · 不改变告警处理状态</span><span>${esc(rangeLabel)}</span></footer>
   </div>`;
 }
 
@@ -2434,13 +2497,17 @@ document.addEventListener('click', async (e) => {
       case 'clinical-page': state.clinicalPage = Number(btn.dataset.page) || 1; await renderRoute(); return;
       case 'skip-main': { const target = $('#view'); if (target) { target.focus(); target.scrollIntoView({ block: 'start' }); } return; }
       case 'copy-ref': {
-        try { await copyText(btn.dataset.value || ''); toast('已复制完整编号'); }
+        const value = btn.dataset.value || '';
+        if (!value) { toast('没有可复制的编号', 'err'); return; }
+        try { await copyText(value); toast('已复制完整编号'); }
         catch (e) { toast(e.message || '复制失败', 'err', '可以手动选择编号。'); }
         return;
       }
       case 'alert-filter': state.alertFilter = btn.dataset.filter; await renderRoute(); return;
       case 'audit-reset': state.auditFilters = { record_ref: '', operator_ref: '' }; state.auditOutcome = 'all'; await renderRoute(); return;
       case 'audit-outcome': state.auditOutcome = btn.dataset.outcome || 'all'; await renderRoute(); return;
+      case 'summary-range': state.summaryRange = btn.dataset.range || 'all'; await renderRoute(); return;
+      case 'summary-group': state.summaryGroup = btn.dataset.group === 'handling_state' ? 'handling_state' : 'rule'; await renderRoute(); return;
       case 'regen-pet': {
         const input = $('#f-pet_ref');
         if (input) { input.value = uuid(); const form = input.form; if (form) saveDraft(form.dataset.draft, form); }
@@ -2461,11 +2528,6 @@ document.addEventListener('click', async (e) => {
           line.className = 'verify-line ' + (res.associable ? 'ok' : 'bad');
           line.textContent = res.associable ? '可关联：该编号属于本店宠物，可在本店建档。' : '不可关联：本店没有该宠物编号。';
         } catch (err) { line.className = 'verify-line bad'; line.textContent = err.message; }
-        return;
-      }
-      case 'copy-ref': {
-        try { await navigator.clipboard.writeText(btn.dataset.ref || ''); toast('编号已复制', 'ok'); }
-        catch (err) { toast('复制失败，请手动选择编号。', 'err'); }
         return;
       }
       case 'reception-correct': await openReceptionCorrect(btn.dataset.id); return;
