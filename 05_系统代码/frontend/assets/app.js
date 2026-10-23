@@ -13,13 +13,13 @@ const state = {
   sidebar: null,
   route: null,
   lastFocus: null,
+  renderSeq: 0,
   range: 'all',
   receptionPage: 1,
   clinicalPage: 1,
   alertFilter: 'unhandled',
   selectedCandidate: '',
   auditFilters: { record_ref: '', operator_ref: '' },
-  pending: new Map(),
   modal: null,
   reloadLatest: null,
   bootError: null
@@ -179,21 +179,91 @@ function statusChip(ok, text, okText) {
   return ok ? chip(text || '正常', 'ok') : chip(text || '异常', 'danger');
 }
 
+function draftPrefix() {
+  const s = state.session;
+  if (!s) return null;
+  return `t22:${s.store_ref || 'store'}:${s.username || 'user'}:${s.role || 'role'}:`;
+}
+function draftStorageKey(name) {
+  const prefix = draftPrefix();
+  return prefix ? prefix + 'draft:' + name : null;
+}
 function saveDraft(key, form) {
+  const storageKey = draftStorageKey(key);
+  if (!storageKey) return;
   try {
     const data = {};
     new FormData(form).forEach((v, k) => { if (typeof v === 'string') data[k] = v; });
-    sessionStorage.setItem('t22:' + key, JSON.stringify(data));
+    sessionStorage.setItem(storageKey, JSON.stringify(data));
   } catch (e) { /* 隐私模式忽略 */ }
 }
 function loadDraft(key) {
+  const storageKey = draftStorageKey(key);
+  if (!storageKey) return null;
   try {
-    const raw = sessionStorage.getItem('t22:' + key);
+    const raw = sessionStorage.getItem(storageKey);
     return raw ? JSON.parse(raw) : null;
   } catch (e) { return null; }
 }
 function clearDraft(key) {
-  try { sessionStorage.removeItem('t22:' + key); } catch (e) { /* ignore */ }
+  const storageKey = draftStorageKey(key);
+  if (!storageKey) return;
+  try { sessionStorage.removeItem(storageKey); } catch (e) { /* ignore */ }
+}
+function purgeForeignDrafts() {
+  const prefix = draftPrefix();
+  if (!prefix) return;
+  try {
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith('t22:') && !key.startsWith(prefix)) sessionStorage.removeItem(key);
+    });
+  } catch (e) { /* ignore */ }
+}
+function clearAllDrafts() {
+  try {
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith('t22:')) sessionStorage.removeItem(key);
+    });
+  } catch (e) { /* ignore */ }
+}
+function pendingStorageKey() {
+  const prefix = draftPrefix();
+  return prefix ? prefix + 'pending' : null;
+}
+function readPending() {
+  const key = pendingStorageKey();
+  if (!key) return {};
+  try {
+    const raw = sessionStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (e) { return {}; }
+}
+function writePending(entries) {
+  const key = pendingStorageKey();
+  if (!key) return;
+  try {
+    if (Object.keys(entries).length) sessionStorage.setItem(key, JSON.stringify(entries));
+    else sessionStorage.removeItem(key);
+  } catch (e) { /* ignore */ }
+}
+function pendingFor(ctx) {
+  return readPending()[ctx] || null;
+}
+function opKey(ctx, body, path) {
+  const entries = readPending();
+  if (entries[ctx] && entries[ctx].key) return entries[ctx].key;
+  const key = uuid();
+  entries[ctx] = { key, path: path || ctx, body: body || null, created_at: new Date().toISOString() };
+  writePending(entries);
+  return key;
+}
+function endOp(ctx) {
+  const entries = readPending();
+  if (entries[ctx]) {
+    delete entries[ctx];
+    writePending(entries);
+  }
 }
 
 /* ---------------- API ---------------- */
@@ -243,25 +313,21 @@ async function api(path, options = {}) {
   return data;
 }
 
-function opKey(signature) {
-  if (!state.pending.has(signature)) state.pending.set(signature, uuid());
-  return state.pending.get(signature);
-}
-function endOp(signature) { state.pending.delete(signature); }
-
-function signature(path, body) {
-  return path + '|' + JSON.stringify(body);
-}
-
 async function write(path, body, options = {}) {
-  const sig = signature(path, body);
-  const key = opKey(sig);
+  const ctx = options.ctx || (state.modal && state.modal.draftKey) ||
+    (body && body.pet_ref ? 'new-reception:' + body.pet_ref : path);
+  const wasPending = Boolean(pendingFor(ctx));
+  const key = opKey(ctx, body, path);
   try {
     const data = await api(path, { method: 'POST', body, key });
-    endOp(sig);
+    endOp(ctx);
     return data;
   } catch (e) {
-    if (e.code === 'GUARD_BLOCKED' || e.status === 401 || e.status === 403 || e.status === 409) endOp(sig);
+    const retryable = e.status === 0 || e.status === 408 || e.status === 429 || e.status >= 500;
+    if (!retryable) endOp(ctx);
+    if (e.status === 409 && wasPending) {
+      e.message = '上次提交结果未确认，已沿用同一幂等键防止重复；服务端拒绝重复或版本已变。请刷新核对最新记录后再重新提交。';
+    }
     throw e;
   }
 }
@@ -340,6 +406,10 @@ function openModal({ title, subtitle = '', body = '', foot = '', wide = false, k
   const bd = $('.modal-backdrop', modalRoot);
   bd.addEventListener('mousedown', (e) => { if (e.target === bd) closeModal(); });
   document.body.style.overflow = 'hidden';
+  if (draftKey && pendingFor(draftKey)) {
+    const bodyEl = $('.modal-body', modalRoot);
+    bodyEl.insertAdjacentHTML('afterbegin', '<div class="pending-note">上次提交结果未确认；本次沿用同一幂等键，服务端会拒绝重复或版本已变。请先核对最新记录。</div>');
+  }
   if (draftKey) {
     const form = $('form[data-draft]', modalRoot);
     const draft = loadDraft(draftKey);
@@ -480,6 +550,7 @@ function textareaHtml(name, value, opts = {}) {
 /* ---------------- 登录 ---------------- */
 
 function renderLogin() {
+  state.renderSeq++;
   closeModal();
   const notice = state.bootError ? `<div class="login-error">无法核对会话：${esc(state.bootError.message)} 仍可直接尝试登录。</div>` : '';
   root.innerHTML = `
@@ -684,6 +755,7 @@ function updateShell() {
 }
 
 async function enterApp() {
+  state.renderSeq++;
   state.bootError = null;
   state.receptionPage = 1;
   state.clinicalPage = 1;
@@ -691,6 +763,7 @@ async function enterApp() {
   state.alertFilter = 'unhandled';
   state.auditFilters = { record_ref: '', operator_ref: '' };
   state.selectedCandidate = '';
+  purgeForeignDrafts();
   await loadSidebar();
   renderShell();
   const route = parseRoute();
@@ -771,28 +844,34 @@ async function renderRoute() {
     return renderRoute();
   }
   state.route = route;
+  const seq = ++state.renderSeq;
   const main = $('.main');
   if (main) main.scrollTop = 0;
   setActiveNav();
-  const view = $('#view');
-  if (!view) { renderShell(); return renderRoute(); }
-  view.innerHTML = loadingView();
+  const host = $('#view');
+  if (!host) { renderShell(); return renderRoute(); }
+  host.innerHTML = loadingView();
   document.title = '门诊护栏 · ' + (ROLES[state.session.role] || '');
+  const target = document.createElement('div');
+  target.className = 'page';
   try {
-    if (route.name === 'receptions' && !route.id) await viewReceptions(view);
-    else if (route.name === 'receptions' && route.id === 'new') await viewNewReception(view);
-    else if (route.name === 'receptions') await viewReceptionDetail(view, route.id);
-    else if (route.name === 'clinical' && !route.id) await viewClinicalList(view);
-    else if (route.name === 'clinical') await viewClinicalDetail(view, route.id);
-    else if (route.name === 'alerts') await viewAlerts(view);
-    else if (route.name === 'governance' && !route.id) await viewGovernance(view);
-    else if (route.name === 'governance') await viewGovernance(view, route.id);
-    else if (route.name === 'audit') await viewAudit(view);
-    else view.innerHTML = viewError(new Error('未知页面。'));
+    if (route.name === 'receptions' && !route.id) await viewReceptions(target);
+    else if (route.name === 'receptions' && route.id === 'new') await viewNewReception(target);
+    else if (route.name === 'receptions') await viewReceptionDetail(target, route.id);
+    else if (route.name === 'clinical' && !route.id) await viewClinicalList(target);
+    else if (route.name === 'clinical') await viewClinicalDetail(target, route.id);
+    else if (route.name === 'alerts') await viewAlerts(target);
+    else if (route.name === 'governance' && !route.id) await viewGovernance(target);
+    else if (route.name === 'governance') await viewGovernance(target, route.id);
+    else if (route.name === 'audit') await viewAudit(target);
+    else target.innerHTML = viewError(new Error('未知页面。'));
   } catch (e) {
-    view.innerHTML = viewError(e);
+    if (seq !== state.renderSeq) return;
+    target.innerHTML = viewError(e);
     if (e instanceof ApiError && e.status === 401) toast('登录已失效', 'err', '请重新登录后继续。');
   }
+  if (seq !== state.renderSeq) return;
+  host.replaceChildren(...target.childNodes);
   updateShell();
 }
 
@@ -976,11 +1055,11 @@ async function viewNewReception(view) {
       </aside>
     </div>
   </div>`;
-  const ta = $('#f-complaint');
+  const ta = $('#f-complaint', view);
   if (ta) {
-    ta.addEventListener('input', () => { const c = $('#complaint-count'); if (c) c.textContent = ta.value.length + ' / 10000'; });
+    ta.addEventListener('input', () => { const c = $('#complaint-count', view); if (c) c.textContent = ta.value.length + ' / 10000'; });
   }
-  const sel = $('#f-doctor_ref');
+  const sel = $('#f-doctor_ref', view);
   if (sel && draft.doctor_ref) {
     const exists = Array.from(sel.options).some((o) => o.value === String(draft.doctor_ref));
     if (exists) sel.value = String(draft.doctor_ref);
@@ -1212,7 +1291,7 @@ async function viewClinicalDetail(view, id) {
         <span class="med-time">${esc(fmtTime(m.created_at))}</span>
       </div>
       <p class="med-why">${corr ? '关联 ' + esc(shortRef(m.original_entry_ref, 8)) + ' · ' + esc(m.reason || '未填写理由') : '原始项 ' + esc(shortRef(m.entry_ref, 8)) + (m.reason ? ' · ' + esc(m.reason) : '')} · 账号 #${esc(m.actor_ref)}</p>
-      ${locked ? '' : `<div class="med-actions"><button class="btn sm ghost" data-action="med-correct" data-id="${esc(r.encounter_ref)}" data-entry="${esc(m.entry_ref)}">更正</button></div>`}
+      <div class="med-actions"><button class="btn sm ghost" data-action="med-correct" data-id="${esc(r.encounter_ref)}" data-entry="${esc(m.entry_ref)}">更正</button></div>
     </li>`;
   }).join('')}</ol>` : `<p class="note">尚无用药记录。追加用药须已存在正式病历，且必须随诊断版本一起解释。</p>`;
 
@@ -1306,6 +1385,7 @@ async function viewClinicalDetail(view, id) {
               ${locked ? '' : `<div class="block-actions"><button class="btn sm" data-action="med-append" data-id="${esc(r.encounter_ref)}">追加用药</button></div>`}
             </div>
             ${c ? medHtml : '<p class="note">没有正式病历，不能追加独立用药。</p>'}
+            ${locked && chain.length ? '<p class="note">误建记录允许对既有用药做关联更正；首次诊断、独立追加和建议采纳仍被禁止。</p>' : ''}
           </div>
         </div>
 
@@ -1327,7 +1407,7 @@ async function viewClinicalDetail(view, id) {
             <div class="block-head"><h2>采纳记录</h2><em>${adoptions.length} 条 · 来源保留</em></div>
             ${adoptions.length ? `<ul class="adopts">${adoptions.map((a) => `<li class="adopt">
               <span class="src">来源 · ${esc(sourceText(a.source))}</span>
-              <p>${esc(a.adopted_content && a.adopted_content.diagnosis ? '诊断：' + a.adopted_content.diagnosis : '')}${a.adopted_content && a.adopted_content.examination ? ' · 检查：' + a.adopted_content.examination : ''}${a.medication_ref ? ' · 含用药' : ''}</p>
+              <p>${esc(a.adopted_content && a.adopted_content.diagnosis ? '诊断：' + a.adopted_content.diagnosis : '')}${esc(a.adopted_content && a.adopted_content.examination ? ' · 检查：' + a.adopted_content.examination : '')}${a.medication_ref ? ' · 含用药' : ''}</p>
               <time>${esc(fmtTime(a.created_at))} · 理由：${esc(a.reason || '未填写')} · 版本 ${esc(shortRef(a.version_ref, 8))}</time>
             </li>`).join('')}</ul>` : '<p class="note">尚无建议被采纳。未采纳建议只登记终态，不写病历。</p>'}
           </div>
@@ -2290,6 +2370,7 @@ document.addEventListener('click', async (e) => {
       }
       case 'logout': {
         await api('/api/logout', { method: 'POST', body: {} }).catch(() => {});
+        clearAllDrafts();
         state.session = null; state.sidebar = null; state.route = null;
         history.replaceState(null, '', '#/');
         renderLogin(); return;

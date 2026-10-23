@@ -24,6 +24,12 @@
       "seconds": 49.444
     },
     "new_test": "governance.tests.GovernanceTests.test_frontend_shell_session_handoff_and_scoped_assets",
+    "frontend_guardrails": {
+      "script": "05_系统代码/frontend/tests/guardrails.test.cjs",
+      "result": "ok",
+      "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "clinical page 51 control", "misregistered medication correction", "late route response discarded"],
+      "note": "Node VM with synthetic data; not a full browser or database integration test"
+    },
     "session_endpoint": "anonymous/{authenticated:false}; authenticated minimal identity; logout returns anonymous",
     "asset_traversal": "GET /app/assets/../../vetapp/settings.py -> 404",
     "static_entry_csrf": "GET /app sets csrftoken cookie",
