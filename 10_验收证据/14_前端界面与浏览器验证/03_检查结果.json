@@ -59,7 +59,9 @@
       "work_divisions": true,
       "csv_exports": true,
       "shared_18730_upgraded": true,
-      "zoom_200_equivalent": "683x384 viewport, no horizontal overflow",
+      "zoom_200_equivalent": "user accepted 2x device scale / 683 CSS; browser menu 200% not verified",
+      "zoom_200_accepted_by_user": true,
+      "browser_menu_200_verified": false,
       "branch": "feat/frontend-ux-final",
       "merged_commit": "ffc9438",
       "pr": 12
