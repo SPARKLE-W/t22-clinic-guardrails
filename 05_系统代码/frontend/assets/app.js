@@ -102,7 +102,9 @@ const RULE_TEXT = {
 };
 const FIELD_TEXT = {
   diagnosis: '诊断', examination: '检查', reason: '更正 / 采纳理由', amount: '剂量', unit: '单位',
-  drug: '药品', original_entry_ref: '关联原条目', content_digest: '内容摘要', template: '字段模板'
+  drug: '药品', original_entry_ref: '关联原条目', content_digest: '内容摘要', template: '字段模板',
+  complaint: '主诉', doctor_id: '接诊医生', pet_id: '宠物编号', species: '物种', pet_name: '宠物昵称',
+  append_only: '只追加'
 };
 
 /* ---------------- 工具 ---------------- */
@@ -1596,21 +1598,26 @@ function definitionBody(detail) {
         <div class="block-head"><h2>定义摘要</h2><em>内容摘要 ${esc(shortRef(detail.content_version_ref, 8))}</em></div>
         <p class="definition-meta"><span><b>${redlines.length}</b> 条安全红线</span><span><b>${coding.length}</b> 项编码约束</span><span><b>${Object.keys(projections).length}</b> 组字段投影</span><span>定义 <b>${esc(d.version || '—')}</b></span></p>
         ${diffs.length ? `<p class="note">相对当前生效：${diffs.map((k) => chip(DIFF_LABELS[k] || k, 'warn')).join(' ')}</p>` : ''}
-        <ul class="rule-list" style="margin-top:8px">${redlineRows || '<li>未登记安全红线</li>'}</ul>
-        ${redlines.length && redlines.every((r) => r.may_weaken === false) ? `<p class="note">以上 ${redlines.length} 条均标记为不可削弱；逐条列出便于核对，不再重复挂标签。</p>` : ''}
+        <details class="details" style="margin-top:10px">
+          <summary>查看 ${redlines.length} 条安全红线<em>核对用</em></summary>
+          <div class="inner">
+            <ul class="rule-list">${redlineRows || '<li>未登记安全红线</li>'}</ul>
+            ${redlines.length && redlines.every((r) => r.may_weaken === false) ? `<p class="note">以上 ${redlines.length} 条均标记为不可削弱；逐条列出便于核对，不再重复挂标签。</p>` : ''}
+          </div>
+        </details>
       </div>
     </div>
 
     <div class="block">
       <div class="block-body">
-        <div class="block-head"><h2>字段与模板</h2><em>定义由受信任发行资产编译</em></div>
+        <div class="block-head"><h2>字段与模板</h2><em>本店当前使用的字段范围</em></div>
         <div class="fields">
-          <div><dt>接诊必填</dt><dd>${(reception.required || []).map(esc).join('、') || '—'}</dd></div>
-          <div><dt>接诊可选</dt><dd>${(reception.optional || []).map(esc).join('、') || '—'}</dd></div>
-          <div><dt>临床必填</dt><dd>${(clinical.required || []).map(esc).join('、') || '—'}</dd></div>
-          <div><dt>临床可选</dt><dd>${(clinical.optional || []).map(esc).join('、') || '—'}</dd></div>
-          <div><dt>用药存储</dt><dd>${esc((clinical.medication && clinical.medication.storage) || '—')}</dd></div>
-          <div><dt>更正要求</dt><dd>${((clinical.medication && clinical.medication.correction_requires) || []).map(esc).join('、') || '—'}</dd></div>
+          <div><dt>接诊必填</dt><dd>${(reception.required || []).map((f) => esc(FIELD_TEXT[f] || f)).join('、') || '—'}</dd></div>
+          <div><dt>接诊可选</dt><dd>${(reception.optional || []).map((f) => esc(FIELD_TEXT[f] || f)).join('、') || '—'}</dd></div>
+          <div><dt>临床必填</dt><dd>${(clinical.required || []).map((f) => esc(FIELD_TEXT[f] || f)).join('、') || '—'}</dd></div>
+          <div><dt>临床可选</dt><dd>${(clinical.optional || []).map((f) => esc(FIELD_TEXT[f] || f)).join('、') || '—'}</dd></div>
+          <div><dt>用药存储</dt><dd>${esc(FIELD_TEXT[(clinical.medication && clinical.medication.storage)] || (clinical.medication && clinical.medication.storage) || '—')}</dd></div>
+          <div><dt>更正要求</dt><dd>${((clinical.medication && clinical.medication.correction_requires) || []).map((f) => esc(FIELD_TEXT[f] || f)).join('、') || '—'}</dd></div>
         </div>
         <details class="details" style="margin-top:10px"><summary>展开完整模板定义<em>JSON</em></summary><div class="inner"><pre class="json">${esc(JSON.stringify(templates, null, 2))}</pre></div></details>
       </div>
@@ -1695,10 +1702,10 @@ async function viewGovernance(view, id) {
       <div class="head-side"><div class="head-actions"><button class="btn primary" data-action="generate-candidate">生成候选</button></div></div>
     </header>
     <div class="stat-strip">
-      <div class="stat"><b>${esc(list.generation ?? '—')}</b><span>生效序号</span></div>
-      <div class="stat"><b>${list.active_candidate_ref ? esc(shortRef(list.active_candidate_ref, 8)) : '—'}</b><span>当前生效</span></div>
+      <div class="stat"><b>${esc(list.generation ?? '—')}</b><span>规则版本</span></div>
+      <div class="stat"><b>${list.active_candidate_ref ? esc(shortRef(list.active_candidate_ref, 8)) : '—'}</b><span>当前规则</span></div>
       <div class="stat"><b>${esc(displayState)}</b><span>候选状态</span></div>
-      <div class="stat"><b>${(detail.definition_differences || []).length ? detail.definition_differences.length + ' 项' : '无变化'}</b><span>相对生效</span></div>
+      <div class="stat"><b>${(detail.definition_differences || []).length ? detail.definition_differences.length + ' 项' : '无变化'}</b><span>与当前规则</span></div>
     </div>
     <div class="gov-grid">
       <aside class="sheet">
