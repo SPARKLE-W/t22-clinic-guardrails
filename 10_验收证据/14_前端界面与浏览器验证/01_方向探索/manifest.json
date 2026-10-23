@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "project": "T22 门诊护栏 · 三角色前端",
+  "brief": "前台、医生、管理三类账号的诊疗与治理工作台。界面需要同时承载长文本病历、不可覆盖的版本链、护栏阻断与脱敏审计；验收基准为 Windows 桌面 Edge/Chrome 1366×768。",
+  "round": "第 1 轮 · 方向",
+  "lang": "zh",
+  "nativeViewport": "1366x768",
+  "candidates": [
+    {
+      "id": "ledger",
+      "name": "病历纸",
+      "kind": "html",
+      "source": "A_病历纸.html",
+      "baseline": true,
+      "interactive": false,
+      "concept": "界面是一张能被审计的病历纸：左边是案卷目录，中间是带页码与印章的记录，右边是压在页边的护栏批注。",
+      "typography": "标题 Noto Serif SC；正文 Microsoft YaHei 13.5px；编号与时间 Cascadia Mono。",
+      "traits": ["纸色底与 1px 墨线", "边缘编号 01—04", "版本印章", "右栏护栏批注", "不使用圆角卡片"],
+      "palette": ["#F3EFE4", "#FCFAF4", "#1B241F", "#0C5A44", "#9E3B29"]
+    },
+    {
+      "id": "clinical",
+      "name": "临床白",
+      "kind": "html",
+      "source": "B_临床白.html",
+      "baseline": false,
+      "interactive": false,
+      "concept": "明亮、熟悉、低摩擦的临床 SaaS：患者横幅、标签页、卡片化的记录与检查器。",
+      "typography": "全无衬线 Microsoft YaHei；数字 Cascadia Mono。",
+      "traits": ["顶部导航", "患者横幅", "三栏卡片", "胶囊状态", "10px 圆角"],
+      "palette": ["#F4F7F7", "#FFFFFF", "#121A1C", "#0F766E", "#B4451F"]
+    },
+    {
+      "id": "console",
+      "name": "监护台",
+      "kind": "html",
+      "source": "C_监护台.html",
+      "baseline": false,
+      "interactive": false,
+      "concept": "把接诊当成一台正在运行的监护仪：信号色、等宽读数、固定面板与状态条。",
+      "typography": "正文 Microsoft YaHei 12px；标签与读数 Cascadia Mono。",
+      "traits": ["深色固定视口", "信号绿/琥珀/锈红", "统计读数条", "方角面板", "全等宽元数据"],
+      "palette": ["#0C1110", "#121917", "#E6EDE9", "#6FE3A8", "#FF7A66"]
+    }
+  ]
+}

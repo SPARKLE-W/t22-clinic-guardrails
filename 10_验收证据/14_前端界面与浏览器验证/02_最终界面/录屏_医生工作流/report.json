@@ -1,0 +1,41 @@
+[
+  {
+    "file": "motion-end.jpg",
+    "state": null,
+    "size": "1366x768",
+    "zoom": 1,
+    "issues": [],
+    "frames": {
+      "start": {
+        "file": "motion-start.jpg",
+        "source": "Page.captureScreenshot",
+        "timeMs": 6331
+      },
+      "mid": {
+        "file": "motion-mid.jpg",
+        "source": "Page.screencastFrame",
+        "timeMs": 6343
+      },
+      "end": {
+        "file": "motion-end.jpg",
+        "source": "Page.captureScreenshot",
+        "timeMs": 8162
+      }
+    },
+    "sampling": {
+      "mode": "action",
+      "step": 13,
+      "action": "click",
+      "raw": "click [data-action=\"close-modal\"]"
+    },
+    "durationMs": 8162,
+    "consistency": {
+      "status": "matched",
+      "reference": "motion-end.jpg",
+      "different": false,
+      "changedPixels": 0,
+      "maxTilePixels": 0,
+      "pixelRatio": 0
+    }
+  }
+]

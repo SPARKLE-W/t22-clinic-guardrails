@@ -34,6 +34,33 @@ class GovernanceTests(TransactionTestCase):
     def call(self, permission, payload, actor=None, key=None):
         return mutate((actor or self.manager).pk, permission, key or str(uuid.uuid4()), payload)
 
+    def test_frontend_shell_session_handoff_and_scoped_assets(self):
+        anonymous = self.client.get('/api/session')
+        self.assertEqual(200, anonymous.status_code)
+        self.assertEqual({'authenticated': False}, anonymous.json())
+
+        shell = self.client.get('/app')
+        self.assertEqual(200, shell.status_code)
+        self.assertIn('text/html', shell['Content-Type'])
+        self.assertIn('csrftoken', shell.cookies)
+        self.assertIn('门诊护栏', b''.join(shell.streaming_content).decode('utf-8'))
+
+        self.client.login(username='manager-a', password='test-only-password')
+        info = self.client.get('/api/session').json()
+        self.assertEqual({'authenticated', 'username', 'role', 'store_ref', 'store_name'}, set(info))
+        self.assertEqual('manager-a', info['username'])
+        self.assertEqual('manager', info['role'])
+        self.assertEqual(str(self.a.pk), info['store_ref'])
+        self.assertEqual('A', info['store_name'])
+
+        script = self.client.get('/app/assets/app.js')
+        self.assertEqual(200, script.status_code)
+        self.assertIn('javascript', script['Content-Type'])
+        self.assertEqual(404, self.client.get('/app/assets/../../vetapp/settings.py').status_code)
+
+        self.client.post('/api/logout')
+        self.assertEqual({'authenticated': False}, self.client.get('/api/session').json())
+
     def generate(self, key=None):
         result = self.call(GENERATE, {'definition': self.definition, 'reason': '定义演示规则'}, key=key)
         self.assertIn('candidate_ref', result)

@@ -1,0 +1,75 @@
+{
+  "stage": "14_frontend_ui_browser",
+  "date": "2026-10-23",
+  "environment": {
+    "os": "Windows desktop, maximized",
+    "browser": "Chrome 155.0.8059.85 (Chromium)",
+    "edge_installed": "155.0.4283.62",
+    "edge_independently_tested": false,
+    "viewport_primary": "1366x768",
+    "viewport_supplement": ["1024x768", "1920x1080"],
+    "python": "3.12.14",
+    "django": "5.2.18",
+    "mysql": "8.4.13",
+    "entry": "http://127.0.0.1:18730/app",
+    "data": "synthetic course demo data"
+  },
+  "checks": {
+    "node_syntax": "pass",
+    "django_check": "pass",
+    "full_regression": {
+      "command": "python manage.py test tests governance clinic --noinput -v 1",
+      "tests": 133,
+      "result": "OK (skipped=10: real queue tests without local MQ config; CI runs RabbitMQ)",
+      "seconds": 49.444
+    },
+    "new_test": "governance.tests.GovernanceTests.test_frontend_shell_session_handoff_and_scoped_assets",
+    "frontend_guardrails": {
+      "script": "05_系统代码/frontend/tests/guardrails.test.cjs",
+      "result": "ok",
+      "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "HTTP 200 unparseable keeps pending key", "clinical page 51 control", "misregistered medication correction", "late route response discarded"],
+      "note": "Node VM with synthetic data; not a full browser or database integration test"
+    },
+    "session_endpoint": "anonymous/{authenticated:false}; authenticated minimal identity; logout returns anonymous",
+    "asset_traversal": "GET /app/assets/../../vetapp/settings.py -> 404",
+    "static_entry_csrf": "GET /app sets csrftoken cookie",
+    "console_errors": "none on primary screenshots",
+    "horizontal_overflow": "none at 1366x768"
+  },
+  "flows": [
+    {"id": "frontdesk_create", "result": "pass", "observed": "created encounter a65c0bee..., redirected to detail"},
+    {"id": "frontdesk_correct", "result": "pass", "observed": "created v2, v1 retained"},
+    {"id": "frontdesk_conflict_409", "result": "pass", "observed": "STATE_OR_VERSION_CONFLICT shown in modal, input retained, reload-latest action offered"},
+    {"id": "clinical_target_forbidden", "result": "pass", "observed": "403 target unavailable page shown for unknown/unauthorized encounter"},
+    {"id": "doctor_first_diagnosis", "result": "pass", "observed": "clinical record v1"},
+    {"id": "doctor_diagnosis_correction", "result": "pass", "observed": "v3, prior versions retained"},
+    {"id": "doctor_medication_append", "result": "pass", "observed": "medication chain 0->1"},
+    {"id": "doctor_medication_correction", "result": "pass", "observed": "linked correction added, 1->2"},
+    {"id": "doctor_suggestion_adopt", "result": "pass", "observed": "adoption with source, reason, version"},
+    {"id": "doctor_alert_resolve", "result": "pass", "observed": "unhandled 6->5, handler/time/result recorded"},
+    {"id": "manager_generate_submit_approve_activate", "result": "pass", "observed": "generation 1->2, active candidate switched"},
+    {"id": "manager_audit", "result": "pass", "observed": "100 metadata rows, no clinical text"}
+  ],
+  "not_verified": [
+    "Edge independent run",
+    "200% zoom",
+    "formal performance/load acceptance",
+    "browser-level GUARD_BLOCKED hit",
+    "401/503 browser state screenshots"
+  ],
+  "review": {
+    "v1_score": 7,
+    "v2_score": 8,
+    "v2_report": "00_评审/独立视觉评审_v2.md",
+    "v2_disposition": "00_评审/主代理处置_v2.md"
+  },
+  "evidence": {
+    "final_screenshots": 15,
+    "supplement_screenshots": 2,
+    "recording_seconds": 9.1,
+    "final_dir": "10_验收证据/14_前端界面与浏览器验证/02_最终界面",
+    "process_dir": "10_验收证据/14_前端界面与浏览器验证/03_流程截图",
+    "exploration_dir": "10_验收证据/14_前端界面与浏览器验证/01_方向探索",
+    "review_dir": "10_验收证据/14_前端界面与浏览器验证/00_评审"
+  }
+}
