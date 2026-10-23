@@ -272,6 +272,23 @@ const session = (c, role, store, username) => {
 
   {
     const c = context();
+    session(c, 'manager', 'A', 'a_manager');
+    for (const payload of [{}, { encounter_created_count: 0 }, {
+      time_range: null, encounter_created_count: 0, error_marked_count: 0,
+      hit_count: 0, alert_count: 0, unhandled_count: 0,
+      grouped_counts: { group_by: 'rule', items: [{ rule_ref: 'SR-02', hit_count: 'bad', alert_count: 0, unhandled_count: 0 }] }
+    }]) {
+      run(c, `api=async()=>(${JSON.stringify(payload)});`);
+      let error;
+      try { await run(c, 'viewSummary(nodes.view)'); } catch (e) { error = e; }
+      assert.equal(error && error.code, 'UNPARSEABLE');
+      assert.ok(!run(c, 'nodes.view.innerHTML').includes('空集合是真实零'));
+    }
+    results.push('malformed HTTP 200 summary never becomes a true zero');
+  }
+
+  {
+    const c = context();
     const full = '11111111-2222-4333-8444-555555555555';
     assert.ok(run(c, `copyRef('${full}', '候选编号')`).includes(`data-value="${full}"`));
     assert.equal((source.match(/case 'copy-ref'/g) || []).length, 1);

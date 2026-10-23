@@ -1737,8 +1737,21 @@ async function viewSummary(view) {
   const tr = rangeParam(state.summaryRange);
   if (tr) params.time_range = tr;
   const d = await api('/api/reports/store-summary?' + qs(params));
-  const groups = (d.grouped_counts && d.grouped_counts.items) || [];
-  const groupBy = (d.grouped_counts && d.grouped_counts.group_by) || state.summaryGroup;
+  const counts = ['encounter_created_count', 'error_marked_count', 'hit_count', 'alert_count', 'unhandled_count'];
+  const validCount = (value) => Number.isSafeInteger(value) && value >= 0;
+  const groupBy = d && d.grouped_counts && d.grouped_counts.group_by;
+  const groups = d && d.grouped_counts && d.grouped_counts.items;
+  const validRange = d && (d.time_range === null || (d.time_range &&
+    typeof d.time_range.from === 'string' && typeof d.time_range.to === 'string' &&
+    Number.isFinite(Date.parse(d.time_range.from)) && Number.isFinite(Date.parse(d.time_range.to))));
+  const validGroups = Array.isArray(groups) && groups.every((g) => g && (
+    groupBy === 'rule'
+      ? typeof g.rule_ref === 'string' && validCount(g.hit_count) && validCount(g.alert_count) && validCount(g.unhandled_count)
+      : ['unhandled', 'handled'].includes(g.handling_state) && validCount(g.alert_count)));
+  if (!d || !counts.every((key) => validCount(d[key])) || !validRange ||
+      groupBy !== state.summaryGroup || !validGroups) {
+    throw new ApiError('UNPARSEABLE', 200, null);
+  }
   const rangeLabel = d.time_range
     ? `${esc(fmtTime(d.time_range.from))} — ${esc(fmtTime(d.time_range.to))}`
     : '全部时间';
@@ -1762,11 +1775,11 @@ async function viewSummary(view) {
       <span class="count">${rangeLabel} · 只读</span>
     </div>
     <div class="stat-strip summary-stats">
-      <div class="stat"><b>${esc(d.encounter_created_count ?? 0)}</b><span>建档接诊</span></div>
-      <div class="stat"><b>${esc(d.error_marked_count ?? 0)}</b><span>误建</span></div>
-      <div class="stat"><b>${esc(d.hit_count ?? 0)}</b><span>命中</span></div>
-      <div class="stat"><b>${esc(d.alert_count ?? 0)}</b><span>告警</span></div>
-      <div class="stat"><b>${esc(d.unhandled_count ?? 0)}</b><span>未处理</span></div>
+      <div class="stat"><b>${esc(d.encounter_created_count)}</b><span>建档接诊</span></div>
+      <div class="stat"><b>${esc(d.error_marked_count)}</b><span>误建</span></div>
+      <div class="stat"><b>${esc(d.hit_count)}</b><span>命中</span></div>
+      <div class="stat"><b>${esc(d.alert_count)}</b><span>告警</span></div>
+      <div class="stat"><b>${esc(d.unhandled_count)}</b><span>未处理</span></div>
     </div>
     <div class="detail-grid summary-grid">
       <section class="sheet">
