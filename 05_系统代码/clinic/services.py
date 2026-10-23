@@ -216,7 +216,7 @@ def read(actor_id, clinical=False, ref=None, query=None):
     explicit_ref = ref
     try:
         with transaction.atomic():
-            actor = require(actor_id, permission, lock=True)
+            actor = require(actor_id, permission)
             query = {} if query is None else query
             _object(query, ['encounter_ref', 'record_ref', 'time_range', 'page'])
             if ref is not None and query:
@@ -236,7 +236,7 @@ def read(actor_id, clinical=False, ref=None, query=None):
             if explicit_ref:
                 if 'time_range' in query or 'page' in query:
                     raise DomainError('INPUT_FIELDS_INVALID', 422)
-                rows = [_own(actor, explicit_ref, clinical, lock=True)]
+                rows = [_own(actor, explicit_ref, clinical)]
                 total, page = 1, 1
             else:
                 filters = {'store': actor.store, 'doctor' if clinical else 'receptionist': actor}
@@ -255,7 +255,7 @@ def read(actor_id, clinical=False, ref=None, query=None):
                 if type(page) is not int or not 1 <= page <= 100000:
                     raise DomainError('INPUT_INVALID', 422)
                 total = values.count()
-                rows = list(values.select_for_update()[(page-1)*50:page*50])
+                rows = list(values[(page-1)*50:page*50])
             relations = ['template', 'receptionrevision_set']
             if clinical:
                 relations += ['clinicalrecord__template', 'clinicalrecord__clinicalrevision_set', 'clinicalrecord__medicationentry_set',

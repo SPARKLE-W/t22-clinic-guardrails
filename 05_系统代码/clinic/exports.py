@@ -77,7 +77,7 @@ def _response(body, ref, count, name):
 
 def clinical(actor_id, payload):
     with transaction.atomic():
-        actor = require(actor_id, CLINICAL, lock=True)
+        actor = require(actor_id, CLINICAL)
         _object(payload, ['scope', 'purpose'], ['scope', 'purpose'])
         _text(payload['purpose'], 2000)
         scope = payload['scope']
@@ -154,7 +154,7 @@ def clinical_records(request):
 
 def guard(actor_id, permission, payload):
     with transaction.atomic():
-        actor = require(actor_id, permission, lock=True)
+        actor = require(actor_id, permission)
         allowed = ['scope', 'time_range', 'rule_ref', 'handling_state'] if permission == DETAIL else [
             'time_range', 'rule_ref', 'handling_state', 'group_by']
         _object(payload, allowed)
