@@ -348,7 +348,7 @@ async function write(path, body, options = {}) {
     const retryable = e.code === 'NETWORK' || e.code === 'UNPARSEABLE' || e.status === 0 || e.status === 408 || e.status === 429 || e.status >= 500;
     if (!retryable) endOp(ctx);
     if (e.status === 409 && wasPending) {
-      e.message = '上次提交结果未确认，已沿用同一幂等键防止重复；服务端拒绝重复或版本已变。请刷新核对最新记录后再重新提交。';
+      e.message = '提交结果还没确认。请刷新核对最新记录，再决定是否重试。';
     }
     throw e;
   }
@@ -430,7 +430,7 @@ function openModal({ title, subtitle = '', body = '', foot = '', wide = false, k
   document.body.style.overflow = 'hidden';
   if (draftKey && pendingFor(draftKey)) {
     const bodyEl = $('.modal-body', modalRoot);
-    bodyEl.insertAdjacentHTML('afterbegin', '<div class="pending-note">上次提交结果未确认；本次沿用同一幂等键，服务端会拒绝重复或版本已变。请先核对最新记录。</div>');
+    bodyEl.insertAdjacentHTML('afterbegin', '<div class="pending-note">上次提交结果还没确认。请先核对最新记录，避免重复提交。</div>');
   }
   if (draftKey) {
     const form = $('form[data-draft]', modalRoot);
@@ -574,29 +574,56 @@ function textareaHtml(name, value, opts = {}) {
 function renderLogin() {
   state.renderSeq++;
   closeModal();
-  const notice = state.bootError ? `<div class="login-error">无法核对会话：${esc(state.bootError.message)} 仍可直接尝试登录。</div>` : '';
+  const notice = state.bootError ? `<div class="login-error">暂时无法连接工作台，请稍后重试。</div>` : '';
+  const today = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date());
   root.innerHTML = `
   <div class="login">
     <section class="login-brand">
       <div class="login-top">
         <span class="mark">护</span>
-        <span class="brand-text"><b>门诊护栏</b><small>CLINIC GUARDRAILS</small></span>
+        <span class="brand-text"><b>门诊护栏</b><small>宠物门诊 · 内部工作台</small></span>
       </div>
-      <div class="login-quote">
-        <p class="login-title">让每一次写入都有边界，<br>让每一次读取都有留痕。</p>
-        <p class="login-line">接诊、病历、用药与治理共用一个受控工作台。前台只写接待，医生只写本人接诊，管理只读治理与脱敏审计；更正保留原项，阻断不写病历。</p>
-        <ol class="principles">
-          <li class="principle"><b>01</b><div><strong>角色边界</strong><span>字段与数据范围由账号、门店和接待/接诊归属判定，页面隐藏按钮不代替服务端鉴权。</span></div></li>
-          <li class="principle"><b>02</b><div><strong>版本不可覆盖</strong><span>更正生成新版本，原项与旧版本保留；历史按当时模板解释。</span></div></li>
-          <li class="principle"><b>03</b><div><strong>阻断即留痕</strong><span>护栏命中时病历不改变，校验事件与告警保留，由负责医生核对处理。</span></div></li>
-        </ol>
+      <div class="login-hero">
+        <div class="login-art" aria-hidden="true">
+          <svg viewBox="0 0 520 280" role="presentation">
+            <circle class="art-wash" cx="118" cy="132" r="92"/>
+            <circle class="art-soft" cx="390" cy="118" r="72"/>
+            <g class="art-line">
+              <path d="M96 62 82 22l42 20"/>
+              <path d="M150 52l20-32 22 38"/>
+              <path d="M76 76c52-34 118-24 138 26 20 50-10 92-64 98-54 6-96-28-96-70 0-24 8-42 22-54Z"/>
+              <path d="M112 116c5 5 11 5 16 0M142 116c5 5 11 5 16 0"/>
+              <path d="m132 132-4 6h8Z" fill="currentColor" stroke="none"/>
+              <path d="M122 142c4 4 10 4 14 0"/>
+              <path d="M108 132H84M108 140H84M156 132h24M156 140h24"/>
+              <circle cx="390" cy="126" r="58"/>
+              <path d="M342 100c-28-8-42 18-30 50 8 22 28 24 40 8M438 100c28-8 42 18 30 50-8 22-28 24-40 8"/>
+              <path d="M370 116c4 4 10 4 14 0M398 116c4 4 10 4 14 0"/>
+              <ellipse cx="390" cy="142" rx="22" ry="15"/>
+              <path d="m390 136-5 5h10Z" fill="currentColor" stroke="none"/>
+              <path d="M390 148v5M380 152c3 5 17 5 20 0"/>
+              <path d="M238 66c10-12 28-8 28 6 0 12-16 20-28 28-12-8-28-16-28-28 0-14 18-18 28-6Z"/>
+              <path d="M238 82v26M228 94h20" class="art-cross"/>
+            </g>
+            <g class="art-paws">
+              <path d="M64 230c0-6 5-11 11-11s11 5 11 11-5 11-11 11-11-5-11-11Z"/>
+              <path d="M54 214c0-4 3-7 7-7s7 3 7 7-3 7-7 7-7-3-7-7ZM73 210c0-4 3-7 7-7s7 3 7 7-3 7-7 7-7-3-7-7ZM88 218c0-4 3-7 7-7s7 3 7 7-3 7-7 7-7-3-7-7Z"/>
+              <path d="M430 226c0-5 4-9 9-9s9 4 9 9-4 9-9 9-9-4-9-9Z"/>
+              <path d="M421 212c0-3 3-6 6-6s6 3 6 6-3 6-6 6-6-3-6-6ZM437 208c0-3 3-6 6-6s6 3 6 6-3 6-6 6-6-3-6-6ZM451 215c0-3 3-6 6-6s6 3 6 6-3 6-6 6-6-3-6-6Z"/>
+            </g>
+          </svg>
+        </div>
+        <h1 class="login-title">把每一次接诊，<br>记得更清楚。</h1>
+        <p class="login-date">${esc(today)} · 门诊工作中</p>
+        <p class="login-line">从接待到病历，从用药到复查。让门店里的每一份就诊记录都完整、清楚、找得到。</p>
+        <div class="login-tags"><span>接诊记录</span><span>用药留痕</span><span>复查可查</span></div>
       </div>
-      <div class="login-foot"><span>T22 · 门店内部工作台</span><span>授权账号登录</span></div>
+      <div class="login-foot"><span>T22 · 门店内部工作台</span><span>仅限授权账号使用</span></div>
     </section>
     <section class="login-side">
       <div class="login-card">
-        <h1>登录工作台</h1>
-        <p class="hint">使用门店分配的内部账号。宠物主人没有登录端。</p>
+        <h2>登录工作台</h2>
+        <p class="hint">使用门店分配的账号继续。</p>
         ${notice}
         <form class="login-form" data-form="login" novalidate>
           <div class="field">
@@ -610,7 +637,7 @@ function renderLogin() {
           <div class="login-error hide" id="login-error" role="alert"></div>
           <button class="btn primary" type="submit">登录</button>
         </form>
-        <p class="login-notice">会话 Cookie 为 HttpOnly，页面不保存口令。登录后按当前账号重新核验角色与数据范围；读取和写入都会记录审计事件。</p>
+        <p class="login-help">忘记密码请联系门店管理员。</p>
       </div>
     </section>
   </div>`;
@@ -664,9 +691,9 @@ function navConfig() {
     ];
   }
   return [
-    { key: 'governance', num: '01', label: '治理台', href: '#/governance' },
+    { key: 'governance', num: '01', label: '规则管理', href: '#/governance' },
     { key: 'summary', num: '02', label: '本店汇总', href: '#/summary' },
-    { key: 'audit', num: '03', label: '脱敏审计', href: '#/audit' }
+    { key: 'audit', num: '03', label: '操作记录', href: '#/audit' }
   ];
 }
 
@@ -689,9 +716,9 @@ function railListHtml() {
     const sb = state.sidebar || {};
     const items = Array.isArray(sb.items) ? sb.items.slice(0, 5) : [];
     return `
-      <div class="rail-title">治理摘要 <span>GEN ${esc(sb.generation ?? '—')}</span></div>
+      <div class="rail-title">规则概览 <span>版本 ${esc(sb.generation ?? '—')}</span></div>
       <div class="rail-list">
-        <div class="case-mini"><b>当前生效</b><p>${sb.active_candidate_ref ? shortRef(sb.active_candidate_ref) : '尚无生效候选'}</p><time>候选 ${items.length} 个</time></div>
+        <div class="case-mini"><b>当前规则</b><p>${sb.active_candidate_ref ? shortRef(sb.active_candidate_ref) : '尚未启用规则'}</p><time>候选 ${items.length} 条</time></div>
         ${items.map((c) => `<a class="case-mini ${state.selectedCandidate === c.candidate_ref ? 'on' : ''}" href="#/governance/${esc(c.candidate_ref)}">
           <b><i class="${c.state === 'approved' ? '' : c.state === 'rejected' ? 'err' : 'wait'}"></i>${esc(CANDIDATE_STATES[c.state] || c.state)} · ${esc(c.version || '')}</b>
           <p>${esc(shortRef(c.candidate_ref))}</p><time>${esc(fmtTime(c.created_at))}</time>
@@ -738,7 +765,7 @@ function renderShell() {
     <header class="masthead">
       <div class="brand" style="display:flex;align-items:center;gap:11px">
         <span class="mark">护</span>
-        <span class="brand-text"><b>门诊护栏</b><small>CLINIC GUARDRAILS</small></span>
+        <span class="brand-text"><b>门诊护栏</b><small>宠物门诊工作台</small></span>
       </div>
       <div class="mast-meta">
         <span class="store">${esc(s.store_name || s.store_ref)}</span>
@@ -754,8 +781,8 @@ function renderShell() {
         <nav class="rail-nav">${navHtml()}</nav>
         <div class="rail-block">${railListHtml()}</div>
         <div class="rail-foot">
-          <span id="rail-policy">${s.role === 'manager' ? '生效 ' + esc(sb.generation ?? '—') : '受控读取'}</span>
-          <span>会话 8 小时</span>
+          <span id="rail-policy">${s.role === 'manager' ? '规则版本 ' + esc(sb.generation ?? '—') : '门诊工作中'}</span>
+          <span>${esc(new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric', weekday: 'short' }).format(new Date()))}</span>
         </div>
       </aside>
       <main class="main"><div class="page" id="view" tabindex="-1"></div></main>
@@ -773,8 +800,8 @@ function updateShell() {
   if (store) store.textContent = state.session.store_name || state.session.store_ref;
   const policy = $('#rail-policy');
   if (policy) policy.textContent = state.session.role === 'manager'
-    ? '生效 ' + ((state.sidebar && state.sidebar.generation) ?? '—')
-    : '受控读取';
+    ? '规则版本 ' + ((state.sidebar && state.sidebar.generation) ?? '—')
+    : '门诊工作中';
 }
 
 async function enterApp() {
@@ -867,7 +894,7 @@ function viewError(e) {
   return `<div class="view"><section class="error-sheet">
     <div class="error-head"><h1>${esc(title)}</h1><span class="stamp blocked">${e && e.status === 403 ? '拒绝读取' : '未完成'}</span></div>
     <p>${esc(message)}</p>
-    <p class="read-note">服务端已拒绝或未能完成本次读取；页面不展示任何未获准的正文。可以返回工作区，或刷新后重新核对当前账号范围。</p>
+    <p class="read-note">没有权限查看这部分内容。可以返回工作区，或刷新后重试。</p>
     <div class="error-actions">${action}</div>
   </section></div>`;
 }
@@ -960,7 +987,7 @@ async function viewReceptions(view) {
     <header class="page-head">
       <div>
         <h1>接诊台</h1>
-        <p class="lede">仅显示 ${esc(state.session.store_name)} 中由当前账号接待的资料。前台读取范围内不含诊断、检查与处方正文。</p>
+        <p class="lede">今天由你接待的宠物。点开记录查看接待资料与版本。</p>
       </div>
       <div class="head-side"><div class="head-actions"><button class="btn ghost" data-action="reload">刷新</button><a class="btn primary" href="#/receptions/new">新建接诊</a></div></div>
     </header>
@@ -969,8 +996,8 @@ async function viewReceptions(view) {
         ${['today', '7d', 'all'].map((r) => `<button type="button" class="${state.range === r ? 'on' : ''}" data-action="range" data-range="${r}">${r === 'today' ? '今日' : r === '7d' ? '近 7 天' : '全部'}</button>`).join('')}
       </div>
       <form class="lookup" data-form="lookup-reception" novalidate>
-        <label for="lookup-ref">按完整编号定位</label>
-        <input id="lookup-ref" name="ref" placeholder="粘贴完整 UUID（36 位）" autocomplete="off">
+        <label for="lookup-ref">按编号查找</label>
+        <input id="lookup-ref" name="ref" placeholder="输入宠物编号" autocomplete="off">
         <button class="btn sm" type="submit">定位</button>
       </form>
       <span class="count">共 ${total} 条 · 第 ${page} / ${pages} 页</span>
@@ -984,7 +1011,7 @@ async function viewReceptions(view) {
       <span class="count">第 ${page} / ${pages} 页</span>
       <button class="btn sm ghost" data-action="reception-page" data-page="${page + 1}" ${page >= pages ? 'disabled' : ''}>下一页</button>
     </div>` : ''}
-    <footer class="page-foot"><span>前台只处理本店由其接待的资料 · 读取已记录审计</span><span>第 ${page} 页</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 接待记录可追溯</span><span>第 ${page} 页</span></footer>
   </div>`;
 }
 
@@ -1013,24 +1040,24 @@ async function viewNewReception(view) {
     <header class="page-head">
       <div>
         <h1>建立接诊</h1>
-        <p class="lede">先确认宠物身份，再填写物种、主诉和接诊医生。接待资料一经建立即固定归属，后续更正保留原版本。</p>
+        <p class="lede">先确认宠物身份，再记录本次到院情况。</p>
       </div>
-      <div class="head-side"><div class="head-actions"><button class="btn primary" type="submit" form="new-reception-form" ${noDoctor ? 'disabled' : ''}>建立接诊</button><span class="stamp">归属固定</span></div></div>
+      <div class="head-side"><div class="head-actions"><button class="btn primary" type="submit" form="new-reception-form" ${noDoctor ? 'disabled' : ''}>建立接诊</button><span class="stamp">前台</span></div></div>
     </header>
     <div class="detail-grid">
       <form id="new-reception-form" class="sheet form-sheet" data-form="new-reception" data-draft="new-reception" novalidate>
-        ${pending ? `<div class="pending-note">上次建立接诊的结果未确认；本次沿用同一幂等键，服务端会拒绝重复或内容冲突。请先回接诊台核对，再决定是否重试。</div>` : ''}
+        ${pending ? `<div class="pending-note">上次建立接诊的结果还没确认。请先回接诊台核对，避免重复建档。</div>` : ''}
         <div class="form-grid">
           <div class="field wide">
             <span class="field-label">宠物身份 <b style="color:var(--rust)">*</b></span>
             <div class="choice-row">
               <label class="choice ${identity === 'new' ? 'on' : ''}">
                 <input type="radio" name="identity" value="new" ${identity === 'new' ? 'checked' : ''}>
-                <b>新宠物</b><span>由系统生成本店宠物编号，建立新的身份档案。</span>
+                <b>新宠物</b><span>第一次到店的宠物。</span>
               </label>
               <label class="choice ${identity === 'known' ? 'on' : ''}">
                 <input type="radio" name="identity" value="known" ${identity === 'known' ? 'checked' : ''}>
-                <b>已知宠物</b><span>输入已有编号并核验可关联，不返回历史病历。</span>
+                <b>已知宠物</b><span>之前来过，用宠物编号找到档案。</span>
               </label>
             </div>
           </div>
@@ -1039,9 +1066,9 @@ async function viewNewReception(view) {
             <label for="f-pet_ref">新宠物编号</label>
             <div class="input-row">
               <input id="f-pet_ref" name="pet_ref" class="mono" type="text" value="${esc(petRef)}" readonly>
-              <button class="btn sm ghost" type="button" data-action="regen-pet">重新生成</button>
+              <button class="btn sm ghost" type="button" data-action="regen-pet">换一个</button>
             </div>
-            <p class="hint">编号由浏览器生成并提交，作为本店宠物档案标识；不包含主人信息。</p>
+            <p class="hint">自动生成，无需手动填写。</p>
           </div>
 
           <div class="field wide ${identity === 'known' ? '' : 'hide'}" id="known-pet-block">
@@ -1060,36 +1087,35 @@ async function viewNewReception(view) {
           </div>
 
           <div class="field">
-            <label for="f-pet_name">宠物名称（可选）</label>
+            <label for="f-pet_name">宠物昵称（可选）</label>
             <input id="f-pet_name" name="pet_name" type="text" maxlength="100" value="${esc(petName)}" placeholder="现场称呼，可留空">
           </div>
 
           <div class="field wide">
             <label for="f-complaint">主诉 <b style="color:var(--rust)">*</b><span class="char-count" id="complaint-count">${complaint.length} / 10000</span></label>
-            <textarea id="f-complaint" name="complaint" maxlength="10000" placeholder="记录到院时的主要诉求，不写诊断结论">${esc(complaint)}</textarea>
+            <textarea id="f-complaint" name="complaint" maxlength="10000" placeholder="描述宠物这次到院的情况">${esc(complaint)}</textarea>
           </div>
 
           <div class="field wide">
             <label for="f-doctor_ref">接诊医生 <b style="color:var(--rust)">*</b></label>
             <select id="f-doctor_ref" name="doctor_ref" ${noDoctor ? 'disabled' : ''}>
-              ${doctors.map((d) => `<option value="${esc(d.doctor_ref)}" ${String(d.doctor_ref) === String(doctorRef) ? 'selected' : ''}>${esc(d.display_name)} · 账号 #${esc(d.doctor_ref)}</option>`).join('')}
+              ${doctors.map((d) => `<option value="${esc(d.doctor_ref)}" ${String(d.doctor_ref) === String(doctorRef) ? 'selected' : ''}>${esc(d.display_name)}</option>`).join('')}
             </select>
-            <p class="hint">${noDoctor ? '本店暂无可用接诊医生，暂时不能建档。' : '列表来自本店当前有效医生账号，提交时由服务端再次核验。'}</p>
+            <p class="hint">${noDoctor ? '本店暂无可用接诊医生，暂时不能建档。' : '选择本次接诊的医生。'}</p>
           </div>
         </div>
         <div class="form-actions">
           <button class="btn primary" type="submit" ${noDoctor ? 'disabled' : ''}>建立接诊</button>
           <a class="btn ghost" href="#/receptions">取消</a>
-          <span class="form-note">提交成功后生成接待记录 v1，并记录审计事件。</span>
+          <span class="form-note">提交后会生成接待记录。</span>
         </div>
       </form>
       <aside class="side">
-        <section class="panel"><div class="panel-head"><span class="panel-label">建档规则</span></div>
+        <section class="panel"><div class="panel-head"><span class="panel-label">小提示</span></div>
           <div class="aside-note"><ol>
-            <li><b>身份先定</b>新宠物生成新编号；已知宠物必须在本店可关联，核验不返回旧病历。</li>
-            <li><b>归属固定</b>建档后接待人与接诊医生固定，复诊或参数修改不能改写历史归属。</li>
-            <li><b>更正留痕</b>资料有误由前台提交更正，生成新版本并保留原版本。</li>
-            <li><b>正文隔离</b>前台不读取临床诊断、检查与处方正文。</li>
+            <li><b>第一次到店</b>选“新宠物”，会自动生成本店编号。</li>
+            <li><b>之前来过</b>选“已知宠物”，输入编号后核验。</li>
+            <li><b>资料有误</b>在接待详情里提交更正，原记录会保留。</li>
           </ol></div>
         </section>
       </aside>
@@ -1118,7 +1144,7 @@ async function viewReceptionDetail(view, id) {
     <header class="page-head">
       <div>
         <h1>${esc(r.pet_name || '未命名宠物')}</h1>
-        <p class="lede">${esc(r.species || '未记录物种')} · 接待资料由 ${esc(state.session.username)} 读取。</p>
+        <p class="lede">${esc(r.species || '未记录物种')} · 本次接诊资料</p>
       </div>
       <div class="head-side">
         <div class="head-meta">
@@ -1149,7 +1175,7 @@ async function viewReceptionDetail(view, id) {
           <div class="block-body">
             <div class="block-head"><h2>接待资料</h2><em>前台可更正；医生只读</em></div>
             <dl class="fields">
-              <div><dt>宠物名称</dt><dd>${esc(r.pet_name || '未填写')}</dd></div>
+              <div><dt>宠物昵称</dt><dd>${esc(r.pet_name || '未填写')}</dd></div>
               <div><dt>物种</dt><dd>${esc(r.species || '—')}</dd></div>
               <div class="wide"><dt>主诉</dt><dd>${esc(r.complaint || '')}</dd></div>
               <div><dt>宠物编号</dt><dd>${refCode(r.pet_ref)}</dd></div>
@@ -1192,18 +1218,18 @@ async function viewReceptionDetail(view, id) {
       </section>
 
       <aside class="side">
-        <section class="panel"><div class="panel-head"><span class="panel-label">前台读取范围</span></div>
-          <div class="panel-body"><p class="read-note">本页只返回接待资料与版本。临床诊断、检查、用药与建议正文由接诊医生范围读取，前台页面不提供入口，直接请求也会被服务端拒绝。</p></div>
+        <section class="panel"><div class="panel-head"><span class="panel-label">本次接待</span></div>
+          <div class="panel-body"><p class="read-note">接待资料由前台维护；诊断、检查与用药由医生记录。</p></div>
         </section>
-        <section class="panel"><div class="panel-head"><span class="panel-label">读取留痕</span></div>
-          <div class="panel-body"><div class="read-line"><i></i><span>encounter.read · 成功</span></div><p class="read-note">本次读取已写入审计事件；审计只记录获准元数据，不复制主诉正文。</p></div>
+        <section class="panel"><div class="panel-head"><span class="panel-label">版本</span></div>
+          <div class="panel-body"><div class="read-line"><i></i><span>已保留 ${vs.length} 个版本</span></div><p class="read-note">更正会生成新版本，原记录仍可核对。</p></div>
         </section>
-        <section class="panel"><div class="panel-head"><span class="panel-label">更正规则</span></div>
-          <div class="panel-body"><p class="read-note">更正必须绑定当前版本并填写理由；提交后生成新版本，旧版本仍可核对。误建标记与更正分开操作，均不删除记录。</p></div>
+        <section class="panel"><div class="panel-head"><span class="panel-label">小提示</span></div>
+          <div class="panel-body"><p class="read-note">资料有误时提交更正并写明原因；误建标记不会删除原记录。</p></div>
         </section>
       </aside>
     </div>
-    <footer class="page-foot"><span>接诊归属固定 · 前台只处理本店由其接待的资料</span><span>${esc(fmtFull(r.created_at))}</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 接待记录可追溯</span><span>${esc(fmtFull(r.created_at))}</span></footer>
   </div>`;
 }
 
@@ -1251,7 +1277,7 @@ async function viewClinicalList(view) {
     <header class="page-head">
       <div>
         <h1>诊疗队列</h1>
-        <p class="lede">仅显示本店由当前账号负责接诊的临床内容。告警持续保留，查看不会自动标记完成。</p>
+        <p class="lede">今天由你负责的接诊。点开记录写病历、处理告警。</p>
       </div>
       <div class="head-side"><div class="head-actions">
         <button class="btn ghost sm" data-action="reload">刷新</button>
@@ -1273,7 +1299,7 @@ async function viewClinicalList(view) {
       <span class="count">第 ${page} / ${pages} 页</span>
       <button class="btn sm ghost" data-action="clinical-page" data-page="${page + 1}" ${page >= pages ? 'disabled' : ''}>下一页</button>
     </div>` : ''}
-    <footer class="page-foot"><span>接诊归属固定 · 只读取本人负责范围 · 读取已记录审计</span><span>第 ${page} 页</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 诊疗记录可追溯</span><span>第 ${page} 页</span></footer>
   </div>`;
 }
 
@@ -1353,7 +1379,7 @@ async function viewClinicalDetail(view, id) {
       <div class="rule"><b>${esc(a.rule_ref)}</b><span>命中 ${esc(FIELD_TEXT[a.hit_field] || a.hit_field)}（${esc(a.hit_field)}）</span></div>
       <p>${a.record_ref ? '关联病历 ' + esc(shortRef(a.record_ref, 8)) : '关联首次写入校验'} · 待处理</p>
       <a class="btn sm danger" href="#/alerts" style="margin-bottom:4px">去告警处理</a>
-    </div>`).join('') : `<p class="read-note">当前没有未处理告警。查看告警或读取病历都不会自动把告警标为已处理。</p>`;
+    </div>`).join('') : `<p class="read-note">当前没有未处理告警。</p>`;
 
   view.innerHTML = `<div class="view">
     <div class="crumbs"><a href="#/clinical">诊疗队列</a><span>/</span>接诊 ${esc(shortRef(r.encounter_ref, 8))}</div>
@@ -1394,7 +1420,7 @@ async function viewClinicalDetail(view, id) {
             <div class="block-head"><h2>接诊资料</h2><em>前台录入 · 临床侧只读</em></div>
             <dl class="fields">
               <div><dt>物种</dt><dd>${esc(r.species || '—')}</dd></div>
-              <div><dt>宠物名称</dt><dd>${esc(r.pet_name || '未填写')}</dd></div>
+              <div><dt>宠物昵称</dt><dd>${esc(r.pet_name || '未填写')}</dd></div>
               <div class="wide"><dt>主诉</dt><dd>${esc(r.complaint || '')}</dd></div>
               <div><dt>宠物编号</dt><dd>${refCode(r.pet_ref)}</dd></div>
               <div><dt>接诊归属</dt><dd>${esc(state.session.username)} · 本店负责</dd></div>
@@ -1412,7 +1438,7 @@ async function viewClinicalDetail(view, id) {
               <div class="exam"><b>检查记录</b><span>${esc(c.examination || '未填写')}</span></div>`
             : `<div class="block-head"><h2>诊断与检查</h2><em>尚无正式病历</em></div>
               <div class="empty-block"><b>${locked ? '误建记录没有正式病历' : '尚无正式病历'}</b>
-                <p>${locked ? '误建记录只允许对已有内容纠错，不能新增独立治疗。' : '首次诊断提交后生成 v1；诊断为空会被护栏阻断，病历不会生成。'}</p>
+                <p>${locked ? '误建记录只允许对已有内容纠错，不能新增独立治疗。' : '填写诊断后生成病历；内容不完整时不会保存。'}</p>
                 ${locked ? '' : `<button class="btn primary" data-action="diagnosis-first" data-id="${esc(r.encounter_ref)}">填写首次诊断</button>`}
               </div>`}
           </div>
@@ -1461,7 +1487,7 @@ async function viewClinicalDetail(view, id) {
             <div class="check"><i class="st ${chain.length ? '' : 'idle'}"></i>用药条目<span>${chain.length}</span></div>
             <div class="check ${recAlerts.some((a) => a.handling_state === 'unhandled') ? 'bad' : ''}"><i class="st ${recAlerts.some((a) => a.handling_state === 'unhandled') ? 'miss' : 'idle'}"></i>本记录未处理告警<span>${recAlerts.filter((a) => a.handling_state === 'unhandled').length}</span></div>
             <div class="check"><i class="st ${adoptions.length ? '' : 'idle'}"></i>已采纳建议<span>${adoptions.length}</span></div>
-            <p class="read-note" style="margin-top:9px">首次诊断须有诊断内容；更正须绑定当前版本并填写理由；护栏命中时病历不改变并生成告警。</p>
+            <p class="read-note" style="margin-top:9px">更正保留原版本；护栏命中不会改写病历。</p>
           </div>
         </section>
 
@@ -1472,13 +1498,9 @@ async function viewClinicalDetail(view, id) {
         <section class="panel"><div class="panel-head"><span class="panel-label">已保存建议</span><span class="panel-count">${suggestions.length}</span></div>
           <div class="panel-body">${suggestionsHtml}</div>
         </section>
-
-        <section class="panel"><div class="panel-head"><span class="panel-label">读取留痕</span></div>
-          <div class="panel-body"><div class="read-line"><i></i><span>clinical.read · 成功</span></div><p class="read-note">本次读取已记录审计目标；审计不复制诊断正文。</p></div>
-        </section>
       </aside>
     </div>
-    <footer class="page-foot"><span>临床读取只向负责医生开放 · 采纳与更正同事务记录责任</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 本次病历可追溯</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
   </div>`;
 }
 
@@ -1498,15 +1520,15 @@ async function viewAlerts(view) {
     return `<article class="alert-card ${handled ? '' : 'unhandled'}">
       <div class="alert-head">
         <span class="rule">${esc(a.rule_ref)}</span>
-        <span class="field">命中字段 ${esc(a.hit_field)}</span>
+        <span class="field">命中：${esc(fieldText)}</span>
         ${handled ? chip('已处理', 'ok') : chip('待处理', 'danger')}
         <span class="when">${handled ? esc(fmtTime(a.handled_at)) : '尚未处理'}</span>
       </div>
       <div class="alert-body">
         <div>
           <div class="txt"><b>${esc(ruleText)}</b>
-            <div class="alert-specific">命中字段 <code>${esc(a.hit_field)}</code>（${esc(fieldText)}）${a.record_ref ? ' · 关联病历 ' + `<code>${esc(shortRef(a.record_ref, 8))}</code>` : ' · 关联首次写入校验'}${handled ? ' · 处理结果：' + esc(a.handling_result || '未填写') : ''}</div>
-            <p class="note">${handled ? '告警已登记处理；命中事件与原始阻断保留。' : '告警列表不展开字段值；打开病历核对被拦内容，再登记处理结果。查看告警不会自动标记完成。'}</p>
+            <div class="alert-specific">命中字段 ${esc(fieldText)}${a.record_ref ? ' · 关联病历 ' + `<code>${esc(shortRef(a.record_ref, 8))}</code>` : ' · 关联首次写入校验'}${handled ? ' · 处理结果：' + esc(a.handling_result || '未填写') : ''}</div>
+            <p class="note">${handled ? '已处理；原始告警保留。' : '为保护病历，列表只显示字段名。请打开病历核对，再登记处理结果。'}</p>
           </div>
           <div class="alert-actions">
             <button class="btn sm" data-action="locate-alert" data-alert="${esc(a.alert_ref)}">打开病历核对</button>
@@ -1527,7 +1549,7 @@ async function viewAlerts(view) {
     <header class="page-head">
       <div>
         <h1>告警队列</h1>
-        <p class="lede">护栏命中的写入事件。未处理告警持续保留；处理须由负责医生登记结果，记录真实账号与时间。</p>
+        <p class="lede">需要你核对的告警。处理后记录处理人和结果。</p>
       </div>
       <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button></div></div>
     </header>
@@ -1538,7 +1560,7 @@ async function viewAlerts(view) {
       <span class="count">显示 ${items.length} / ${counts.all} 条</span>
     </div>
     ${cards || '<div class="list-empty"><b>当前筛选下没有告警</b><p>护栏命中才会生成告警；查看病历不会产生告警。</p></div>'}
-    <footer class="page-foot"><span>处理告警不会删除命中事件 · 同一告警只登记一次终态</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 告警处理可追溯</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
   </div>`;
 }
 
@@ -1652,7 +1674,7 @@ async function viewGovernance(view, id) {
   let selected = id || state.selectedCandidate || (items[0] && items[0].candidate_ref) || '';
   if (!selected) {
     view.innerHTML = `<div class="view">
-      <header class="page-head"><div><h1>治理台</h1><p class="lede">本店规则与模板的生成、提交、审批和启用是四个独立步骤；批准不会自动启用。</p></div>
+      <header class="page-head"><div><h1>规则管理</h1><p class="lede">生成、提交、审批、启用，每一步都单独记录。</p></div>
       <div class="head-side"><div class="head-actions"><button class="btn primary" data-action="generate-candidate">生成候选</button></div></div></header>
       <div class="list-empty"><b>本店暂无候选</b><p>导入控制定义并生成候选，随后仍需提交、人工审批和手动启用。</p><div style="margin-top:14px"><button class="btn" data-action="generate-candidate">生成候选</button></div></div>
     </div>`;
@@ -1669,7 +1691,7 @@ async function viewGovernance(view, id) {
 
   view.innerHTML = `<div class="view">
     <header class="page-head">
-      <div><h1>治理台</h1><p class="lede">本店候选的生成、提交、审批和启用分别记录。批准绑定具体内容摘要；启用前再次核对生效序号。</p></div>
+      <div><h1>规则管理</h1><p class="lede">候选的生成、审批与启用分别记录；批准不会自动启用。</p></div>
       <div class="head-side"><div class="head-actions"><button class="btn primary" data-action="generate-candidate">生成候选</button></div></div>
     </header>
     <div class="stat-strip">
@@ -1699,7 +1721,7 @@ async function viewGovernance(view, id) {
         </div>
       </section>
     </div>
-    <footer class="page-foot"><span>批准不等于启用 · 不伪造他人审批 · 定义与批准内容绑定</span><span>GEN ${esc(list.generation)}</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 规则变更可追溯</span><span>规则版本 ${esc(list.generation)}</span></footer>
   </div>`;
 }
 
@@ -1720,7 +1742,7 @@ async function viewSummary(view) {
 
   view.innerHTML = `<div class="view">
     <header class="page-head">
-      <div><h1>本店汇总</h1><p class="lede">本店脱敏聚合；不含病例、宠物、命中值或正文。建档数含误建与重建，不作去重宠物数。</p></div>
+      <div><h1>本店汇总</h1><p class="lede">本店的接诊与告警概览。数字来自门诊记录，不展示病例明细。</p></div>
       <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button></div></div>
     </header>
     <div class="toolbar">
@@ -1730,7 +1752,7 @@ async function viewSummary(view) {
       <div class="seg" role="group" aria-label="告警分组">
         ${[['rule', '按规则'], ['handling_state', '按处理状态']].map(([k, l]) => `<button type="button" class="${state.summaryGroup === k ? 'on' : ''}" data-action="summary-group" data-group="${k}">${l}</button>`).join('')}
       </div>
-      <span class="count">${rangeLabel} · 只读聚合</span>
+      <span class="count">${rangeLabel} · 只读</span>
     </div>
     <div class="stat-strip summary-stats">
       <div class="stat"><b>${esc(d.encounter_created_count ?? 0)}</b><span>建档接诊</span></div>
@@ -1751,11 +1773,11 @@ async function viewSummary(view) {
         </table></div>
       </section>
       <aside class="side">
-        <section class="panel"><div class="panel-head"><span class="panel-label">口径</span></div><div class="panel-body"><p class="read-note">接诊与校验各按自身事实时间筛选；未处理/已处理是读取时状态，不表示期间处理次数。消息重试和投递尝试不增加命中或告警数。</p></div></section>
-        <section class="panel"><div class="panel-head"><span class="panel-label">边界</span></div><div class="panel-body"><p class="read-note">本页只显示服务端聚合，不提供病例/告警下钻，也不读取医生列表估算。读取成功会写入审计。</p></div></section>
+        <section class="panel"><div class="panel-head"><span class="panel-label">统计说明</span></div><div class="panel-body"><p class="read-note">接诊按建档时间，告警按校验时间；未处理/已处理是当前状态。</p></div></section>
+        <section class="panel"><div class="panel-head"><span class="panel-label">范围</span></div><div class="panel-body"><p class="read-note">只显示本店汇总，不提供病例或告警明细。</p></div></section>
       </aside>
     </div>
-    <footer class="page-foot"><span>本店聚合 · 不含病例明细 · 不改变告警处理状态</span><span>${esc(rangeLabel)}</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 本店经营概览</span><span>${esc(rangeLabel)}</span></footer>
   </div>`;
 }
 
@@ -1777,19 +1799,19 @@ async function viewAudit(view) {
   const rows = items.map((e) => `<tr>
     <td class="nowrap"><code>${esc(fmtFull(e.event_at))}</code></td>
     <td class="nowrap">${e.operator_ref ? '#' + esc(e.operator_ref) : '—'} <span class="muted">/ ${esc(ROLES[e.operator_role] || e.operator_role || '—')}</span></td>
-    <td class="nowrap">${esc(ACTIONS[e.action] || e.action)}<br><code>${esc(e.action)}</code></td>
+    <td class="nowrap" title="${esc(e.action)}">${esc(ACTIONS[e.action] || e.action)}</td>
     <td class="nowrap"><span class="out-${esc(e.outcome)}">${esc(OUTCOMES[e.outcome] || e.outcome)}</span>${e.normalized_reason && e.normalized_reason !== 'COMPLETED' ? `<br><code>${esc(e.normalized_reason)}</code>` : ''}</td>
     <td>${e.target_ref ? refCode(e.target_ref, 8) : '—'}</td>
   </tr>`).join('');
 
   view.innerHTML = `<div class="view">
     <header class="page-head">
-      <div><h1>脱敏审计</h1><p class="lede" style="max-width:64ch">最近 100 条获准事件元数据。只含账号、动作、结果、原因与目标编号，不含临床正文或自由理由。</p></div>
+      <div><h1>操作记录</h1><p class="lede">本店最近的访问与操作记录。</p></div>
       <div class="head-side"><span class="chip muted">只读</span></div>
     </header>
     <form class="toolbar" data-form="audit" novalidate>
-      <div class="field" style="min-width:260px"><label for="audit-record">按病历编号</label><input id="audit-record" name="record_ref" class="mono" type="text" value="${esc(f.record_ref)}" placeholder="UUID（可选）" autocomplete="off"></div>
-      <div class="field" style="min-width:200px"><label for="audit-operator">按操作者编号</label><input id="audit-operator" name="operator_ref" class="mono" type="text" value="${esc(f.operator_ref)}" placeholder="数字（可选）" autocomplete="off"></div>
+      <div class="field" style="min-width:260px"><label for="audit-record">病历编号</label><input id="audit-record" name="record_ref" class="mono" type="text" value="${esc(f.record_ref)}" placeholder="输入病历编号（可选）" autocomplete="off"></div>
+      <div class="field" style="min-width:200px"><label for="audit-operator">操作者</label><input id="audit-operator" name="operator_ref" class="mono" type="text" value="${esc(f.operator_ref)}" placeholder="输入操作者编号（可选）" autocomplete="off"></div>
       <button class="btn primary sm" type="submit" style="align-self:flex-end;margin-bottom:2px">查询</button>
       <button class="btn ghost sm" type="button" data-action="audit-reset" style="align-self:flex-end;margin-bottom:2px">重置</button>
       <span class="count">共 ${allItems.length} 条</span>
@@ -1802,11 +1824,11 @@ async function viewAudit(view) {
     </div>
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>结果 / 标准原因</th><th>目标</th></tr></thead>
-        <tbody>${rows || '<tr><td colspan="5"><div class="list-empty"><b>没有符合条件的事件</b><p>审计只返回本店范围，最多 100 条。</p></div></td></tr>'}</tbody>
+        <thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>结果</th><th>目标</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="5"><div class="list-empty"><b>没有符合条件的事件</b><p>本店最多显示最近 100 条。</p></div></td></tr>'}</tbody>
       </table>
     </div>
-    <footer class="page-foot"><span>元数据只读 · 不含临床正文 · 事件不可在此修改</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
+    <footer class="page-foot"><span>门诊护栏 · 访问记录可追溯</span><span>${esc(fmtFull(new Date().toISOString()))}</span></footer>
   </div>`;
 }
 
@@ -1831,7 +1853,7 @@ async function openReceptionCorrect(id, prefill = {}) {
       <input type="hidden" name="original_version_ref" value="${esc(latest.version_ref)}">
       <div class="form-grid">
         ${fieldWrap('物种', 'species', inputHtml('species', species, { maxlength: 100 }), '必填，最多 100 字。', true)}
-        ${fieldWrap('宠物名称', 'pet_name', inputHtml('pet_name', petName, { maxlength: 100 }), '可选，最多 100 字。')}
+        ${fieldWrap('宠物昵称', 'pet_name', inputHtml('pet_name', petName, { maxlength: 100 }), '可选，最多 100 字。')}
         <div class="field wide"><label for="f-complaint">主诉 <b style="color:var(--rust)">*</b></label>${textareaHtml('complaint', complaint, { maxlength: 10000 })}</div>
         <div class="field wide"><label for="f-reason">更正理由 <b style="color:var(--rust)">*</b></label>${textareaHtml('reason', reason, { maxlength: 2000, placeholder: '说明需要更正的内容与依据' })}<p class="hint">理由与操作账号一并保留，可在版本链核对。</p></div>
       </div>
@@ -1926,7 +1948,7 @@ function openMedicationAppend(id) {
         ${fieldWrap('剂量', 'amount', inputHtml('amount', '', { maxlength: 256, placeholder: '如 1' }), '', true)}
         ${fieldWrap('单位', 'unit', inputHtml('unit', '', { maxlength: 100, placeholder: '如 片、ml' }), '', true)}
       </div>
-      <p class="note">须已有正式病历。追加后通过受控读取刷新用药链，响应本身不内嵌正文。</p>
+      <p class="note">有正式病历后才能追加用药。保存后会刷新用药记录。</p>
     </form>`,
     foot: `<button class="btn ghost" data-action="close-modal">取消</button><button class="btn primary" type="submit" form="modal-form">追加</button>`
   });
@@ -2032,7 +2054,7 @@ async function openDecline(id, suggestionRef) {
 function openResolveAlert(alertRef) {
   openModal({
     title: '登记告警处理结果',
-    subtitle: '处理人、时间与结果由服务端记录；同一告警只能登记一次',
+    subtitle: '系统会自动记录处理人和时间；同一告警只能登记一次',
     draftKey: 'resolve:' + alertRef,
     body: `<form id="modal-form" data-form="resolve-alert" data-draft="resolve:${esc(alertRef)}" novalidate>
       <input type="hidden" name="alert_ref" value="${esc(alertRef)}">
@@ -2060,7 +2082,7 @@ function openGenerateCandidate() {
         </div>
         <div class="file-alt">没有文件？<button class="btn-link" type="button" data-action="example-definition">载入本店演示定义</button></div>
         <div class="definition-summary" id="definition-summary">尚未载入定义。选择 JSON 文件，或载入本店演示定义；这里会先显示这次要生成什么。</div>
-        <p class="hint">定义中的 scope.store_id 必须等于当前门店；客户端不做信任判断，由服务端编译和校验。</p>
+        <p class="hint">导入规则与模板，不导入病历内容。</p>
       </div>
       <details class="details" style="margin:10px 0 12px"><summary>查看或编辑定义 JSON<em id="definition-size"></em></summary><div class="inner"><textarea id="definition-json" name="definition" style="min-height:180px" placeholder="粘贴定义 JSON，或选择文件"></textarea></div></details>
       <div class="field"><label for="f-reason">生成理由 <b style="color:var(--rust)">*</b></label>${textareaHtml('reason', '', { maxlength: 2000, placeholder: '说明规则或模板调整的来源与目的' })}</div>

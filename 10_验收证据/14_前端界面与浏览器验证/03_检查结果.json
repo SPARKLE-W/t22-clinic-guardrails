@@ -21,7 +21,7 @@
       "command": "python manage.py test tests governance clinic --noinput -v 1",
       "tests": 143,
       "result": "OK (skipped=10: real queue tests without local MQ config; CI runs RabbitMQ)",
-      "seconds": 41.574
+      "seconds": 44.929
     },
     "new_test": "governance.tests.GovernanceTests.test_frontend_shell_session_handoff_and_scoped_assets",
     "frontend_guardrails": {
@@ -37,6 +37,7 @@
       "audit_tab_counts": true,
       "manager_summary": true,
       "copy_ref_fixed": true,
+      "clinic_ui_cleanup": true,
       "zoom_200_equivalent": "683x384 viewport, no horizontal overflow",
       "branch": "feat/frontend-ux-final",
       "merged_commit": "ffc9438",
@@ -80,7 +81,7 @@
     "v2_disposition": "00_评审/主代理处置_v2.md"
   },
   "evidence": {
-    "final_screenshots": 16,
+    "final_screenshots": 15,
     "supplement_screenshots": 2,
     "recording_seconds": 9.1,
     "final_dir": "10_验收证据/14_前端界面与浏览器验证/02_最终界面",
