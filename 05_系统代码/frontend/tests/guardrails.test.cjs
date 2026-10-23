@@ -309,6 +309,9 @@ const session = (c, role, store, username) => {
     assert.ok(html.includes('#2'));
     assert.ok(!html.includes('诊断正文'));
     assert.ok(run(c, `workEvidenceHtml(${JSON.stringify(item.actual_execution_metadata)}).includes('账号 #2')`));
+    const evidenceHtml = run(c, `workEvidenceHtml(${JSON.stringify([...item.actual_execution_metadata, { source_event_ref: '55555555-5555-4555-8555-555555555555', stage_ref: 'rule_review', actor_ref: null, actor_role: null, occurred_at: '2026-10-23T10:03:00+08:00', result: 'new', dimensions: { content_generation: 'ai', data_entry: 'doctor', human_decision: null } }])}, ${JSON.stringify(item.source_event_refs)})`);
+    assert.ok(evidenceHtml.includes('44444444-4444-4444-8444-444444444444'));
+    assert.ok(evidenceHtml.includes('55555555-5555-4555-8555-555555555555'));
     const reviewed = { ...item, review_history: [
       { plan_version_ref: item.plan_version_ref, actual_version_ref: item.actual_version_ref, actor_ref: 1, created_at: '2026-10-23T10:01:00+08:00', conclusion: 'confirmed_difference', reason: '旧结论' },
       { plan_version_ref: item.plan_version_ref, actual_version_ref: item.actual_version_ref, actor_ref: 3, created_at: '2026-10-23T10:02:00+08:00', conclusion: 'confirmed_consistent', reason: '新结论' }
