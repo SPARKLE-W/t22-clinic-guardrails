@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "count": 9,
+  "checks": [
+    {
+      "check": "03_需求规格说明书.md",
+      "passed": true
+    },
+    {
+      "check": "03_需求规格说明书.docx",
+      "passed": true
+    },
+    {
+      "check": "完整107项回归退出0",
+      "passed": true
+    },
+    {
+      "check": "实际HTTP21项全部通过",
+      "passed": true
+    },
+    {
+      "check": "Python及迁移语法",
+      "passed": true
+    },
+    {
+      "check": "OpenAPI三路由实际注册",
+      "passed": true
+    },
+    {
+      "check": "本批未修改前端模板",
+      "passed": true
+    },
+    {
+      "check": "13_前端对接与接口交接.md链接",
+      "passed": true
+    },
+    {
+      "check": "14_演示建议与人工决定接口.md链接",
+      "passed": true
+    }
+  ]
+}

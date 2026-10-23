@@ -43,7 +43,10 @@ def protected(permission, methods):
                         target = kwargs.get('candidate_id') or kwargs.get('encounter_id')
                         alert_ref = kwargs.get('alert_id') or (request.GET.get('alert_ref') if permission == 'clinical.alert.handle' else None)
                         record_ref = request.GET.get('record_ref') if permission == 'clinical.alert.handle' else None
-                        if (alert_ref or record_ref) and request.user.is_authenticated:
+                        if kwargs.get('suggestion_id') and request.user.is_authenticated:
+                            from clinic.suggestions import refusal
+                            refusal(request.user.pk,exc,str(kwargs['suggestion_id']),permission)
+                        elif (alert_ref or record_ref) and request.user.is_authenticated:
                             from clinic.writes import alert_refusal
                             alert_refusal(request.user.pk, exc, str(alert_ref) if alert_ref else None, permission, record_ref)
                         elif kwargs.get('encounter_id') and request.user.is_authenticated:

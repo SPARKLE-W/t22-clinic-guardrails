@@ -1,0 +1,91 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "check": "前台实际创建独立合成接诊",
+      "passed": true
+    },
+    {
+      "check": "受控命令初始化演示建议",
+      "passed": true
+    },
+    {
+      "check": "医生获取两条明确标注演示来源",
+      "passed": true
+    },
+    {
+      "check": "实际读取响应符合本批OpenAPI结构",
+      "passed": true
+    },
+    {
+      "check": "生成建议不自动写入正式病历",
+      "passed": true
+    },
+    {
+      "check": "缺采纳理由被运行护栏阻断",
+      "passed": true
+    },
+    {
+      "check": "实际护栏拒绝响应符合本批OpenAPI结构",
+      "passed": true
+    },
+    {
+      "check": "被阻断后仍无正式病历",
+      "passed": true
+    },
+    {
+      "check": "直接调用API也要求CSRF",
+      "passed": true
+    },
+    {
+      "check": "带理由实际采纳入库",
+      "passed": true
+    },
+    {
+      "check": "实际采纳请求及响应符合本批OpenAPI结构",
+      "passed": true
+    },
+    {
+      "check": "写响应只有引用和真实责任",
+      "passed": true
+    },
+    {
+      "check": "同一请求重试返回同一决定",
+      "passed": true
+    },
+    {
+      "check": "同键换理由明确冲突",
+      "passed": true
+    },
+    {
+      "check": "临床实际读取采纳内容及其来源",
+      "passed": true
+    },
+    {
+      "check": "原始建议不被医生编辑覆盖",
+      "passed": true
+    },
+    {
+      "check": "未采纳无理由仍保留决定",
+      "passed": true
+    },
+    {
+      "check": "实际不采纳请求及响应符合本批OpenAPI结构",
+      "passed": true
+    },
+    {
+      "check": "未采纳不增加正式病历采纳条目",
+      "passed": true
+    },
+    {
+      "check": "已采纳不能改报未采纳",
+      "passed": true
+    },
+    {
+      "check": "跨角色及跨店直接API均拒绝",
+      "passed": true
+    }
+  ],
+  "count": 21,
+  "note": "真实本机HTTP+CSRF；所有账号和临床文字均为合成演示，自动化采纳不等于真实医生认可；无新前端页面"
+}

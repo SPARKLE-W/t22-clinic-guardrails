@@ -1,0 +1,15 @@
+{
+  "command": [
+    "C:\\Users\\29512\\.cache\\t22-runtime\\controls-venv\\Scripts\\python.exe",
+    "manage.py",
+    "test",
+    "tests",
+    "governance",
+    "clinic",
+    "--noinput",
+    "-v",
+    "2"
+  ],
+  "exit_code": 0,
+  "wall_seconds": 38.066
+}
