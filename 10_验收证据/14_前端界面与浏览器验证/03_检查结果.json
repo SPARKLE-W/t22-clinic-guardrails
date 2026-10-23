@@ -70,7 +70,9 @@
       "pr8_commit": "b3f58ad",
       "pr12_commit": "ffc9438",
       "pr20_commit": "1f9d989",
-      "pr21_commit": "44721dd"
+      "pr21_commit": "44721dd",
+      "pr23_commit": "7443ef0",
+      "frontend_complete": true
     },
     "session_endpoint": "anonymous/{authenticated:false}; authenticated minimal identity; logout returns anonymous",
     "asset_traversal": "GET /app/assets/../../vetapp/settings.py -> 404",
