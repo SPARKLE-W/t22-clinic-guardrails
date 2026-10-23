@@ -223,3 +223,17 @@ class WorkDivisionReview(models.Model):
     conclusion = models.CharField(max_length=32)
     reason = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ExportRequest(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    store = models.ForeignKey(Store, on_delete=models.PROTECT)
+    actor = models.ForeignKey(Account, on_delete=models.PROTECT)
+    permission = models.CharField(max_length=80)
+    scope = models.JSONField()
+    purpose = models.TextField(blank=True)
+    record_count = models.PositiveIntegerField(default=0)
+    row_count = models.PositiveIntegerField(default=0)
+    byte_count = models.PositiveIntegerField(default=0)
+    state = models.CharField(max_length=16, default='ready')
+    created_at = models.DateTimeField(auto_now_add=True)
