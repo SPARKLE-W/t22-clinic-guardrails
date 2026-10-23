@@ -20,6 +20,7 @@ const state = {
   alertFilter: 'unhandled',
   selectedCandidate: '',
   auditFilters: { record_ref: '', operator_ref: '' },
+  auditOutcome: 'all',
   modal: null,
   reloadLatest: null,
   bootError: null
@@ -781,6 +782,7 @@ async function enterApp() {
   state.range = 'all';
   state.alertFilter = 'unhandled';
   state.auditFilters = { record_ref: '', operator_ref: '' };
+  state.auditOutcome = 'all';
   state.selectedCandidate = '';
   purgeForeignDrafts();
   await loadSidebar();
@@ -1700,7 +1702,15 @@ async function viewAudit(view) {
   if (f.record_ref) params.record_ref = f.record_ref;
   if (f.operator_ref) params.operator_ref = f.operator_ref;
   const data = await api('/api/audit' + (Object.keys(params).length ? '?' + qs(params) : ''));
-  const items = data.items || [];
+  const allItems = data.items || [];
+  const counts = {
+    all: allItems.length,
+    success: allItems.filter((e) => e.outcome === 'success').length,
+    refused: allItems.filter((e) => e.outcome === 'refused' || e.outcome === 'request_refused').length,
+    validation_failed: allItems.filter((e) => e.outcome === 'validation_failed').length
+  };
+  const items = state.auditOutcome === 'all' ? allItems :
+    allItems.filter((e) => state.auditOutcome === 'refused' ? (e.outcome === 'refused' || e.outcome === 'request_refused') : e.outcome === state.auditOutcome);
   const rows = items.map((e) => `<tr>
     <td class="nowrap"><code>${esc(fmtFull(e.event_at))}</code></td>
     <td class="nowrap">${e.operator_ref ? '#' + esc(e.operator_ref) : '—'} <span class="muted">/ ${esc(ROLES[e.operator_role] || e.operator_role || '—')}</span></td>
@@ -1719,8 +1729,14 @@ async function viewAudit(view) {
       <div class="field" style="min-width:200px"><label for="audit-operator">按操作者编号</label><input id="audit-operator" name="operator_ref" class="mono" type="text" value="${esc(f.operator_ref)}" placeholder="数字（可选）" autocomplete="off"></div>
       <button class="btn primary sm" type="submit" style="align-self:flex-end;margin-bottom:2px">查询</button>
       <button class="btn ghost sm" type="button" data-action="audit-reset" style="align-self:flex-end;margin-bottom:2px">重置</button>
-      <span class="count">共 ${items.length} 条</span>
+      <span class="count">共 ${allItems.length} 条</span>
     </form>
+    <div class="toolbar audit-outcomes">
+      <div class="seg" role="group" aria-label="审计结果">
+        ${[['all', '全部'], ['success', '成功'], ['refused', '拒绝'], ['validation_failed', '校验失败']].map(([k, l]) => `<button type="button" class="${state.auditOutcome === k ? 'on' : ''}" data-action="audit-outcome" data-outcome="${k}">${l}<span class="seg-count">${counts[k]}</span></button>`).join('')}
+      </div>
+      <span class="count">显示 ${items.length} / ${allItems.length} 条</span>
+    </div>
     <div class="table-wrap">
       <table class="table">
         <thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>结果 / 标准原因</th><th>目标</th></tr></thead>
@@ -2423,7 +2439,8 @@ document.addEventListener('click', async (e) => {
         return;
       }
       case 'alert-filter': state.alertFilter = btn.dataset.filter; await renderRoute(); return;
-      case 'audit-reset': state.auditFilters = { record_ref: '', operator_ref: '' }; await renderRoute(); return;
+      case 'audit-reset': state.auditFilters = { record_ref: '', operator_ref: '' }; state.auditOutcome = 'all'; await renderRoute(); return;
+      case 'audit-outcome': state.auditOutcome = btn.dataset.outcome || 'all'; await renderRoute(); return;
       case 'regen-pet': {
         const input = $('#f-pet_ref');
         if (input) { input.value = uuid(); const form = input.form; if (form) saveDraft(form.dataset.draft, form); }

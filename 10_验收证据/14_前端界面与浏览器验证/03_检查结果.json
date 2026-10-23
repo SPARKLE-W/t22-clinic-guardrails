@@ -34,6 +34,7 @@
       "copy_full_reference": true,
       "list_skeleton": true,
       "alert_tab_counts": true,
+      "audit_tab_counts": true,
       "zoom_200_equivalent": "683x384 viewport, no horizontal overflow",
       "branch": "feat/frontend-ux"
     },
