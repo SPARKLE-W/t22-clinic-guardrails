@@ -2,8 +2,10 @@ from django.urls import path
 from governance import views
 from governance.services import GENERATE, REVIEW, ACTIVATE
 from clinic import views as clinic
+from clinic import reports
 
 urlpatterns = [
+    path('api/reports/store-summary', reports.store_summary),
     path('api/clinical/encounters/<uuid:encounter_id>/suggestions', clinic.suggestion_list),
     path('api/clinical/suggestions/<uuid:suggestion_id>/adoption', clinic.suggestion_decision('adopt')),
     path('api/clinical/suggestions/<uuid:suggestion_id>/decline', clinic.suggestion_decision('decline')),
