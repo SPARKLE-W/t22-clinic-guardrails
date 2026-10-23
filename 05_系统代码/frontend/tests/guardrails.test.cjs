@@ -151,6 +151,25 @@ const session = (c, role, store, username) => {
     results.push('R3 uncertain key survives refresh; success releases it for the next intent');
   }
 
+  // R7: HTTP 200 with an unparseable body is still an uncertain write; keep the key.
+  {
+    const storage = new Map();
+    const first = context(storage);
+    session(first, 'doctor', 'A', 'a_doctor');
+    run(first, `state.modal={draftKey:'med-add:enc-7'}; keys=[]; api=async (p,o)=>{ keys.push(o.key); throw new ApiError('UNPARSEABLE',200,null); };`);
+    await run(first, `write('/api/clinical/encounters/enc-7/medications',{drug:'合成药'}).catch(()=>{})`);
+    await run(first, `write('/api/clinical/encounters/enc-7/medications',{drug:'合成药'}).catch(()=>{})`);
+    assert.equal(run(first, 'keys[0]'), run(first, 'keys[1]'));
+    assert.notEqual(run(first, `pendingFor('med-add:enc-7')`), null);
+
+    const reload = context(storage);
+    session(reload, 'doctor', 'A', 'a_doctor');
+    run(reload, `state.modal={draftKey:'med-add:enc-7'}; keys=[]; api=async (p,o)=>{ keys.push(o.key); return {ok:true}; };`);
+    await run(reload, `write('/api/clinical/encounters/enc-7/medications',{drug:'合成药'})`);
+    assert.equal(run(reload, 'keys[0]'), run(first, 'keys[0]'));
+    results.push('R7 HTTP 200 unparseable response keeps the pending key');
+  }
+
   // R6: a late A response must not overwrite a newer B route.
   {
     const c = context();

@@ -323,7 +323,7 @@ async function write(path, body, options = {}) {
     endOp(ctx);
     return data;
   } catch (e) {
-    const retryable = e.status === 0 || e.status === 408 || e.status === 429 || e.status >= 500;
+    const retryable = e.code === 'NETWORK' || e.code === 'UNPARSEABLE' || e.status === 0 || e.status === 408 || e.status === 429 || e.status >= 500;
     if (!retryable) endOp(ctx);
     if (e.status === 409 && wasPending) {
       e.message = '上次提交结果未确认，已沿用同一幂等键防止重复；服务端拒绝重复或版本已变。请刷新核对最新记录后再重新提交。';

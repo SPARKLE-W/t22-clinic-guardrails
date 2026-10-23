@@ -27,7 +27,7 @@
     "frontend_guardrails": {
       "script": "05_系统代码/frontend/tests/guardrails.test.cjs",
       "result": "ok",
-      "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "clinical page 51 control", "misregistered medication correction", "late route response discarded"],
+      "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "HTTP 200 unparseable keeps pending key", "clinical page 51 control", "misregistered medication correction", "late route response discarded"],
       "note": "Node VM with synthetic data; not a full browser or database integration test"
     },
     "session_endpoint": "anonymous/{authenticated:false}; authenticated minimal identity; logout returns anonymous",
