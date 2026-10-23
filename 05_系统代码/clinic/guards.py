@@ -1,4 +1,4 @@
-"""Trusted diagnosis-path checks; requests never provide checker facts."""
+"""Trusted clinical-path checks; requests never provide checker facts."""
 from governance.services import DomainError
 
 
@@ -17,7 +17,7 @@ def condition(node, facts):
     return any(type(value) is type(item) and value == item for item in candidates)
 
 
-def evaluate(policy, template, values, mode):
+def evaluate(policy, template, values, mode, medication=None):
     clinical = template['clinical']
     facts = {
         'policy.pin_valid': True, 'template.reference_resolved': True,
@@ -37,6 +37,10 @@ def evaluate(policy, template, values, mode):
         'recovery.local_evidence_plan_ready': True, 'recovery.guard_refusal_plan_ready': True,
         'principal.role': 'doctor', 'operation.mode': mode,
     }
+    if medication is not None:
+        facts['template.medication_group_valid'] = all(medication['values'].get(field, '').strip() for field in clinical['medication']['all_or_none'])
+        facts['medication.original_link_valid'] = medication['original_valid']
+        facts['medication.correction_reason_valid'] = medication['reason_valid']
     results, hits = [], []
     available = {'referenced_template', 'append_only_medication', 'human_adoption_and_retention',
                  'audit_and_authorized_export', 'durable_alert_and_idempotency'}
@@ -48,9 +52,15 @@ def evaluate(policy, template, values, mode):
             raise DomainError('RULE_EXECUTION_UNAVAILABLE', 503)
         selected = 'when' not in rule or condition(rule['when'], facts)
         fields = [field for field in clinical['required'] if not values.get(field, '').strip()] if selected and rule['checker'] == 'referenced_template' else []
+        if selected and medication is not None:
+            if rule['checker'] == 'referenced_template':
+                fields += [field for field in clinical['medication']['all_or_none'] if not medication['values'].get(field, '').strip()]
+            if rule['checker'] == 'append_only_medication':
+                fields = ([] if medication['original_valid'] else ['original_entry_ref']) + ([] if medication['reason_valid'] else ['reason'])
         result = 'blocked' if fields else 'passed' if selected else 'not_selected'
-        if rule['checker'] in {'append_only_medication', 'human_adoption_and_retention'}:
+        if rule['checker'] == 'human_adoption_and_retention' or (rule['checker'] == 'append_only_medication' and medication is None):
             result = 'not_applicable'
         results.append({'rule_ref': rule['id'], 'rule_version': rule['version'], 'result': result})
-        hits.extend({'rule_ref': rule['id'], 'rule_version': rule['version'], 'field': field, 'value': values.get(field)} for field in fields)
+        hit_values = {**values, **(medication['values'] if medication is not None else {})}
+        hits.extend({'rule_ref': rule['id'], 'rule_version': rule['version'], 'field': field, 'value': hit_values.get(field)} for field in fields)
     return results, hits

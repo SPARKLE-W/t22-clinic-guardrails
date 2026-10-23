@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "checks": {
+    "03_需求规格说明书.md": true,
+    "03_需求规格说明书.docx": true,
+    "full89": true,
+    "http10": true,
+    "browser": true,
+    "python_syntax": true,
+    "05_系统代码\\clinic\\templates\\clinic\\clinical_write_script.html": true,
+    "05_系统代码\\clinic\\templates\\clinic\\medication_script.html": true,
+    "05_系统代码\\clinic\\templates\\clinic\\workbench_script.html": true,
+    "05_系统代码\\governance\\templates\\governance\\home.html": true
+  },
+  "subagent_calls": 0
+}

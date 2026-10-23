@@ -24,6 +24,7 @@ function doctorEditor(parent,result){
     finally{save.disabled=false;}
   };
   parent.append(form);
+  if(clinical)medicationEditor(parent,result);
 }
 
 async function doctorAlertsRefresh(){
@@ -32,7 +33,7 @@ async function doctorAlertsRefresh(){
   $('alert-count').textContent=pendingCount?'有 '+pendingCount+' 条未处理告警':'暂无未处理告警';
   for(const item of result.items){
     const panel=node('div');panel.className='history-entry';
-    const fieldName=({diagnosis:'诊断说明',examination:'检查说明'})[item.hit_field]||item.hit_field;
+    const fieldName=({diagnosis:'诊断说明',examination:'检查说明',drug:'药品',amount:'用量',unit:'单位',reason:'更正理由',original_entry_ref:'原用药项'})[item.hit_field]||item.hit_field;
     panel.append(node('p',item.rule_ref+' · 命中字段：'+fieldName+'\n'+(item.handling_state==='handled'?'已处理':'待处理')));
     const open=node('button','查看对应接诊');open.className='secondary';open.onclick=async()=>{
       open.disabled=true;

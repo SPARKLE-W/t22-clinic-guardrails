@@ -1,0 +1,123 @@
+Creating test database for alias 'default' ('t22_app_test')...
+Found 9 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: rest_framework
+  Apply all migrations: auth, clinic, contenttypes, governance, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying governance.0001_initial... OK
+  Applying clinic.0001_initial... OK
+  Applying clinic.0002_alert_alertoutbox_clinicalcheck_guardhit_alert_hit... OK
+  Applying clinic.0003_clinicalcheck_original_version_and_more... OK
+  Applying sessions.0001_initial...test_append_response_is_reference_only_and_read_has_real_responsibility (clinic.test_medication.MedicationTests.test_append_response_is_reference_only_and_read_has_real_responsibility) ... FAIL
+test_audit_failure_rolls_back_medication_and_guard_evidence (clinic.test_medication.MedicationTests.test_audit_failure_rolls_back_medication_and_guard_evidence) ... ERROR
+test_corrections_append_and_keep_full_original_chain (clinic.test_medication.MedicationTests.test_corrections_append_and_keep_full_original_chain) ... FAIL
+test_error_mark_allows_only_existing_item_correction (clinic.test_medication.MedicationTests.test_error_mark_allows_only_existing_item_correction) ... FAIL
+test_missing_correction_reason_is_sr03_not_an_overwrite (clinic.test_medication.MedicationTests.test_missing_correction_reason_is_sr03_not_an_overwrite) ... FAIL
+test_no_record_or_policy_cannot_be_bypassed (clinic.test_medication.MedicationTests.test_no_record_or_policy_cannot_be_bypassed) ... FAIL
+test_replay_content_conflict_and_current_authorization (clinic.test_medication.MedicationTests.test_replay_content_conflict_and_current_authorization) ... FAIL
+test_required_medication_group_is_a_durable_guard_hit (clinic.test_medication.MedicationTests.test_required_medication_group_is_a_durable_guard_hit) ... FAIL
+test_role_scope_parent_and_input_projection_are_enforced (clinic.test_medication.MedicationTests.test_role_scope_parent_and_input_projection_are_enforced) ... FAIL
+
+======================================================================
+ERROR: test_audit_failure_rolls_back_medication_and_guard_evidence (clinic.test_medication.MedicationTests.test_audit_failure_rolls_back_medication_and_guard_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_medication.py", line 97, in test_audit_failure_rolls_back_medication_and_guard_evidence
+    with patch('clinic.medications._audit',side_effect=DatabaseError('injected')):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1451, in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+  File "C:\Users\29512\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pkgutil.py", line 528, in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+AttributeError: module 'clinic' has no attribute 'medications'. Did you mean: 'migrations'?
+
+======================================================================
+FAIL: test_append_response_is_reference_only_and_read_has_real_responsibility (clinic.test_medication.MedicationTests.test_append_response_is_reference_only_and_read_has_real_responsibility)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_medication.py", line 31, in test_append_response_is_reference_only_and_read_has_real_responsibility
+    self.assertEqual(200, response.status_code)
+AssertionError: 200 != 404
+
+======================================================================
+FAIL: test_corrections_append_and_keep_full_original_chain (clinic.test_medication.MedicationTests.test_corrections_append_and_keep_full_original_chain)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_medication.py", line 40, in test_corrections_append_and_keep_full_original_chain
+    self.assertEqual(200, first.status_code)
+AssertionError: 200 != 404
+
+======================================================================
+FAIL: test_error_mark_allows_only_existing_item_correction (clinic.test_medication.MedicationTests.test_error_mark_allows_only_existing_item_correction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_medication.py", line 91, in test_error_mark_allows_only_existing_item_correction
+    self.assertEqual(200,first.status_code)
+AssertionError: 200 != 404
+
+======================================================================
+FAIL: test_missing_correction_reason_is_sr03_not_an_overwrite (clinic.test_medication.MedicationTests.test_missing_correction_reason_is_sr03_not_an_overwrite)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_medication.py", line 74, in test_missing_correction_reason_is_sr03_not_an_overwrite
+    self.assertEqual(200,saved.status_code)
+AssertionError: 200 != 404
+
+======================================================================
+FAIL: test_no_record_or_policy_cannot_be_bypassed (clinic.test_medication.MedicationTests.test_no_record_or_policy_cannot_be_bypassed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_medication.py", line 105, in test_no_record_or_policy_cannot_be_bypassed
+    self.assertEqual(409,self.post(self.values(),ref=ref).status_code)
+AssertionError: 409 != 404
+
+======================================================================
+FAIL: test_replay_content_conflict_and_current_authorization (clinic.test_medication.MedicationTests.test_replay_content_conflict_and_current_authorization)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_medication.py", line 83, in test_replay_content_conflict_and_current_authorization
+    self.assertEqual(200,first.status_code)
+AssertionError: 200 != 404
+
+======================================================================
+FAIL: test_required_medication_group_is_a_durable_guard_hit (clinic.test_medication.MedicationTests.test_required_medication_group_is_a_durable_guard_hit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_medication.py", line 64, in test_required_medication_group_is_a_durable_guard_hit
+    self.assertEqual(422,first.status_code)
+AssertionError: 422 != 404
+
+======================================================================
+FAIL: test_role_scope_parent_and_input_projection_are_enforced (clinic.test_medication.MedicationTests.test_role_scope_parent_and_input_projection_are_enforced)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_medication.py", line 52, in test_role_scope_parent_and_input_projection_are_enforced
+    self.assertEqual(200, self.post(self.values()).status_code)
+AssertionError: 200 != 404
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.605s
+
+FAILED (failures=8, errors=1)
+Destroying test database for alias 'default' ('t22_app_test')...
+ OK
+System check identified no issues (0 silenced).
