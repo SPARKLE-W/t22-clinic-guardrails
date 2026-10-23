@@ -289,6 +289,19 @@ const session = (c, role, store, username) => {
 
   {
     const c = context();
+    assert.deepEqual(JSON.parse(run(c, `JSON.stringify(exportRangeFromValues('', ''))`)), { ok: true, range: null });
+    assert.equal(JSON.parse(run(c, `JSON.stringify(exportRangeFromValues('', '2026-10-23'))`)).ok, false);
+    assert.equal(JSON.parse(run(c, `JSON.stringify(exportRangeFromValues('2026-10-23', '2026-10-23'))`)).ok, true);
+    const sha = 'a'.repeat(64);
+    assert.equal(run(c, `exportVerifyHeaders({get:(k)=>(({ 'content-length':'3','x-byte-count':'3','x-content-sha256':'${sha}' })[k])}, 3)`), sha);
+    assert.throws(() => run(c, `exportVerifyHeaders({get:()=>null}, 3)`), /未完整接收/);
+    assert.throws(() => run(c, `exportVerifyHeaders({get:(k)=>(({ 'content-length':'3','x-byte-count':'4','x-content-sha256':'${sha}' })[k])}, 3)`), /未完整接收/);
+    assert.throws(() => run(c, `exportVerifyHeaders({get:(k)=>(({ 'content-length':'3','x-byte-count':'3','x-content-sha256':'bad' })[k])}, 3)`), /未完整接收/);
+    results.push('F-04 partial dates and export metadata are rejected');
+  }
+
+  {
+    const c = context();
     const full = '11111111-2222-4333-8444-555555555555';
     assert.ok(run(c, `copyRef('${full}', '候选编号')`).includes(`data-value="${full}"`));
     assert.equal((source.match(/case 'copy-ref'/g) || []).length, 1);

@@ -374,6 +374,19 @@ async function sha256Hex(buffer) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+function exportVerifyHeaders(headers, byteLength) {
+  const length = Number(headers.get('content-length'));
+  const byteCount = Number(headers.get('x-byte-count'));
+  const expected = (headers.get('x-content-sha256') || '').toLowerCase();
+  if (!Number.isSafeInteger(length) || length <= 0 || !Number.isSafeInteger(byteCount) || byteCount <= 0) {
+    throw new ApiError('EXPORT_INCOMPLETE', 200, null);
+  }
+  if (byteCount !== length || byteLength !== length || !/^[0-9a-f]{64}$/.test(expected)) {
+    throw new ApiError('EXPORT_INCOMPLETE', 200, null);
+  }
+  return expected;
+}
+
 async function downloadCsv(path, body) {
   const res = await fetch(path, {
     method: 'POST', credentials: 'same-origin',
@@ -389,13 +402,9 @@ async function downloadCsv(path, body) {
   }
   if (!type.includes('text/csv')) throw new ApiError('EXPORT_FORMAT', res.status, null);
   const buffer = await res.arrayBuffer();
-  const declared = Number(res.headers.get('content-length') || res.headers.get('x-byte-count') || 0);
-  if (declared && buffer.byteLength !== declared) throw new ApiError('EXPORT_INCOMPLETE', res.status, null);
-  const expected = (res.headers.get('x-content-sha256') || '').toLowerCase();
-  if (expected) {
-    const actual = await sha256Hex(buffer);
-    if (actual !== expected) throw new ApiError('EXPORT_INCOMPLETE', res.status, null);
-  }
+  const expected = exportVerifyHeaders(res.headers, buffer.byteLength);
+  const actual = await sha256Hex(buffer);
+  if (actual !== expected) throw new ApiError('EXPORT_INCOMPLETE', res.status, null);
   const filename = exportFilename(res.headers.get('content-disposition'));
   const blob = new Blob([buffer], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -1790,11 +1799,14 @@ async function viewGovernance(view, id) {
   </div>`;
 }
 
+function exportRangeFromValues(from, to) {
+  if (!from && !to) return { ok: true, range: null };
+  if (!from || !to) return { ok: false, range: null };
+  return { ok: true, range: { from: from + 'T00:00:00+08:00', to: addDays(to, 1) + 'T00:00:00+08:00' } };
+}
+
 function exportDateScope(form) {
-  const from = form.elements.from.value;
-  const to = form.elements.to.value;
-  if (!from || !to) return null;
-  return { from: from + 'T00:00:00+08:00', to: addDays(to, 1) + 'T00:00:00+08:00' };
+  return exportRangeFromValues(form.elements.from.value, form.elements.to.value);
 }
 
 function openClinicalExport() {
@@ -1876,15 +1888,16 @@ async function submitExport(form) {
       if (!refs.length || refs.some((r) => !isUuid(r))) { formError(form, '请填写一个或多个完整病历 UUID。'); return; }
       body = { scope: { record_refs: refs }, purpose };
     } else {
-      const range = exportDateScope(form);
-      if (!range) { formError(form, '请选择起止日期。'); return; }
-      body = { scope: { time_range: range }, purpose };
+      const check = exportDateScope(form);
+      if (!check.ok || !check.range) { formError(form, '请选择完整的起止日期。'); return; }
+      body = { scope: { time_range: check.range }, purpose };
     }
     path = '/api/exports/clinical-records';
   } else if (kind === 'export-alert-hits') {
-    const range = exportDateScope(form);
+    const check = exportDateScope(form);
+    if (!check.ok) { formError(form, '起止日期需同时填写或同时留空。'); return; }
     body = {};
-    if (range) body.time_range = range;
+    if (check.range) body.time_range = check.range;
     if (f.rule_ref.value.trim()) body.rule_ref = f.rule_ref.value.trim();
     if (f.handling_state.value) body.handling_state = f.handling_state.value;
     const encounters = refsFromText(f.encounters.value);
@@ -1894,9 +1907,10 @@ async function submitExport(form) {
     }
     path = '/api/exports/alert-hits';
   } else {
-    const range = exportDateScope(form);
+    const check = exportDateScope(form);
+    if (!check.ok) { formError(form, '起止日期需同时填写或同时留空。'); return; }
     body = { group_by: f.group_by.value };
-    if (range) body.time_range = range;
+    if (check.range) body.time_range = check.range;
     if (f.rule_ref.value.trim()) body.rule_ref = f.rule_ref.value.trim();
     if (f.handling_state.value) body.handling_state = f.handling_state.value;
     path = '/api/exports/alert-summary';
