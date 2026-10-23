@@ -113,6 +113,15 @@ def mutate(actor_id, mode, key, payload, encounter_ref=None):
                 _own(actor, previous.result['encounter_ref'])
                 return previous.result
             if mode == 'create':
+                doctor_ref = payload['doctor_ref']
+                if type(doctor_ref) not in (int, str) or not str(doctor_ref).isdigit() or len(str(doctor_ref)) > 16:
+                    raise DomainError('INVALID_REFERENCE', 422)
+                # Encounter insertion checks the doctor FK. Lock that account before
+                # PolicyHead, matching the doctor-write account -> policy order.
+                doctor = Account.objects.select_for_update().filter(
+                    pk=int(doctor_ref), store=actor.store, role='doctor', is_active=True).first()
+                if not doctor:
+                    raise DomainError('DOCTOR_UNAVAILABLE', 403)
                 head = PolicyHead.objects.select_for_update().filter(store=actor.store).first()
                 if not head or not head.candidate_id:
                     raise DomainError('TEMPLATE_UNAVAILABLE', 503)
@@ -120,12 +129,6 @@ def mutate(actor_id, mode, key, payload, encounter_ref=None):
                 _template(candidate, actor.store_id)
                 if 'template_ref' in payload and _uuid(payload['template_ref']) != candidate.pk:
                     raise DomainError('INVALID_TEMPLATE', 422)
-                doctor_ref = payload['doctor_ref']
-                if type(doctor_ref) not in (int, str) or not str(doctor_ref).isdigit() or len(str(doctor_ref)) > 16:
-                    raise DomainError('INVALID_REFERENCE', 422)
-                doctor = Account.objects.filter(pk=int(doctor_ref), store=actor.store, role='doctor', is_active=True).first()
-                if not doctor:
-                    raise DomainError('DOCTOR_UNAVAILABLE', 403)
                 _text(payload['species'], 100)
                 _text(payload['complaint'], 10000)
                 _text(payload.get('pet_name', ''), 100, False)
