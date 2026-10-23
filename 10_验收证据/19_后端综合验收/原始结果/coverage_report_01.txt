@@ -1,0 +1,33 @@
+Name                                                  Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------------------------
+governance\management\commands\seed_demo.py              33     33     0%   2-38
+vetcontrols\__main__.py                                  59     59     0%   2-73
+clinic\management\commands\alert_delivery.py             41     13    68%   20, 26-29, 36-40, 43-45
+clinic\mq_transport.py                                   55     11    80%   16-17, 35, 43-46, 62-65, 73
+clinic\views.py                                          86     15    83%   14, 17, 19-21, 32, 37-39, 50, 58, 64, 69, 93, 108
+governance\views.py                                     165     25    85%   61-62, 81, 84, 93, 107, 117, 121, 124-125, 127, 131-134, 140, 148, 160, 166-170, 187, 193
+clinic\services.py                                      239     30    87%   18-19, 73-74, 118, 125, 138-140, 151, 158, 160-163, 175-178, 196, 220, 223, 226, 228-232, 235, 250, 288
+clinic\writes.py                                        162     19    88%   63, 67, 75, 123-124, 135, 146-148, 152, 154, 156, 158-160, 173, 177, 184, 187
+clinic\management\commands\seed_demo_suggestions.py      28      3    89%   24-25, 29
+governance\entry.py                                      28      3    89%   21, 34-35
+clinic\collaboration.py                                 210     21    90%   47, 53, 141, 147, 149, 153, 159, 162, 165, 170, 203, 211, 213-215, 224, 228, 244, 263-265
+vetcontrols\compiler.py                                 249     23    91%   51, 53, 55, 60, 62, 109, 120, 124, 133, 156, 165, 177-178, 199, 212, 215, 224, 271, 294, 308, 315-316, 318
+governance\services.py                                  172     12    93%   53, 76-77, 79, 90, 95-97, 115, 151, 160, 188-189
+clinic\delivery.py                                      159     11    93%   37, 39-40, 89, 102, 114, 135, 157-158, 161, 186
+clinic\suggestions.py                                   129      8    94%   62, 80, 85, 92, 104, 108, 116, 118
+clinic\exports.py                                       197     12    94%   36, 49-51, 90, 114, 164, 167, 182, 190-191, 202
+clinic\medications.py                                    62      3    95%   40, 46, 49
+clinic\guards.py                                         46      1    98%   54
+clinic\__init__.py                                        0      0   100%
+clinic\management\__init__.py                             0      0   100%
+clinic\management\commands\__init__.py                    0      0   100%
+clinic\models.py                                        190      0   100%
+clinic\reports.py                                        52      0   100%
+governance\__init__.py                                    0      0   100%
+governance\apps.py                                        5      0   100%
+governance\management\__init__.py                         0      0   100%
+governance\management\commands\__init__.py                0      0   100%
+governance\models.py                                     72      0   100%
+vetcontrols\__init__.py                                   2      0   100%
+-----------------------------------------------------------------------------------
+TOTAL                                                  2441    302    88%
