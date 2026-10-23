@@ -188,3 +188,38 @@ class SuggestionDecision(models.Model):
 
     class Meta:
         constraints = [models.CheckConstraint(condition=models.Q(outcome__in=['adopted', 'declined']), name='suggestion_terminal_outcome')]
+
+
+class WorkDivision(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    store = models.ForeignKey(Store, on_delete=models.PROTECT)
+    work_item_ref = models.UUIDField()
+    stage_ref = models.CharField(max_length=32)
+    current_version = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['store', 'work_item_ref', 'stage_ref'], name='one_work_stage')]
+
+
+class WorkDivisionRevision(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    division = models.ForeignKey(WorkDivision, on_delete=models.PROTECT, related_name='revisions')
+    version = models.PositiveIntegerField()
+    plan_version_ref = models.UUIDField(default=uuid.uuid4, unique=True)
+    actual_version_ref = models.UUIDField(default=uuid.uuid4, unique=True)
+    snapshot = models.JSONField()
+    actor = models.ForeignKey(Account, on_delete=models.PROTECT)
+    reason = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['division', 'version'], name='one_work_revision')]
+
+
+class WorkDivisionReview(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    revision = models.ForeignKey(WorkDivisionRevision, on_delete=models.PROTECT, related_name='reviews')
+    actor = models.ForeignKey(Account, on_delete=models.PROTECT)
+    conclusion = models.CharField(max_length=32)
+    reason = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
