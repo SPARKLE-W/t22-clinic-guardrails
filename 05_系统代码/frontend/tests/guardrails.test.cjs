@@ -289,6 +289,37 @@ const session = (c, role, store, username) => {
 
   {
     const c = context();
+    const item = {
+      work_item_ref: '11111111-1111-4111-8111-111111111111',
+      stage_ref: 'rule_review',
+      plan_version_ref: '22222222-2222-4222-8222-222222222222',
+      actual_version_ref: '33333333-3333-4333-8333-333333333333',
+      plan_dimensions: { content_generation: null, data_entry: 'manager', human_decision: 'manager' },
+      source_event_refs: ['44444444-4444-4444-8444-444444444444'],
+      actual_execution_metadata: [{ source_event_ref: '44444444-4444-4444-8444-444444444444', stage_ref: 'rule_review', actor_ref: 2, actor_role: 'manager', occurred_at: '2026-10-23T10:00:00+08:00', result: 'approve', dimensions: { content_generation: 'human', data_entry: 'manager', human_decision: 'manager' } }],
+      manual_evidence_provenance: [],
+      comparison: { state: 'pending_review', missing_dimensions: [], differences: [{ dimension: 'human_decision', planned: 'manager', actual: ['doctor'] }] },
+      maintenance_history: [{ plan_version_ref: '22222222-2222-4222-8222-222222222222', actual_version_ref: '33333333-3333-4333-8333-333333333333', actor_ref: 1, created_at: '2026-10-23T10:00:00+08:00', reason: '登记', plan_dimensions: {}, source_event_refs: [], actual_execution_metadata: [], manual_evidence_provenance: [], comparison: { state: 'pending_review', missing_dimensions: [], differences: [] } }],
+      review_history: []
+    };
+    const html = run(c, `workDetailHtml(${JSON.stringify(item)})`);
+    assert.ok(html.includes('待复核'));
+    assert.ok(html.includes('维护新版本'));
+    assert.ok(html.includes('人工复核'));
+    assert.ok(html.includes('#2'));
+    assert.ok(!html.includes('诊断正文'));
+    assert.ok(run(c, `workEvidenceHtml(${JSON.stringify(item.actual_execution_metadata)}).includes('账号 #2')`));
+    run(c, `state.workDivisionItems=[]; state.workDivisionSelected=null; api=async()=>({items:[${JSON.stringify(item)}],page:1,page_size:50,total:1});`);
+    await run(c, `viewWorkDivisions(nodes.view)`);
+    const listHtml = run(c, 'nodes.view.innerHTML');
+    assert.ok(listHtml.includes('人机分工'));
+    assert.ok(listHtml.includes('规则审批'));
+    assert.ok(listHtml.includes('待复核'));
+    results.push('F-03 work division detail renders comparison, evidence and review action');
+  }
+
+  {
+    const c = context();
     const full = '11111111-2222-4333-8444-555555555555';
     assert.ok(run(c, `copyRef('${full}', '候选编号')`).includes(`data-value="${full}"`));
     assert.equal((source.match(/case 'copy-ref'/g) || []).length, 1);
