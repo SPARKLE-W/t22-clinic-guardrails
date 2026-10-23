@@ -23,6 +23,11 @@ const state = {
   auditOutcome: 'all',
   summaryRange: 'all',
   summaryGroup: 'rule',
+  workDivisionPage: 1,
+  workDivisionStage: '',
+  workDivisionComparison: '',
+  workDivisionSelected: null,
+  workDivisionItems: [],
   modal: null,
   reloadLatest: null,
   bootError: null
@@ -65,7 +70,9 @@ const ERRORS = {
   MISSING_PERMISSION_ENTRY: '接口未登记权限入口，已拒绝。',
   CSRF: '页面会话已失效，请刷新后重试。',
   NETWORK: '网络中断，结果暂无法确认。请保留输入，使用同一操作重试核对。',
-  UNPARSEABLE: '响应暂无法确认，请保留输入后重试核对。'
+  UNPARSEABLE: '响应暂无法确认，请保留输入后重试核对。',
+  EXPORT_INCOMPLETE: '导出文件未完整接收，请重新导出核对。',
+  EXPORT_FORMAT: '导出响应不是可核验的 CSV。'
 };
 
 const ROLES = { frontdesk: '前台', doctor: '医生', manager: '管理' };
@@ -105,6 +112,23 @@ const FIELD_TEXT = {
   drug: '药品', original_entry_ref: '关联原条目', content_digest: '内容摘要', template: '字段模板',
   complaint: '主诉', doctor_id: '接诊医生', pet_id: '宠物编号', species: '物种', pet_name: '宠物昵称',
   append_only: '只追加'
+};
+
+const WORK_STAGES = {
+  content_generation: '内容生成', clinical_entry: '病历录入', medication_entry: '用药录入',
+  reception_entry: '接待录入', suggestion_decision: '建议决定', rule_review: '规则审批',
+  rule_activation: '规则启用', alert_handling: '告警处理'
+};
+const WORK_DIMENSIONS = {
+  content_generation: { label: '内容生成方式', options: [['human', '人工'], ['ai', 'AI'], ['demo', '演示来源'], ['rule_engine', '规则引擎'], ['unknown', '未知']] },
+  data_entry: { label: '录入主体', options: [['frontdesk', '前台'], ['doctor', '医生'], ['manager', '管理']] },
+  human_decision: { label: '人工决定主体', options: [['doctor', '医生'], ['manager', '管理']] }
+};
+const WORK_COMPARISON = {
+  consistent: ['一致', 'ok'], pending_review: ['待复核', 'warn'], not_comparable: ['不可比较', 'muted']
+};
+const WORK_CONCLUSION = {
+  confirmed_consistent: '确认一致', confirmed_difference: '确认差异', needs_followup: '需继续跟进'
 };
 
 /* ---------------- 工具 ---------------- */
@@ -356,6 +380,63 @@ async function write(path, body, options = {}) {
   }
 }
 
+/* ---------------- 受限 CSV 导出 ---------------- */
+
+function exportFilename(disposition) {
+  const value = disposition || '';
+  const star = value.match(/filename\*=UTF-8''([^;]+)/i);
+  if (star) { try { return decodeURIComponent(star[1].trim().replace(/^"|"$/g, '')); } catch (e) { /* fall through */ } }
+  const plain = value.match(/filename="?([^";]+)"?/i);
+  return plain ? plain[1].trim() : 'export.csv';
+}
+
+async function sha256Hex(buffer) {
+  if (!crypto || !crypto.subtle) throw new ApiError('EXPORT_FORMAT', 200, null);
+  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function exportVerifyHeaders(headers, byteLength) {
+  const length = Number(headers.get('content-length'));
+  const byteCount = Number(headers.get('x-byte-count'));
+  const expected = (headers.get('x-content-sha256') || '').toLowerCase();
+  if (!Number.isSafeInteger(length) || length <= 0 || !Number.isSafeInteger(byteCount) || byteCount <= 0) {
+    throw new ApiError('EXPORT_INCOMPLETE', 200, null);
+  }
+  if (byteCount !== length || byteLength !== length || !/^[0-9a-f]{64}$/.test(expected)) {
+    throw new ApiError('EXPORT_INCOMPLETE', 200, null);
+  }
+  return expected;
+}
+
+async function downloadCsv(path, body) {
+  const res = await fetch(path, {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': cookie('csrftoken'), Accept: 'text/csv' },
+    body: JSON.stringify(body)
+  });
+  const type = (res.headers.get('content-type') || '').toLowerCase();
+  if (!res.ok || type.includes('application/json')) {
+    let payload = null;
+    try { payload = await res.json(); } catch (e) { /* non-JSON error body */ }
+    const code = payload && payload.error && payload.error.code ? payload.error.code : 'EXPORT_FORMAT';
+    throw new ApiError(code, res.status, payload, payload && payload.error && payload.error.message);
+  }
+  if (!type.includes('text/csv')) throw new ApiError('EXPORT_FORMAT', res.status, null);
+  const buffer = await res.arrayBuffer();
+  const expected = exportVerifyHeaders(res.headers, buffer.byteLength);
+  const actual = await sha256Hex(buffer);
+  if (actual !== expected) throw new ApiError('EXPORT_INCOMPLETE', res.status, null);
+  const filename = exportFilename(res.headers.get('content-disposition'));
+  const blob = new Blob([buffer], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  return { filename, bytes: buffer.byteLength, records: Number(res.headers.get('x-record-count') || 0), exportRef: res.headers.get('x-export-ref') || '' };
+}
+
 /* ---------------- 会话与路由 ---------------- */
 
 function homeFor() {
@@ -383,7 +464,7 @@ function routeAllowed(route) {
   const allowed = {
     frontdesk: ['receptions'],
     doctor: ['clinical', 'alerts'],
-    manager: ['governance', 'summary', 'audit']
+    manager: ['governance', 'work-divisions', 'summary', 'audit']
   }[role] || [];
   return allowed.includes(route.name);
 }
@@ -694,8 +775,9 @@ function navConfig() {
   }
   return [
     { key: 'governance', num: '01', label: '规则管理', href: '#/governance' },
-    { key: 'summary', num: '02', label: '本店汇总', href: '#/summary' },
-    { key: 'audit', num: '03', label: '操作记录', href: '#/audit' }
+    { key: 'work-divisions', num: '02', label: '人机分工', href: '#/work-divisions' },
+    { key: 'summary', num: '03', label: '本店汇总', href: '#/summary' },
+    { key: 'audit', num: '04', label: '操作记录', href: '#/audit' }
   ];
 }
 
@@ -817,6 +899,11 @@ async function enterApp() {
   state.auditOutcome = 'all';
   state.summaryRange = 'all';
   state.summaryGroup = 'rule';
+  state.workDivisionPage = 1;
+  state.workDivisionStage = '';
+  state.workDivisionComparison = '';
+  state.workDivisionSelected = null;
+  state.workDivisionItems = [];
   state.selectedCandidate = '';
   purgeForeignDrafts();
   await loadSidebar();
@@ -854,6 +941,7 @@ function setActiveNav() {
       (key === 'clinical' && route.name === 'clinical') ||
       (key === 'alerts' && route.name === 'alerts') ||
       (key === 'governance' && route.name === 'governance') ||
+      (key === 'work-divisions' && route.name === 'work-divisions') ||
       (key === 'summary' && route.name === 'summary') ||
       (key === 'audit' && route.name === 'audit');
     a.classList.toggle('on', on);
@@ -936,6 +1024,7 @@ async function renderRoute() {
     else if (route.name === 'alerts') await viewAlerts(target);
     else if (route.name === 'governance' && !route.id) await viewGovernance(target);
     else if (route.name === 'governance') await viewGovernance(target, route.id);
+    else if (route.name === 'work-divisions') await viewWorkDivisions(target);
     else if (route.name === 'summary') await viewSummary(target);
     else if (route.name === 'audit') await viewAudit(target);
     else target.innerHTML = viewError(new Error('未知页面。'));
@@ -1291,6 +1380,7 @@ async function viewClinicalList(view) {
       <div class="head-side"><div class="head-actions">
         <button class="btn ghost sm" data-action="reload">刷新</button>
         <a class="btn sm" href="#/alerts">查看告警${unhandledCount() ? ' · ' + unhandledCount() : ''}</a>
+        <button class="btn sm" data-action="export-clinical">导出病历</button>
       </div></div>
     </header>
     <div class="toolbar">
@@ -1560,7 +1650,7 @@ async function viewAlerts(view) {
         <h1>告警队列</h1>
         <p class="lede">需要你核对的告警。处理后记录处理人和结果。</p>
       </div>
-      <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button></div></div>
+      <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button><button class="btn sm" data-action="export-alert-hits">导出命中明细</button></div></div>
     </header>
     <div class="toolbar">
       <div class="seg" role="group" aria-label="处理状态">
@@ -1739,6 +1829,376 @@ async function viewGovernance(view, id) {
   </div>`;
 }
 
+function exportRangeFromValues(from, to) {
+  if (!from && !to) return { ok: true, range: null };
+  if (!from || !to) return { ok: false, range: null };
+  return { ok: true, range: { from: from + 'T00:00:00+08:00', to: addDays(to, 1) + 'T00:00:00+08:00' } };
+}
+
+function exportDateScope(form) {
+  return exportRangeFromValues(form.elements.from.value, form.elements.to.value);
+}
+
+function openClinicalExport() {
+  const today = dateFmt.format(new Date());
+  openModal({
+    title: '导出病历 CSV', subtitle: '只导出你负责的接诊；不包含未采纳建议',
+    body: `<form id="modal-form" data-form="export-clinical" novalidate>
+      <div class="field"><label>导出范围</label><div class="choice-row">
+        <label class="choice on"><input type="radio" name="scope_mode" value="time" checked><b>按时间段</b><span>选择接诊建档时间</span></label>
+        <label class="choice"><input type="radio" name="scope_mode" value="refs"><b>按病历编号</b><span>只导出指定病历</span></label>
+      </div></div>
+      <div class="form-grid">
+        <div class="field"><label for="export-from">开始日期</label><input id="export-from" name="from" type="date" value="${today}"></div>
+        <div class="field"><label for="export-to">结束日期</label><input id="export-to" name="to" type="date" value="${today}"></div>
+      </div>
+      <div class="field"><label for="export-refs">病历编号（按编号时填写）</label><textarea id="export-refs" name="refs" placeholder="每行一个 UUID"></textarea></div>
+      <div class="field"><label for="export-purpose">用途 <b>*</b></label><textarea id="export-purpose" name="purpose" maxlength="200" placeholder="例如：复诊对照"></textarea></div>
+      <p id="export-status" class="read-note">生成后会核对文件长度与 SHA-256；不匹配不会提示成功。</p>
+    </form>`,
+    foot: '<button class="btn ghost" data-action="close-modal">取消</button><button class="btn primary" type="submit" form="modal-form">导出</button>'
+  });
+}
+
+function openAlertHitsExport() {
+  openModal({
+    title: '导出告警命中明细', subtitle: '只导出你负责接诊的命中；不含命中值',
+    body: `<form id="modal-form" data-form="export-alert-hits" novalidate>
+      <div class="form-grid">
+        <div class="field"><label for="export-from">开始日期（可选）</label><input id="export-from" name="from" type="date"></div>
+        <div class="field"><label for="export-to">结束日期（可选）</label><input id="export-to" name="to" type="date"></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label for="export-rule">规则编号（可选）</label><input id="export-rule" name="rule_ref" placeholder="如 SR-02"></div>
+        <div class="field"><label for="export-state">处理状态</label><select id="export-state" name="handling_state"><option value="">全部</option><option value="unhandled">未处理</option><option value="handled">已处理</option></select></div>
+      </div>
+      <div class="field"><label for="export-encounters">接诊编号（可选，每行一个）</label><textarea id="export-encounters" name="encounters" placeholder="不填则导出全部获准范围"></textarea></div>
+      <p id="export-status" class="read-note">导出不会改变告警处理状态；完整接收会核对长度和摘要。</p>
+    </form>`,
+    foot: '<button class="btn ghost" data-action="close-modal">取消</button><button class="btn primary" type="submit" form="modal-form">导出</button>'
+  });
+}
+
+function openAlertSummaryExport() {
+  const today = dateFmt.format(new Date());
+  openModal({
+    title: '导出告警汇总', subtitle: '只导出本店聚合，不含病例明细',
+    body: `<form id="modal-form" data-form="export-alert-summary" novalidate>
+      <div class="form-grid">
+        <div class="field"><label for="export-from">开始日期（可选）</label><input id="export-from" name="from" type="date" value="${today}"></div>
+        <div class="field"><label for="export-to">结束日期（可选）</label><input id="export-to" name="to" type="date" value="${today}"></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label for="export-rule">规则编号（可选）</label><input id="export-rule" name="rule_ref" placeholder="如 SR-02"></div>
+        <div class="field"><label for="export-state">处理状态</label><select id="export-state" name="handling_state"><option value="">全部</option><option value="unhandled">未处理</option><option value="handled">已处理</option></select></div>
+      </div>
+      <div class="field"><label for="export-group">分组</label><select id="export-group" name="group_by"><option value="rule">按规则</option><option value="handling_state">按处理状态</option></select></div>
+      <p id="export-status" class="read-note">仅本店聚合计数；完整接收会核对长度和摘要。</p>
+    </form>`,
+    foot: '<button class="btn ghost" data-action="close-modal">取消</button><button class="btn primary" type="submit" form="modal-form">导出</button>'
+  });
+}
+
+function refsFromText(text) {
+  return String(text || '').split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean);
+}
+
+async function submitExport(form) {
+  const f = form.elements;
+  const status = $('#export-status', form);
+  const kind = form.dataset.form;
+  let path;
+  let body;
+  if (kind === 'export-clinical') {
+    const purpose = f.purpose.value.trim();
+    if (!purpose) { markField(form, 'purpose', '请填写导出用途。'); return; }
+    const mode = f.scope_mode.value;
+    if (mode === 'refs') {
+      const refs = refsFromText(f.refs.value);
+      if (!refs.length || refs.some((r) => !isUuid(r))) { formError(form, '请填写一个或多个完整病历 UUID。'); return; }
+      body = { scope: { record_refs: refs }, purpose };
+    } else {
+      const check = exportDateScope(form);
+      if (!check.ok || !check.range) { formError(form, '请选择完整的起止日期。'); return; }
+      body = { scope: { time_range: check.range }, purpose };
+    }
+    path = '/api/exports/clinical-records';
+  } else if (kind === 'export-alert-hits') {
+    const check = exportDateScope(form);
+    if (!check.ok) { formError(form, '起止日期需同时填写或同时留空。'); return; }
+    body = {};
+    if (check.range) body.time_range = check.range;
+    if (f.rule_ref.value.trim()) body.rule_ref = f.rule_ref.value.trim();
+    if (f.handling_state.value) body.handling_state = f.handling_state.value;
+    const encounters = refsFromText(f.encounters.value);
+    if (encounters.length) {
+      if (encounters.some((r) => !isUuid(r))) { formError(form, '接诊编号格式不完整。'); return; }
+      body.scope = { encounter_refs: encounters };
+    }
+    path = '/api/exports/alert-hits';
+  } else {
+    const check = exportDateScope(form);
+    if (!check.ok) { formError(form, '起止日期需同时填写或同时留空。'); return; }
+    body = { group_by: f.group_by.value };
+    if (check.range) body.time_range = check.range;
+    if (f.rule_ref.value.trim()) body.rule_ref = f.rule_ref.value.trim();
+    if (f.handling_state.value) body.handling_state = f.handling_state.value;
+    path = '/api/exports/alert-summary';
+  }
+  if (status) status.textContent = '正在生成并核对文件…';
+  const result = await downloadCsv(path, body);
+  if (status) {
+    status.className = 'export-ok';
+    status.textContent = `已完整接收：${result.filename} · ${result.bytes} 字节${result.records ? ' · ' + result.records + ' 条记录' : ''}${result.exportRef ? ' · 导出引用 ' + result.exportRef : ''}`;
+  }
+}
+
+function workReviewFor(item) {
+  const history = Array.isArray(item.review_history) ? item.review_history : [];
+  const matching = history.filter((r) => r.plan_version_ref === item.plan_version_ref && r.actual_version_ref === item.actual_version_ref);
+  return matching.length ? matching[matching.length - 1] : null;
+}
+
+function workValueText(dimension, value) {
+  if (value === null || value === undefined || value === '') return '不适用';
+  const found = (WORK_DIMENSIONS[dimension] || { options: [] }).options.find(([v]) => v === value);
+  return found ? found[1] : value;
+}
+
+function workEvidenceHtml(metadata, selected = []) {
+  if (!Array.isArray(metadata) || !metadata.length) {
+    return '<p class="read-note">该阶段暂无可用业务证据。空列表可以保存计划，但比较结果会是“不可比较”。</p>';
+  }
+  return `<div class="work-evidence-list">${metadata.map((m) => {
+    const dims = Object.keys(WORK_DIMENSIONS).map((key) => `${WORK_DIMENSIONS[key].label}：${workValueText(key, m.dimensions && m.dimensions[key])}`).join(' · ');
+    return `<label class="work-evidence">
+      <input type="checkbox" data-work-source value="${esc(m.source_event_ref)}" ${selected.includes(m.source_event_ref) ? 'checked' : ''}>
+      <span><b>${esc(shortRef(m.source_event_ref, 10))}</b><span class="muted">${esc(fmtTime(m.occurred_at))}</span>
+        <small>${esc(m.actor_ref ? '账号 #' + m.actor_ref : '无账号来源')} / ${esc(ROLES[m.actor_role] || m.actor_role || '—')} · ${esc(m.result || '—')}</small>
+        <small>${esc(dims)}</small></span>
+    </label>`;
+  }).join('')}</div>`;
+}
+
+function workDetailHtml(item) {
+  const comparison = item.comparison || { state: 'not_comparable', missing_dimensions: [], differences: [] };
+  const missingDimensions = Array.isArray(comparison.missing_dimensions) ? comparison.missing_dimensions : [];
+  const comparisonDifferences = Array.isArray(comparison.differences) ? comparison.differences : [];
+  const [comparisonText, comparisonKind] = WORK_COMPARISON[comparison.state] || WORK_COMPARISON.not_comparable;
+  const review = workReviewFor(item);
+  const meta = Array.isArray(item.actual_execution_metadata) ? item.actual_execution_metadata : [];
+  const manual = Array.isArray(item.manual_evidence_provenance) ? item.manual_evidence_provenance : [];
+  const maintenance = Array.isArray(item.maintenance_history) ? item.maintenance_history : [];
+  const reviews = Array.isArray(item.review_history) ? item.review_history : [];
+  const dims = item.plan_dimensions || {};
+  return `<section class="sheet work-detail">
+    <header class="sheet-head">
+      <div><h2 class="sheet-title">${esc(shortRef(item.work_item_ref, 10))} <span class="chip muted">${esc(WORK_STAGES[item.stage_ref] || item.stage_ref)}</span></h2>
+        <span class="sheet-sub">${copyRef(item.work_item_ref, '工作项编号')} · 计划版本 ${esc(shortRef(item.plan_version_ref, 8))}</span></div>
+      <div class="head-actions">${chip(comparisonText, comparisonKind)} ${review ? chip('已复核', 'ok') : chip('待人工复核', 'warn')}</div>
+    </header>
+    <div class="block-body">
+      <div class="work-actions">
+        <button class="btn sm" data-action="work-edit">维护新版本</button>
+        ${comparison.state === 'not_comparable'
+          ? '<span class="read-note">先补取可核对的业务证据，再登记复核。</span>'
+          : `<button class="btn primary sm" data-action="work-review">${review ? '追加复核' : '人工复核'}</button>`}
+      </div>
+      <div class="work-dim-grid">
+        ${Object.keys(WORK_DIMENSIONS).map((key) => `<div><span class="panel-label">${esc(WORK_DIMENSIONS[key].label)}</span><b>${esc(workValueText(key, dims[key]))}</b></div>`).join('')}
+      </div>
+      ${missingDimensions.length ? `<p class="note">缺少可核对维度：${missingDimensions.map((d) => esc(WORK_DIMENSIONS[d] ? WORK_DIMENSIONS[d].label : d)).join('、')}</p>` : ''}
+      ${comparisonDifferences.length ? `<div class="work-diff">${comparisonDifferences.map((d) => `<p><b>${esc(WORK_DIMENSIONS[d.dimension] ? WORK_DIMENSIONS[d.dimension].label : d.dimension)}</b> 计划：${esc(workValueText(d.dimension, d.planned))}；实际：${(Array.isArray(d.actual) ? d.actual : []).map((v) => esc(workValueText(d.dimension, v))).join('、')}</p>`).join('')}</div>` : ''}
+      <div class="work-review-line">${review
+        ? `<b>${esc(WORK_CONCLUSION[review.conclusion] || review.conclusion)}</b> · ${esc(fmtTime(review.created_at))} · 账号 #${esc(review.actor_ref)}<p>${esc(review.reason || '')}</p>`
+        : '<span class="muted">当前版本还没有人工复核。</span>'}</div>
+      <details class="details"><summary>业务证据 ${meta.length} 条<em>脱敏元数据</em></summary><div class="inner">
+        <div class="table-wrap"><table class="table"><thead><tr><th>来源记录</th><th>账号 / 角色</th><th>时间</th><th>结果</th><th>可证明维度</th></tr></thead><tbody>
+          ${meta.length ? meta.map((m) => `<tr><td><code>${esc(shortRef(m.source_event_ref, 10))}</code></td><td>${esc(m.actor_ref ? '#' + m.actor_ref : '无账号')} / ${esc(ROLES[m.actor_role] || m.actor_role || '—')}</td><td>${esc(fmtTime(m.occurred_at))}</td><td>${esc(m.result || '—')}</td><td>${Object.keys(WORK_DIMENSIONS).map((k) => esc(workValueText(k, m.dimensions && m.dimensions[k]))).join(' · ')}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">暂无</td></tr>'}
+        </tbody></table></div>
+        ${manual.length ? `<p class="note">人工补录依据：${manual.map((m) => `${esc(WORK_DIMENSIONS[m.dimension] ? WORK_DIMENSIONS[m.dimension].label : m.dimension)}=${esc(workValueText(m.dimension, m.value))}（${esc(m.source_ref)}，账号 #${esc(m.recorded_by)}）`).join('；')}</p>` : ''}
+      </div></details>
+      <details class="details"><summary>维护与复核历史 ${maintenance.length + reviews.length} 条<em>旧版本保留</em></summary><div class="inner">
+        ${maintenance.map((h) => `<div class="work-history"><b>${esc(fmtTime(h.created_at))}</b> · 账号 #${esc(h.actor_ref)} · ${esc(h.reason || '')}<small>计划 ${esc(shortRef(h.plan_version_ref, 8))} / 实际 ${esc(shortRef(h.actual_version_ref, 8))}</small></div>`).join('')}
+        ${reviews.map((h) => `<div class="work-history"><b>${esc(WORK_CONCLUSION[h.conclusion] || h.conclusion)}</b> · ${esc(fmtTime(h.created_at))} · 账号 #${esc(h.actor_ref)}<small>${esc(h.reason || '')}</small></div>`).join('')}
+        ${!maintenance.length && !reviews.length ? '<p class="muted">暂无历史。</p>' : ''}
+      </div></details>
+    </div>
+  </section>`;
+}
+
+async function viewWorkDivisions(view) {
+  const params = { page: state.workDivisionPage };
+  if (state.workDivisionStage) params.stage_ref = state.workDivisionStage;
+  if (state.workDivisionComparison) params.comparison_state = state.workDivisionComparison;
+  const data = await api('/api/management/work-divisions?' + qs(params));
+  const items = Array.isArray(data.items) ? data.items : [];
+  state.workDivisionItems = items;
+  const selected = items.find((x) => state.workDivisionSelected && x.work_item_ref === state.workDivisionSelected.work_item_ref && x.stage_ref === state.workDivisionSelected.stage_ref) || items[0] || null;
+  state.workDivisionSelected = selected ? { work_item_ref: selected.work_item_ref, stage_ref: selected.stage_ref } : null;
+  const stageOptions = [['', '全部阶段'], ...Object.entries(WORK_STAGES)];
+  view.innerHTML = `<div class="view">
+    <header class="page-head">
+      <div><h1>人机分工</h1><p class="lede">登记计划分工，核对系统记录，再由管理人工复核。</p></div>
+      <div class="head-side"><div class="head-actions"><button class="btn primary" data-action="work-new">登记分工</button></div></div>
+    </header>
+    <div class="toolbar">
+      <select data-work-filter="stage" aria-label="按阶段筛选">${stageOptions.map(([k, l]) => `<option value="${esc(k)}" ${state.workDivisionStage === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>
+      <div class="seg" role="group" aria-label="按比较状态筛选">
+        ${[['', '全部'], ['consistent', '一致'], ['pending_review', '待复核'], ['not_comparable', '不可比较']].map(([k, l]) => `<button type="button" class="${state.workDivisionComparison === k ? 'on' : ''}" data-action="work-comparison" data-state="${k}">${l}</button>`).join('')}
+      </div>
+      <span class="count">共 ${esc(data.total ?? items.length)} 条</span>
+    </div>
+    <div class="work-grid">
+      <section class="sheet work-list">
+        <header class="sheet-head"><div><h2 class="sheet-title">分工记录</h2><span class="sheet-sub">按工作项与阶段，一页 50 条</span></div></header>
+        <div class="cand-list">${items.length ? items.map((item) => {
+          const on = selected && item.work_item_ref === selected.work_item_ref && item.stage_ref === selected.stage_ref;
+          const [text, kind] = WORK_COMPARISON[(item.comparison && item.comparison.state)] || WORK_COMPARISON.not_comparable;
+          return `<button class="work-cand ${on ? 'on' : ''}" data-action="work-select" data-ref="${esc(item.work_item_ref)}" data-stage="${esc(item.stage_ref)}">
+            <b>${esc(shortRef(item.work_item_ref, 10))}</b><span class="chip muted">${esc(WORK_STAGES[item.stage_ref] || item.stage_ref)}</span>
+            <small>${esc(text)} · ${workReviewFor(item) ? '已复核' : '待复核'} · ${esc(fmtTime(item.maintenance_history && item.maintenance_history.length ? item.maintenance_history[item.maintenance_history.length - 1].created_at : ''))}</small>
+          </button>`;
+        }).join('') : `<div class="list-empty"><b>还没有分工记录</b><p>先登记一条计划分工，再核对系统记录。</p></div>`}</div>
+        <div class="work-pager"><button class="btn ghost sm" data-action="work-page" data-page="${Math.max(1, Number(data.page || 1) - 1)}" ${Number(data.page || 1) <= 1 ? 'disabled' : ''}>上一页</button><span>第 ${esc(data.page || 1)} 页</span><button class="btn ghost sm" data-action="work-page" data-page="${Number(data.page || 1) + 1}" ${items.length < 50 ? 'disabled' : ''}>下一页</button></div>
+      </section>
+      ${selected ? workDetailHtml(selected) : '<section class="sheet"><div class="list-empty"><b>选择一条分工记录</b><p>查看计划、证据、比较和复核历史。</p></div></section>'}
+    </div>
+    <footer class="page-foot"><span>门诊护栏 · 分工登记与人工复核可追溯</span><span>${esc(data.page || 1)} / ${esc(Math.max(1, Math.ceil((data.total || 0) / 50)))}</span></footer>
+  </div>`;
+}
+
+function workDimensionSelects(plan) {
+  return `<div class="work-dim-grid form-grid">
+    ${Object.keys(WORK_DIMENSIONS).map((key) => `<div class="field"><label for="work-${key}">${esc(WORK_DIMENSIONS[key].label)}</label>
+      <select id="work-${key}" name="plan_${key}"><option value="">不适用</option>${WORK_DIMENSIONS[key].options.map(([v, l]) => `<option value="${esc(v)}" ${plan[key] === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>`).join('')}
+  </div>`;
+}
+
+function workManualRowHtml(entry = {}) {
+  const dimension = entry.dimension || '';
+  const value = entry.value || '';
+  const source = entry.source_ref || '';
+  return `<div class="work-manual-row">
+    <select name="manual_dimension"><option value="">维度</option>${Object.keys(WORK_DIMENSIONS).map((k) => `<option value="${esc(k)}" ${dimension === k ? 'selected' : ''}>${esc(WORK_DIMENSIONS[k].label)}</option>`).join('')}</select>
+    <select name="manual_value"><option value="">值</option>${Object.entries(WORK_DIMENSIONS).flatMap(([k, d]) => d.options.map(([v, l]) => `<option value="${esc(v)}" ${value === v ? 'selected' : ''}>${esc(l)}</option>`)).join('')}</select>
+    <input name="manual_source" value="${esc(source)}" placeholder="依据编号（不写正文）" maxlength="200">
+    <button type="button" class="btn ghost sm" data-action="work-manual-remove">移除</button>
+  </div>`;
+}
+
+function openWorkDivisionForm(item) {
+  const editing = Boolean(item);
+  const ref = item ? item.work_item_ref : '';
+  const stage = item ? item.stage_ref : 'rule_review';
+  const plan = item ? (item.plan_dimensions || {}) : {};
+  const selected = item && Array.isArray(item.source_event_refs) ? item.source_event_refs : [];
+  const meta = item && Array.isArray(item.actual_execution_metadata) ? item.actual_execution_metadata : [];
+  const manual = item && Array.isArray(item.manual_evidence_provenance) ? item.manual_evidence_provenance : [];
+  openModal({
+    title: editing ? '维护分工新版本' : '登记人机分工',
+    subtitle: editing ? '保存后保留旧版本、旧比较和旧复核' : '先登记计划分工，再补业务证据',
+    wide: true,
+    draftKey: `work-division:${ref || 'new'}:${stage}`,
+    body: `<form id="modal-form" data-form="work-division" data-work-ref="${esc(ref)}" data-work-stage="${esc(stage)}" data-plan-ref="${esc(item ? item.plan_version_ref || '' : '')}" data-actual-ref="${esc(item ? item.actual_version_ref || '' : '')}" novalidate>
+      <div class="form-grid">
+        <div class="field wide"><label for="work-ref">工作项编号 <b>*</b></label><input id="work-ref" name="work_item_ref" class="mono" value="${esc(ref)}" ${editing ? 'readonly' : ''} placeholder="接诊编号或候选编号 UUID"></div>
+        <div class="field wide"><label for="work-stage">阶段 <b>*</b></label><select id="work-stage" name="stage_ref" ${editing ? 'disabled' : ''}>${Object.entries(WORK_STAGES).map(([k, l]) => `<option value="${esc(k)}" ${stage === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+      </div>
+      ${workDimensionSelects(plan)}
+      <div class="field wide"><label>业务证据</label><div id="work-evidence">${workEvidenceHtml(meta, selected)}</div><button type="button" class="btn ghost sm" data-action="work-evidence">重新加载业务证据</button> <p class="hint">只选择能证明本次实际执行的记录；空列表会判为不可比较。</p></div>
+      <div class="field wide"><label>人工补录依据（可选）</label><div id="work-manual">${manual.length ? manual.map((entry) => workManualRowHtml(entry)).join('') : workManualRowHtml()}</div><button type="button" class="btn ghost sm" data-action="work-manual-add">添加一条</button><p class="hint">只填依据编号，不写临床正文；人工声明不会覆盖系统记录。</p></div>
+      <div class="field wide"><label for="work-reason">维护理由 <b>*</b></label><textarea id="work-reason" name="reason" maxlength="2000" placeholder="说明这次登记或修改的原因"></textarea></div>
+    </form>`,
+    foot: '<button class="btn ghost" data-action="close-modal">取消</button><button class="btn primary" type="submit" form="modal-form">保存分工</button>'
+  });
+}
+
+function openWorkReview(item) {
+  const comparison = (item && item.comparison) || {};
+  const options = comparison.state === 'consistent'
+    ? [['confirmed_consistent', '确认一致']]
+    : comparison.state === 'pending_review'
+      ? [['confirmed_difference', '确认差异'], ['needs_followup', '需继续跟进']]
+      : [];
+  if (!options.length) { toast('不可比较的记录需先补证据，不能登记复核。', 'err'); return; }
+  openModal({
+    title: '人工复核分工',
+    subtitle: `当前版本 ${shortRef(item.plan_version_ref, 8)} / ${shortRef(item.actual_version_ref, 8)}`,
+    draftKey: `work-review:${item.work_item_ref}:${item.stage_ref}:${item.plan_version_ref}:${item.actual_version_ref}`,
+    body: `<form id="modal-form" data-form="work-review" data-work-ref="${esc(item.work_item_ref)}" data-work-stage="${esc(item.stage_ref)}" data-plan-ref="${esc(item.plan_version_ref)}" data-actual-ref="${esc(item.actual_version_ref)}" novalidate>
+      <p class="read-note">这里只登记人工复核结论，不改变自动比较，也不改写业务记录。</p>
+      <div class="field"><label for="work-conclusion">复核结论 <b>*</b></label><select id="work-conclusion" name="conclusion">${options.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select></div>
+      <div class="field"><label for="work-review-reason">复核理由 <b>*</b></label><textarea id="work-review-reason" name="reason" maxlength="2000" placeholder="说明依据与结论"></textarea></div>
+    </form>`,
+    foot: '<button class="btn ghost" data-action="close-modal">取消</button><button class="btn primary" type="submit" form="modal-form">保存复核</button>'
+  });
+}
+
+async function submitWorkDivision(form) {
+  const f = form.elements;
+  const ref = f.work_item_ref.value.trim();
+  const stage = f.stage_ref.value || form.dataset.workStage;
+  if (!isUuid(ref)) { markField(form, 'work_item_ref', '请输入完整 UUID。'); return; }
+  const plan = {};
+  for (const key of Object.keys(WORK_DIMENSIONS)) plan[key] = f['plan_' + key].value || null;
+  if (!Object.values(plan).some((v) => v !== null)) { formError(form, '至少选择一个计划维度。'); return; }
+  const source = [...form.querySelectorAll('[data-work-source]:checked')].map((el) => el.value);
+  const manual = [];
+  for (const row of form.querySelectorAll('.work-manual-row')) {
+    const dimension = row.querySelector('[name="manual_dimension"]').value;
+    const value = row.querySelector('[name="manual_value"]').value;
+    const sourceRef = row.querySelector('[name="manual_source"]').value.trim();
+    if (!dimension && !value && !sourceRef) continue;
+    if (!dimension || !value || !sourceRef) { formError(form, '人工依据需要维度、值和依据编号都填写。'); return; }
+    manual.push({ dimension, value, source_ref: sourceRef });
+  }
+  const reason = f.reason.value.trim();
+  if (!reason) { markField(form, 'reason', '请填写维护理由。'); return; }
+  const body = {
+    work_item_ref: ref, stage_ref: stage,
+    plan_version_ref: form.dataset.planRef || null,
+    actual_version_ref: form.dataset.actualRef || null,
+    plan_dimensions: plan, source_event_refs: source, manual_actual_evidence: manual, reason
+  };
+  await write('/api/management/work-divisions', body, { ctx: `work-division:${ref}:${stage}` });
+  state.workDivisionSelected = { work_item_ref: ref, stage_ref: stage };
+  closeModal();
+  toast('分工已保存', 'ok');
+  await renderRoute();
+}
+
+async function submitWorkReview(form) {
+  const f = form.elements;
+  const reason = f.reason.value.trim();
+  if (!reason) { markField(form, 'reason', '请填写复核理由。'); return; }
+  const item = state.workDivisionItems.find((x) => x.work_item_ref === form.dataset.workRef && x.stage_ref === form.dataset.workStage);
+  await write('/api/management/work-divisions/reviews', {
+    work_item_ref: form.dataset.workRef, stage_ref: form.dataset.workStage,
+    plan_version_ref: form.dataset.planRef, actual_version_ref: form.dataset.actualRef,
+    redacted_evidence: (item && item.source_event_refs) || [],
+    conclusion: f.conclusion.value, reason
+  }, { ctx: `work-review:${form.dataset.workRef}:${form.dataset.workStage}:${form.dataset.planRef}:${form.dataset.actualRef}` });
+  closeModal();
+  toast('复核已保存', 'ok');
+  await renderRoute();
+}
+
+async function loadWorkEvidence(button) {
+  const form = button.closest('form');
+  const ref = form.elements.work_item_ref.value.trim();
+  const stage = form.elements.stage_ref.value;
+  if (!isUuid(ref)) { markField(form, 'work_item_ref', '请先输入完整 UUID。'); return; }
+  button.disabled = true;
+  try {
+    const checked = [...form.querySelectorAll('[data-work-source]:checked')].map((el) => el.value);
+    const data = await api('/api/management/work-divisions/evidence?' + qs({ work_item_ref: ref, stage_ref: stage }));
+    $('#work-evidence', form).innerHTML = workEvidenceHtml(data.actual_execution_metadata || [], checked);
+  } catch (e) {
+    formError(form, e.message || '证据加载失败。');
+  } finally { button.disabled = false; }
+}
+
 async function viewSummary(view) {
   const params = { group_by: state.summaryGroup };
   const tr = rangeParam(state.summaryRange);
@@ -1770,7 +2230,7 @@ async function viewSummary(view) {
   view.innerHTML = `<div class="view">
     <header class="page-head">
       <div><h1>本店汇总</h1><p class="lede">本店的接诊与告警概览。数字来自门诊记录，不展示病例明细。</p></div>
-      <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button></div></div>
+      <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button><button class="btn sm" data-action="export-alert-summary">导出汇总</button></div></div>
     </header>
     <div class="toolbar">
       <div class="seg" role="group" aria-label="统计时间范围">
@@ -2462,6 +2922,9 @@ async function handleForm(form) {
   if (name === 'resolve-alert') return runForm(form, () => submitResolveAlert(form).catch((e) => writeError(e, form)));
   if (name === 'generate-candidate') return runForm(form, () => submitGenerate(form).catch((e) => writeError(e, form)));
   if (name === 'candidate-action') return runForm(form, () => submitCandidateAction(form).catch((e) => writeError(e, form)));
+  if (name === 'export-clinical' || name === 'export-alert-hits' || name === 'export-alert-summary') return runForm(form, () => submitExport(form).catch((e) => writeError(e, form)));
+  if (name === 'work-division') return runForm(form, () => submitWorkDivision(form).catch((e) => writeError(e, form)));
+  if (name === 'work-review') return runForm(form, () => submitWorkReview(form).catch((e) => writeError(e, form)));
 }
 
 /* ---------------- 事件 ---------------- */
@@ -2486,6 +2949,12 @@ document.addEventListener('input', (e) => {
 });
 
 document.addEventListener('change', (e) => {
+  if (e.target.matches('[data-work-filter="stage"]')) {
+    state.workDivisionStage = e.target.value;
+    state.workDivisionPage = 1;
+    renderRoute();
+    return;
+  }
   const form = e.target.closest('form[data-draft]');
   if (form) saveDraft(form.dataset.draft, form);
   if (e.target.matches('input[name="identity"]')) {
@@ -2555,6 +3024,31 @@ document.addEventListener('click', async (e) => {
       case 'alert-filter': state.alertFilter = btn.dataset.filter; await renderRoute(); return;
       case 'audit-reset': state.auditFilters = { record_ref: '', operator_ref: '' }; state.auditOutcome = 'all'; await renderRoute(); return;
       case 'audit-outcome': state.auditOutcome = btn.dataset.outcome || 'all'; await renderRoute(); return;
+      case 'export-clinical': openClinicalExport(); return;
+      case 'export-alert-hits': openAlertHitsExport(); return;
+      case 'export-alert-summary': openAlertSummaryExport(); return;
+      case 'work-select': {
+        state.workDivisionSelected = { work_item_ref: btn.dataset.ref, stage_ref: btn.dataset.stage };
+        await renderRoute(); return;
+      }
+      case 'work-new': openWorkDivisionForm(null); return;
+      case 'work-edit': {
+        const item = state.workDivisionItems.find((x) => state.workDivisionSelected && x.work_item_ref === state.workDivisionSelected.work_item_ref && x.stage_ref === state.workDivisionSelected.stage_ref);
+        if (item) openWorkDivisionForm(item); return;
+      }
+      case 'work-review': {
+        const item = state.workDivisionItems.find((x) => state.workDivisionSelected && x.work_item_ref === state.workDivisionSelected.work_item_ref && x.stage_ref === state.workDivisionSelected.stage_ref);
+        if (item) openWorkReview(item); return;
+      }
+      case 'work-evidence': await loadWorkEvidence(btn); return;
+      case 'work-manual-add': {
+        const box = $('#work-manual', btn.closest('form'));
+        if (box && box.querySelectorAll('.work-manual-row').length < 30) box.insertAdjacentHTML('beforeend', workManualRowHtml());
+        return;
+      }
+      case 'work-manual-remove': { const row = btn.closest('.work-manual-row'); if (row) row.remove(); return; }
+      case 'work-comparison': state.workDivisionComparison = btn.dataset.state || ''; state.workDivisionPage = 1; await renderRoute(); return;
+      case 'work-page': state.workDivisionPage = Math.max(1, Number(btn.dataset.page) || 1); await renderRoute(); return;
       case 'summary-range': state.summaryRange = btn.dataset.range || 'all'; await renderRoute(); return;
       case 'summary-group': state.summaryGroup = btn.dataset.group === 'handling_state' ? 'handling_state' : 'rule'; await renderRoute(); return;
       case 'regen-pet': {
