@@ -5,6 +5,7 @@ from governance.views import _body, protected
 from .services import auxiliary, mutate, read
 from . import writes
 from . import medications
+from . import suggestions
 
 
 def query(request):
@@ -97,5 +98,21 @@ def medication(mode):
     @protected(medications.PERMISSION, ['POST'])
     def view(request, encounter_id):
         result = medications.mutate(request.user.pk,mode,request.headers.get('Idempotency-Key'),_body(request),str(encounter_id))
+        return JsonResponse(result,status=422 if result.get('ok') is False else 200)
+    return view
+
+
+@protected('clinical.read', ['GET'])
+def suggestion_list(request, encounter_id):
+    if request.GET:
+        raise DomainError('INPUT_FIELDS_INVALID',422)
+    return JsonResponse(suggestions.listing(request.user.pk,str(encounter_id)))
+
+
+def suggestion_decision(mode):
+    permission = suggestions.ADOPT if mode == 'adopt' else suggestions.DECLINE
+    @protected(permission,['POST'])
+    def view(request,suggestion_id):
+        result = suggestions.mutate(request.user.pk,mode,request.headers.get('Idempotency-Key'),_body(request),str(suggestion_id))
         return JsonResponse(result,status=422 if result.get('ok') is False else 200)
     return view

@@ -201,7 +201,11 @@ def _clinical(row, templates):
                                  'created_at':item.created_at.isoformat(),'reason':item.reason}
                                 for item in sorted(record.medicationentry_set.all(),key=lambda item:(item.created_at,str(item.pk)))],
             'clinical_versions': [{'version_ref': str(r.pk), 'version': r.version, 'diagnosis': r.diagnosis, 'examination': r.examination,
-                                   'actor_ref': r.actor_id, 'created_at': r.created_at.isoformat(), 'reason': r.reason} for r in revisions]}
+                                   'actor_ref': r.actor_id, 'created_at': r.created_at.isoformat(), 'reason': r.reason} for r in revisions],
+            'adoptions': [{'decision_ref':str(item.pk),'suggestion_ref':str(item.suggestion_id),'source':item.suggestion.source,
+                           'adopted_content':item.adopted_content,'actor_ref':item.actor_id,'created_at':item.created_at.isoformat(),
+                           'reason':item.reason,'version_ref':str(item.version_id),'medication_ref':str(item.medication_id) if item.medication_id else None}
+                          for item in sorted(record.suggestion_decisions.all(),key=lambda item:(item.created_at,str(item.pk))) if item.outcome == 'adopted']}
 
 
 def read(actor_id, clinical=False, ref=None, query=None):
@@ -251,7 +255,8 @@ def read(actor_id, clinical=False, ref=None, query=None):
                 rows = list(values.select_for_update()[(page-1)*50:page*50])
             relations = ['template', 'receptionrevision_set']
             if clinical:
-                relations += ['clinicalrecord__template', 'clinicalrecord__clinicalrevision_set', 'clinicalrecord__medicationentry_set']
+                relations += ['clinicalrecord__template', 'clinicalrecord__clinicalrevision_set', 'clinicalrecord__medicationentry_set',
+                              'clinicalrecord__suggestion_decisions__suggestion']
             prefetch_related_objects(rows, *relations)
             items, targets, templates = [], [], {}
             for row in rows:

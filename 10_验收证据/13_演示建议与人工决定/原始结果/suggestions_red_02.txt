@@ -1,0 +1,418 @@
+Creating test database for alias 'default' ('t22_app_test')...
+Found 18 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: rest_framework
+  Apply all migrations: auth, clinic, contenttypes, governance, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying governance.0001_initial... OK
+  Applying clinic.0001_initial... OK
+  Applying clinic.0002_alert_alertoutbox_clinicalcheck_guardhit_alert_hit... OK
+  Applying clinic.0003_clinicalcheck_original_version_and_more... OK
+  Applying clinic.0004_medicationentry... OK
+  Applying sessions.0001_initial...test_adoption_keeps_old_diagnosis_history_and_appends_medication (clinic.test_suggestions.SuggestionTests.test_adoption_keeps_old_diagnosis_history_and_appends_medication) ... ERROR
+test_audit_or_outbox_failure_rolls_back_all_adoption_state (clinic.test_suggestions.SuggestionTests.test_audit_or_outbox_failure_rolls_back_all_adoption_state) ... ERROR
+test_concurrent_same_key_creates_one_decision_and_one_record (clinic.test_suggestions.SuggestionTests.test_concurrent_same_key_creates_one_decision_and_one_record) ... ERROR
+test_decline_without_reason_survives_missing_policy_and_error_mark (clinic.test_suggestions.SuggestionTests.test_decline_without_reason_survives_missing_policy_and_error_mark) ... ERROR
+test_demo_seed_is_idempotent_and_never_writes_clinical_content (clinic.test_suggestions.SuggestionTests.test_demo_seed_is_idempotent_and_never_writes_clinical_content) ... ERROR
+test_direct_edit_or_delete_is_not_a_decision_endpoint (clinic.test_suggestions.SuggestionTests.test_direct_edit_or_delete_is_not_a_decision_endpoint) ... ERROR
+test_empty_list_does_not_manufacture_a_formal_record (clinic.test_suggestions.SuggestionTests.test_empty_list_does_not_manufacture_a_formal_record) ... FAIL
+test_error_mark_disallows_adoption (clinic.test_suggestions.SuggestionTests.test_error_mark_disallows_adoption) ... ERROR
+test_final_decision_replay_content_conflict_and_current_authorization (clinic.test_suggestions.SuggestionTests.test_final_decision_replay_content_conflict_and_current_authorization) ... ERROR
+test_first_adoption_and_medication_group_require_real_template_fields (clinic.test_suggestions.SuggestionTests.test_first_adoption_and_medication_group_require_real_template_fields) ... ERROR
+test_first_adoption_preserves_original_and_returns_only_references (clinic.test_suggestions.SuggestionTests.test_first_adoption_preserves_original_and_returns_only_references) ... ERROR
+test_medication_only_adoption_does_not_increment_diagnosis_version (clinic.test_suggestions.SuggestionTests.test_medication_only_adoption_does_not_increment_diagnosis_version) ... ERROR
+test_missing_current_policy_prevents_adoption_but_not_decline (clinic.test_suggestions.SuggestionTests.test_missing_current_policy_prevents_adoption_but_not_decline) ... ERROR
+test_missing_reason_is_durable_sr04_and_retry_is_not_new_alert (clinic.test_suggestions.SuggestionTests.test_missing_reason_is_durable_sr04_and_retry_is_not_new_alert) ... ERROR
+test_parent_body_reference_and_untrusted_source_are_rejected (clinic.test_suggestions.SuggestionTests.test_parent_body_reference_and_untrusted_source_are_rejected) ... ERROR
+test_read_audit_failure_does_not_return_suggestion (clinic.test_suggestions.SuggestionTests.test_read_audit_failure_does_not_return_suggestion) ... ERROR
+test_role_scope_and_cross_store_refusal_keep_suggestion_private (clinic.test_suggestions.SuggestionTests.test_role_scope_and_cross_store_refusal_keep_suggestion_private) ... ERROR
+test_stale_clinical_reference_and_new_record_after_read_are_conflicts (clinic.test_suggestions.SuggestionTests.test_stale_clinical_reference_and_new_record_after_read_are_conflicts) ... ERROR
+
+======================================================================
+ERROR: test_adoption_keeps_old_diagnosis_history_and_appends_medication (clinic.test_suggestions.SuggestionTests.test_adoption_keeps_old_diagnosis_history_and_appends_medication)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 103, in test_adoption_keeps_old_diagnosis_history_and_appends_medication
+    item=self.seed()[0]
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_audit_or_outbox_failure_rolls_back_all_adoption_state (clinic.test_suggestions.SuggestionTests.test_audit_or_outbox_failure_rolls_back_all_adoption_state)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 169, in test_audit_or_outbox_failure_rolls_back_all_adoption_state
+    item=self.seed()[0]
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_concurrent_same_key_creates_one_decision_and_one_record (clinic.test_suggestions.SuggestionTests.test_concurrent_same_key_creates_one_decision_and_one_record)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 190, in test_concurrent_same_key_creates_one_decision_and_one_record
+    item=self.seed()[0];barrier=Barrier(2);key=str(uuid.uuid4())
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_decline_without_reason_survives_missing_policy_and_error_mark (clinic.test_suggestions.SuggestionTests.test_decline_without_reason_survives_missing_policy_and_error_mark)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 70, in test_decline_without_reason_survives_missing_policy_and_error_mark
+    item=self.seed()[0]
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_demo_seed_is_idempotent_and_never_writes_clinical_content (clinic.test_suggestions.SuggestionTests.test_demo_seed_is_idempotent_and_never_writes_clinical_content)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 44, in test_demo_seed_is_idempotent_and_never_writes_clinical_content
+    first=self.seed();second=self.seed()
+          ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_direct_edit_or_delete_is_not_a_decision_endpoint (clinic.test_suggestions.SuggestionTests.test_direct_edit_or_delete_is_not_a_decision_endpoint)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 205, in test_direct_edit_or_delete_is_not_a_decision_endpoint
+    item=self.seed()[0];client=Client();client.force_login(self.doctor)
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_error_mark_disallows_adoption (clinic.test_suggestions.SuggestionTests.test_error_mark_disallows_adoption)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 163, in test_error_mark_disallows_adoption
+    item=self.seed()[0]
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_final_decision_replay_content_conflict_and_current_authorization (clinic.test_suggestions.SuggestionTests.test_final_decision_replay_content_conflict_and_current_authorization)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 151, in test_final_decision_replay_content_conflict_and_current_authorization
+    item=self.seed()[0];key=str(uuid.uuid4());values=self.adoption_payload(item)
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_first_adoption_and_medication_group_require_real_template_fields (clinic.test_suggestions.SuggestionTests.test_first_adoption_and_medication_group_require_real_template_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 93, in test_first_adoption_and_medication_group_require_real_template_fields
+    item=self.seed()[0]
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_first_adoption_preserves_original_and_returns_only_references (clinic.test_suggestions.SuggestionTests.test_first_adoption_preserves_original_and_returns_only_references)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 52, in test_first_adoption_preserves_original_and_returns_only_references
+    item=self.seed()[0]
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_medication_only_adoption_does_not_increment_diagnosis_version (clinic.test_suggestions.SuggestionTests.test_medication_only_adoption_does_not_increment_diagnosis_version)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 116, in test_medication_only_adoption_does_not_increment_diagnosis_version
+    item=self.seed()[0]
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_missing_current_policy_prevents_adoption_but_not_decline (clinic.test_suggestions.SuggestionTests.test_missing_current_policy_prevents_adoption_but_not_decline)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 211, in test_missing_current_policy_prevents_adoption_but_not_decline
+    item=self.seed()[0]
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_missing_reason_is_durable_sr04_and_retry_is_not_new_alert (clinic.test_suggestions.SuggestionTests.test_missing_reason_is_durable_sr04_and_retry_is_not_new_alert)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 80, in test_missing_reason_is_durable_sr04_and_retry_is_not_new_alert
+    item=self.seed()[0];values=self.adoption_payload(item);values.pop('reason');key=str(uuid.uuid4())
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_parent_body_reference_and_untrusted_source_are_rejected (clinic.test_suggestions.SuggestionTests.test_parent_body_reference_and_untrusted_source_are_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 144, in test_parent_body_reference_and_untrusted_source_are_rejected
+    item=self.seed()[0];values=self.adoption_payload(item)
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_read_audit_failure_does_not_return_suggestion (clinic.test_suggestions.SuggestionTests.test_read_audit_failure_does_not_return_suggestion)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 180, in test_read_audit_failure_does_not_return_suggestion
+    self.seed()
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_role_scope_and_cross_store_refusal_keep_suggestion_private (clinic.test_suggestions.SuggestionTests.test_role_scope_and_cross_store_refusal_keep_suggestion_private)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 134, in test_role_scope_and_cross_store_refusal_keep_suggestion_private
+    item=self.seed()[0]
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+ERROR: test_stale_clinical_reference_and_new_record_after_read_are_conflicts (clinic.test_suggestions.SuggestionTests.test_stale_clinical_reference_and_new_record_after_read_are_conflicts)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 110, in call_command
+    app_name = get_commands()[command_name]
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+KeyError: 'seed_demo_suggestions'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 124, in test_stale_clinical_reference_and_new_record_after_read_are_conflicts
+    item=self.seed()[0]
+         ^^^^^^^^^^^
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 22, in seed
+    call_command('seed_demo_suggestions', encounter_ref=self.ref, stdout=StringIO())
+  File "C:\Users\29512\.cache\t22-runtime\controls-venv\Lib\site-packages\django\core\management\__init__.py", line 112, in call_command
+    raise CommandError("Unknown command: %r" % command_name)
+django.core.management.base.CommandError: Unknown command: 'seed_demo_suggestions'
+
+======================================================================
+FAIL: test_empty_list_does_not_manufacture_a_formal_record (clinic.test_suggestions.SuggestionTests.test_empty_list_does_not_manufacture_a_formal_record)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\大三\课程\软件设计与开发\大作业\05_系统代码\clinic\test_suggestions.py", line 39, in test_empty_list_does_not_manufacture_a_formal_record
+    self.assertEqual(200,response.status_code)
+AssertionError: 200 != 404
+
+----------------------------------------------------------------------
+Ran 18 tests in 1.525s
+
+FAILED (failures=1, errors=17)
+Destroying test database for alias 'default' ('t22_app_test')...
+ OK
+System check identified no issues (0 silenced).

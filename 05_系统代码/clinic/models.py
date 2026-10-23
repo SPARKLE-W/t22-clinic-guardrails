@@ -126,3 +126,33 @@ class MedicationEntry(models.Model):
     actor = models.ForeignKey(Account, on_delete=models.PROTECT)
     reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Suggestion(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    encounter = models.ForeignKey(Encounter, on_delete=models.PROTECT)
+    source_version = models.CharField(max_length=100)
+    sample_key = models.CharField(max_length=100)
+    source = models.JSONField()
+    content = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['encounter', 'source_version', 'sample_key'], name='one_demo_suggestion')]
+
+
+class SuggestionDecision(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    suggestion = models.OneToOneField(Suggestion, on_delete=models.PROTECT, related_name='decision')
+    outcome = models.CharField(max_length=12)
+    actor = models.ForeignKey(Account, on_delete=models.PROTECT)
+    reason = models.TextField(blank=True)
+    adopted_content = models.JSONField(default=dict)
+    record = models.ForeignKey(ClinicalRecord, on_delete=models.PROTECT, null=True, related_name='suggestion_decisions')
+    version = models.ForeignKey(ClinicalRevision, on_delete=models.PROTECT, null=True)
+    medication = models.OneToOneField(MedicationEntry, on_delete=models.PROTECT, null=True)
+    evaluation = models.OneToOneField(ClinicalCheck, on_delete=models.PROTECT, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(outcome__in=['adopted', 'declined']), name='suggestion_terminal_outcome')]

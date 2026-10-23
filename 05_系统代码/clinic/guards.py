@@ -17,7 +17,7 @@ def condition(node, facts):
     return any(type(value) is type(item) and value == item for item in candidates)
 
 
-def evaluate(policy, template, values, mode, medication=None):
+def evaluate(policy, template, values, mode, medication=None, suggestion=None):
     clinical = template['clinical']
     facts = {
         'policy.pin_valid': True, 'template.reference_resolved': True,
@@ -41,6 +41,8 @@ def evaluate(policy, template, values, mode, medication=None):
         facts['template.medication_group_valid'] = all(medication['values'].get(field, '').strip() for field in clinical['medication']['all_or_none'])
         facts['medication.original_link_valid'] = medication['original_valid']
         facts['medication.correction_reason_valid'] = medication['reason_valid']
+    if suggestion is not None:
+        facts['suggestion.adoption_reason_valid'] = suggestion['reason_valid']
     results, hits = [], []
     available = {'referenced_template', 'append_only_medication', 'human_adoption_and_retention',
                  'audit_and_authorized_export', 'durable_alert_and_idempotency'}
@@ -57,10 +59,12 @@ def evaluate(policy, template, values, mode, medication=None):
                 fields += [field for field in clinical['medication']['all_or_none'] if not medication['values'].get(field, '').strip()]
             if rule['checker'] == 'append_only_medication':
                 fields = ([] if medication['original_valid'] else ['original_entry_ref']) + ([] if medication['reason_valid'] else ['reason'])
+        if selected and suggestion is not None and rule['checker'] == 'human_adoption_and_retention':
+            fields = [] if suggestion['reason_valid'] else ['reason']
         result = 'blocked' if fields else 'passed' if selected else 'not_selected'
-        if rule['checker'] == 'human_adoption_and_retention' or (rule['checker'] == 'append_only_medication' and medication is None):
+        if (rule['checker'] == 'human_adoption_and_retention' and suggestion is None) or (rule['checker'] == 'append_only_medication' and medication is None):
             result = 'not_applicable'
         results.append({'rule_ref': rule['id'], 'rule_version': rule['version'], 'result': result})
-        hit_values = {**values, **(medication['values'] if medication is not None else {})}
+        hit_values = {**values, **(medication['values'] if medication is not None else {}), **({'reason': suggestion['reason']} if suggestion is not None else {})}
         hits.extend({'rule_ref': rule['id'], 'rule_version': rule['version'], 'field': field, 'value': hit_values.get(field)} for field in fields)
     return results, hits
