@@ -523,6 +523,40 @@ code,.mono{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
 .definition-summary{border:1px solid var(--line);background:var(--paper);padding:10px 12px;font-size:13px;line-height:1.65;color:var(--ink-soft);max-width:44ch}
 .definition-summary b{font-family:var(--mono);font-weight:400;color:var(--ink)}
 .definition-summary.bad{border-color:var(--rust-line);background:var(--rust-wash);color:var(--rust-deep)}
+
+/* ---------- 人机分工 ---------- */
+.work-grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}
+.work-list{padding-bottom:0}
+.work-cand{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line-soft);padding:11px 14px;color:var(--ink);cursor:pointer}
+.work-cand:hover{background:#F7F2E6}
+.work-cand.on{background:var(--green-wash);box-shadow:inset 3px 0 0 var(--green)}
+.work-cand b{display:block;font:12px var(--mono);font-weight:400}
+.work-cand .chip{margin:3px 0 4px}
+.work-cand small{display:block;color:var(--muted);font-size:11px;line-height:1.5}
+.work-pager{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+.work-detail{overflow:hidden}
+.work-detail .sheet-head{align-items:flex-start;gap:12px}
+.work-detail .sheet-title{font-size:20px}
+.work-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 14px}
+.work-dim-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:6px 0 14px}
+.work-dim-grid > div{border-top:1px solid var(--line);padding-top:8px}
+.work-dim-grid b{display:block;margin-top:3px;font-size:13px}
+.work-diff{border-left:2px solid var(--rust-line);padding-left:10px;margin:8px 0 12px}
+.work-diff p{margin:0 0 4px;font-size:12px;color:var(--ink-soft)}
+.work-review-line{border-top:1px solid var(--line-soft);padding-top:9px;margin:8px 0 12px;font-size:12px;color:var(--ink-soft)}
+.work-review-line p{margin:2px 0 0;color:var(--muted)}
+.work-evidence-list{border:1px solid var(--line);border-radius:6px;max-height:260px;overflow:auto;background:var(--paper)}
+.work-evidence{display:flex;gap:9px;padding:8px 10px;border-bottom:1px solid var(--line-soft);align-items:flex-start;cursor:pointer}
+.work-evidence:last-child{border-bottom:0}
+.work-evidence:hover{background:var(--sheet)}
+.work-evidence input{margin-top:2px}
+.work-evidence span{display:block;min-width:0}
+.work-evidence b{font:11px var(--mono);font-weight:400}
+.work-evidence .muted{font-size:10px;margin-left:8px}
+.work-evidence small{display:block;color:var(--muted);font-size:11px;line-height:1.5}
+.work-manual-row{display:grid;grid-template-columns:1.1fr 1fr 1.5fr auto;gap:8px;margin-bottom:8px;align-items:center}
+.work-history{padding:6px 0;border-bottom:1px solid var(--line-soft);font-size:12px;color:var(--ink-soft)}
+.work-history small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.001ms !important;transition-duration:.001ms !important}}
 
 /* ---------- 响应 ---------- */
@@ -541,7 +575,9 @@ code,.mono{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
   .rail-nav{flex-direction:row;gap:6px;flex:1}
   .nav-item{padding:6px 9px;gap:6px}
   .rail .mark{display:none}
-  .detail-grid,.gov-grid{grid-template-columns:1fr}
+  .detail-grid,.gov-grid,.work-grid{grid-template-columns:1fr}
+  .work-dim-grid{grid-template-columns:1fr}
+  .work-manual-row{grid-template-columns:1fr}
   .side{position:static}
   .alert-body{grid-template-columns:1fr}
   .list-head{display:none}
