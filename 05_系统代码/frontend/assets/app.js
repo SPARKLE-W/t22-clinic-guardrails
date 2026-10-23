@@ -1771,7 +1771,8 @@ async function viewGovernance(view, id) {
 
 function workReviewFor(item) {
   const history = Array.isArray(item.review_history) ? item.review_history : [];
-  return history.find((r) => r.plan_version_ref === item.plan_version_ref && r.actual_version_ref === item.actual_version_ref) || null;
+  const matching = history.filter((r) => r.plan_version_ref === item.plan_version_ref && r.actual_version_ref === item.actual_version_ref);
+  return matching.length ? matching[matching.length - 1] : null;
 }
 
 function workValueText(dimension, value) {
@@ -1890,11 +1891,14 @@ function workDimensionSelects(plan) {
   </div>`;
 }
 
-function workManualRowHtml() {
+function workManualRowHtml(entry = {}) {
+  const dimension = entry.dimension || '';
+  const value = entry.value || '';
+  const source = entry.source_ref || '';
   return `<div class="work-manual-row">
-    <select name="manual_dimension"><option value="">维度</option>${Object.keys(WORK_DIMENSIONS).map((k) => `<option value="${esc(k)}">${esc(WORK_DIMENSIONS[k].label)}</option>`).join('')}</select>
-    <select name="manual_value"><option value="">值</option>${Object.entries(WORK_DIMENSIONS).flatMap(([k, d]) => d.options.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`)).join('')}</select>
-    <input name="manual_source" placeholder="依据编号（不写正文）" maxlength="200">
+    <select name="manual_dimension"><option value="">维度</option>${Object.keys(WORK_DIMENSIONS).map((k) => `<option value="${esc(k)}" ${dimension === k ? 'selected' : ''}>${esc(WORK_DIMENSIONS[k].label)}</option>`).join('')}</select>
+    <select name="manual_value"><option value="">值</option>${Object.entries(WORK_DIMENSIONS).flatMap(([k, d]) => d.options.map(([v, l]) => `<option value="${esc(v)}" ${value === v ? 'selected' : ''}>${esc(l)}</option>`)).join('')}</select>
+    <input name="manual_source" value="${esc(source)}" placeholder="依据编号（不写正文）" maxlength="200">
     <button type="button" class="btn ghost sm" data-action="work-manual-remove">移除</button>
   </div>`;
 }
@@ -1906,6 +1910,7 @@ function openWorkDivisionForm(item) {
   const plan = item ? (item.plan_dimensions || {}) : {};
   const selected = item && Array.isArray(item.source_event_refs) ? item.source_event_refs : [];
   const meta = item && Array.isArray(item.actual_execution_metadata) ? item.actual_execution_metadata : [];
+  const manual = item && Array.isArray(item.manual_evidence_provenance) ? item.manual_evidence_provenance : [];
   openModal({
     title: editing ? '维护分工新版本' : '登记人机分工',
     subtitle: editing ? '保存后保留旧版本、旧比较和旧复核' : '先登记计划分工，再补业务证据',
@@ -1917,8 +1922,8 @@ function openWorkDivisionForm(item) {
         <div class="field wide"><label for="work-stage">阶段 <b>*</b></label><select id="work-stage" name="stage_ref" ${editing ? 'disabled' : ''}>${Object.entries(WORK_STAGES).map(([k, l]) => `<option value="${esc(k)}" ${stage === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
       </div>
       ${workDimensionSelects(plan)}
-      <div class="field wide"><label>业务证据</label><div id="work-evidence">${workEvidenceHtml(meta, selected)}</div>${meta.length ? '' : '<button type="button" class="btn ghost sm" data-action="work-evidence">加载业务证据</button>'} <p class="hint">只选择能证明本次实际执行的记录；空列表会判为不可比较。</p></div>
-      <div class="field wide"><label>人工补录依据（可选）</label><div id="work-manual">${workManualRowHtml()}</div><button type="button" class="btn ghost sm" data-action="work-manual-add">添加一条</button><p class="hint">只填依据编号，不写临床正文；人工声明不会覆盖系统记录。</p></div>
+      <div class="field wide"><label>业务证据</label><div id="work-evidence">${workEvidenceHtml(meta, selected)}</div><button type="button" class="btn ghost sm" data-action="work-evidence">重新加载业务证据</button> <p class="hint">只选择能证明本次实际执行的记录；空列表会判为不可比较。</p></div>
+      <div class="field wide"><label>人工补录依据（可选）</label><div id="work-manual">${manual.length ? manual.map((entry) => workManualRowHtml(entry)).join('') : workManualRowHtml()}</div><button type="button" class="btn ghost sm" data-action="work-manual-add">添加一条</button><p class="hint">只填依据编号，不写临床正文；人工声明不会覆盖系统记录。</p></div>
       <div class="field wide"><label for="work-reason">维护理由 <b>*</b></label><textarea id="work-reason" name="reason" maxlength="2000" placeholder="说明这次登记或修改的原因"></textarea></div>
     </form>`,
     foot: '<button class="btn ghost" data-action="close-modal">取消</button><button class="btn primary" type="submit" form="modal-form">保存分工</button>'
@@ -2002,8 +2007,9 @@ async function loadWorkEvidence(button) {
   if (!isUuid(ref)) { markField(form, 'work_item_ref', '请先输入完整 UUID。'); return; }
   button.disabled = true;
   try {
+    const checked = [...form.querySelectorAll('[data-work-source]:checked')].map((el) => el.value);
     const data = await api('/api/management/work-divisions/evidence?' + qs({ work_item_ref: ref, stage_ref: stage }));
-    $('#work-evidence', form).innerHTML = workEvidenceHtml(data.actual_execution_metadata || [], data.source_event_refs || []);
+    $('#work-evidence', form).innerHTML = workEvidenceHtml(data.actual_execution_metadata || [], checked);
   } catch (e) {
     formError(form, e.message || '证据加载失败。');
   } finally { button.disabled = false; }

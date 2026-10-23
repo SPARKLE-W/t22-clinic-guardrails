@@ -309,6 +309,13 @@ const session = (c, role, store, username) => {
     assert.ok(html.includes('#2'));
     assert.ok(!html.includes('诊断正文'));
     assert.ok(run(c, `workEvidenceHtml(${JSON.stringify(item.actual_execution_metadata)}).includes('账号 #2')`));
+    const reviewed = { ...item, review_history: [
+      { plan_version_ref: item.plan_version_ref, actual_version_ref: item.actual_version_ref, actor_ref: 1, created_at: '2026-10-23T10:01:00+08:00', conclusion: 'confirmed_difference', reason: '旧结论' },
+      { plan_version_ref: item.plan_version_ref, actual_version_ref: item.actual_version_ref, actor_ref: 3, created_at: '2026-10-23T10:02:00+08:00', conclusion: 'confirmed_consistent', reason: '新结论' }
+    ] };
+    assert.equal(run(c, `workReviewFor(${JSON.stringify(reviewed)}).conclusion`), 'confirmed_consistent');
+    assert.ok(run(c, `workManualRowHtml({dimension:'data_entry',value:'manager',source_ref:'REF-1'})`).includes('REF-1'));
+    assert.ok(source.includes('重新加载业务证据'));
     run(c, `state.workDivisionItems=[]; state.workDivisionSelected=null; api=async()=>({items:[${JSON.stringify(item)}],page:1,page_size:50,total:1});`);
     await run(c, `viewWorkDivisions(nodes.view)`);
     const listHtml = run(c, 'nodes.view.innerHTML');
