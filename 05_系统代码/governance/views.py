@@ -1,15 +1,18 @@
 import functools
 import json
+import mimetypes
 from pathlib import Path
 
 from django.contrib.auth import authenticate, login, logout
 from django.db import DatabaseError
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from vetcontrols.compiler import parse_text
 from .models import AuditEvent, Candidate, PolicyHead
 from .services import ACTIVATE, GENERATE, REVIEW, DomainError, detail, mutate, require, write_audit
+
+FRONTEND_ROOT = Path(__file__).resolve().parent.parent / 'frontend'
 
 
 def error(code, status):
@@ -69,6 +72,43 @@ def protected(permission, methods):
 @ensure_csrf_cookie
 def home(request):
     return render(request, 'governance/home.html')
+
+
+@ensure_csrf_cookie
+def console(request):
+    """Serve the same-origin SPA shell and initialise the CSRF cookie."""
+    if request.method != 'GET':
+        return error('METHOD_NOT_ALLOWED', 405)
+    index = FRONTEND_ROOT / 'index.html'
+    if not index.is_file():
+        raise Http404()
+    response = FileResponse(open(index, 'rb'), content_type='text/html; charset=utf-8')
+    response['Cache-Control'] = 'no-store'
+    return response
+
+
+def frontend_asset(request, path):
+    """Serve only files under frontend/assets; never expose the rest of the tree."""
+    if request.method != 'GET':
+        return error('METHOD_NOT_ALLOWED', 405)
+    base = (FRONTEND_ROOT / 'assets').resolve()
+    target = (base / path).resolve()
+    if base not in target.parents or not target.is_file():
+        raise Http404()
+    content_type = mimetypes.guess_type(str(target))[0] or 'application/octet-stream'
+    response = FileResponse(open(target, 'rb'), content_type=content_type)
+    response['Cache-Control'] = 'no-cache'
+    return response
+
+
+def session_info(request):
+    """Minimal current-account identity; no clinical content and no extra scopes."""
+    if request.method != 'GET':
+        return error('METHOD_NOT_ALLOWED', 405)
+    if not request.user.is_authenticated or not request.user.is_active:
+        return JsonResponse({'authenticated': False})
+    return JsonResponse({'authenticated': True, 'username': request.user.username, 'role': request.user.role,
+                         'store_ref': str(request.user.store_id), 'store_name': request.user.store.name})
 
 
 @csrf_protect
@@ -164,5 +204,5 @@ def audit(request):
                          'target_ref': str(row.target) if row.target else None} for row in rows]})
 
 
-for public_view in [home, signin, signout]:
+for public_view in [home, signin, signout, console, frontend_asset, session_info]:
     public_view.public_entry = True
