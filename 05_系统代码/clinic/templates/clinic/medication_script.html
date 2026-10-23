@@ -1,0 +1,35 @@
+<script>
+function medicationEditor(parent,context){
+  const rows=context.clinical.medication_chain||[];
+  parent.append(node('h3','用药原项与更正记录'));
+  if(!rows.length)parent.append(node('p','暂无用药记录。'));
+  rows.forEach((entry,index)=>{
+    const p=node('p',(index+1)+'. '+entry.drug+' · '+entry.amount+' '+entry.unit+'\n'+(entry.original_entry_ref?'更正原项 '+entry.original_entry_ref:'新增原项')+'\n医生账号 '+entry.actor_ref+' · '+new Date(entry.created_at).toLocaleString('zh-CN')+(entry.reason?'\n理由：'+entry.reason:''));
+    p.className='history-entry clinic-copy';parent.append(p);
+  });
+  if(context.reception.error_mark&&!rows.length)return;
+  const form=node('form');form.append(node('h3','追加用药或关联更正'));
+  const mode=node('select');mode.setAttribute('aria-label','用药操作');
+  if(!context.reception.error_mark){const option=node('option','追加新用药');option.value='append';mode.append(option);}
+  if(rows.length){const option=node('option','更正已有项（原项保留）');option.value='correct';mode.append(option);}
+  const original=node('select');original.setAttribute('aria-label','原用药项');
+  rows.forEach((entry,index)=>{const option=node('option',(index+1)+'. '+entry.drug+' · '+entry.amount+' '+entry.unit);option.value=entry.entry_ref;original.append(option);});
+  form.append(mode,original);
+  const inputs={};
+  for(const [field,label,max] of [['drug','药品',2000],['amount','用量',256],['unit','单位',100],['reason','更正理由',2000]]){
+    const l=node('label',label),input=node('input');input.id='medication-'+field;l.htmlFor=input.id;input.maxLength=max;inputs[field]=input;form.append(l,input);
+  }
+  function selectOriginal(){const entry=rows.find(row=>row.entry_ref===original.value);if(mode.value==='correct'&&entry)for(const field of ['drug','amount','unit'])inputs[field].value=entry[field];}
+  mode.onchange=()=>{original.hidden=mode.value!=='correct';inputs.reason.required=mode.value==='correct';selectOriginal();};
+  original.onchange=selectOriginal;mode.onchange();
+  const save=node('button','保存追加记录');form.append(save);
+  form.onsubmit=async event=>{
+    event.preventDefault();save.disabled=true;
+    try{const values={drug:inputs.drug.value,amount:inputs.amount.value,unit:inputs.unit.value};
+      if(mode.value==='correct'){values.original_entry_ref=original.value;values.reason=inputs.reason.value;}
+      await api('/api/clinical/encounters/'+context.reception.encounter_ref+'/medications'+(mode.value==='correct'?'/corrections':''),values);
+      notice('追加记录已保存，原用药及历史保留。');await clinicOpen(context.reception.encounter_ref);await doctorAlertsRefresh();
+    }catch(error){notice(error.message,true);await doctorAlertsRefresh().catch(()=>{});}finally{save.disabled=false;}
+  };parent.append(form);
+}
+</script>

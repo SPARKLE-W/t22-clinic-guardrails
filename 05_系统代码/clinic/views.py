@@ -4,6 +4,7 @@ from governance.services import DomainError
 from governance.views import _body, protected
 from .services import auxiliary, mutate, read
 from . import writes
+from . import medications
 
 
 def query(request):
@@ -90,3 +91,11 @@ def alert_encounter(request, alert_id):
     if request.GET:
         raise DomainError('INPUT_FIELDS_INVALID', 422)
     return JsonResponse(writes.alert_encounter(request.user.pk, str(alert_id)))
+
+
+def medication(mode):
+    @protected(medications.PERMISSION, ['POST'])
+    def view(request, encounter_id):
+        result = medications.mutate(request.user.pk,mode,request.headers.get('Idempotency-Key'),_body(request),str(encounter_id))
+        return JsonResponse(result,status=422 if result.get('ok') is False else 200)
+    return view

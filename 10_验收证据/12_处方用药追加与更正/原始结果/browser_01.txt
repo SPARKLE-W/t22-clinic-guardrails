@@ -1,0 +1,106 @@
+## Latest page snapshot
+uid=2_0 RootWebArea "门诊护栏 · 治理工作台" url="http://127.0.0.1:18730/"
+  uid=2_1 banner
+    uid=2_2 heading "门诊护栏" level="1"
+    uid=2_3 "规则与模板 · 人工审阅 · 版本留存"
+    uid=2_4 "A店（演示） · a_doctor "
+    uid=2_5 button "退出登录"
+  uid=2_6 main
+    uid=2_7 status atomic live="polite" relevant="additions text"
+      uid=5_0 "追加记录已保存，原用药及历史保留。"
+    uid=2_9 complementary
+      uid=2_10 heading "负责接诊的记录" level="2"
+      uid=2_11 button "刷新"
+      uid=2_12 "共 3 次接诊 · 第 1 页"
+      uid=2_13 button "浏览器首诊演示宠物 · 2026/10/22 16:21:41"
+      uid=2_14 button "[误建] 临床写入演示宠物 · 2026/10/22 16:11:38"
+      uid=2_15 button "[误建] 读取权限演示宠物 · 2026/10/22 12:48:08"
+      uid=2_16 button "上一页" disableable disabled
+      uid=2_17 button "下一页" disableable disabled
+      uid=2_18 heading "我的护栏告警" level="2"
+      uid=2_19 button "刷新告警"
+      uid=2_20 paragraph live="polite" relevant="additions text"
+        uid=5_1 "有 4 条未处理告警"
+      uid=5_2 "SR-02 · 命中字段：诊断说明
+已处理"
+      uid=5_3 button "查看对应接诊"
+      uid=5_4 "已核对缺项，原阻断记录保留 · 处理账号 2"
+      uid=5_5 "SR-02 · 命中字段：诊断说明
+已处理"
+      uid=5_6 button "查看对应接诊"
+      uid=5_7 "浏览器页面核对完成，缺项的原始阻断留痕继续保留 · 处理账号 2"
+      uid=5_8 "SR-02 · 命中字段：诊断说明
+待处理"
+      uid=5_9 button "查看对应接诊"
+      uid=5_10 textbox "实际处理结果" multiline
+      uid=5_11 button "登记处理结果"
+      uid=5_12 "SR-03 · 命中字段：reason
+待处理"
+      uid=5_13 button "查看对应接诊"
+      uid=5_14 textbox "实际处理结果" multiline
+      uid=5_15 button "登记处理结果"
+      uid=5_16 "SR-02 · 命中字段：amount
+待处理"
+      uid=5_17 button "查看对应接诊"
+      uid=5_18 textbox "实际处理结果" multiline
+      uid=5_19 button "登记处理结果"
+      uid=5_20 "SR-02 · 命中字段：unit
+待处理"
+      uid=5_21 button "查看对应接诊"
+      uid=5_22 textbox "实际处理结果" multiline
+      uid=5_23 button "登记处理结果"
+    uid=5_24 heading "浏览器首诊演示宠物 · 本次接诊" level="2"
+    uid=5_25 "接诊编号：2761a92b-f838-4f6f-8412-6e4d1309c2d3
+宠物编号：a4aba8bd-1c65-4b76-97ef-5188db9c31a2
+接待账号：3 · 接诊医生：2
+时间：2026/10/22 16:21:41"
+    uid=5_26 heading "种类" level="3"
+    uid=5_27 "猫"
+    uid=5_28 heading "本次主诉" level="3"
+    uid=5_29 "合成页面验证，不用于真实诊疗"
+    uid=5_30 "病历编号：5a2352c6-2933-499d-9a35-a913a48299ce · 原模板版本：template-0.2"
+    uid=5_31 heading "诊断说明" level="3"
+    uid=5_32 "浏览器提交的合成初诊说明，非真实诊疗"
+    uid=5_33 heading "检查说明" level="3"
+    uid=5_34 "浏览器合成检查记录"
+    uid=5_35 DisclosureTriangle "诊疗版本记录" expandable
+    uid=5_36 form
+      uid=5_37 heading "更正已有诊疗内容" level="3"
+      uid=5_38 "诊断说明（必填）"
+      uid=5_39 textbox "诊断说明（必填）" multiline required value="浏览器提交的合成初诊说明，非真实诊疗"
+      uid=5_40 "检查说明（可选）"
+      uid=5_41 textbox "检查说明（可选）" multiline value="浏览器合成检查记录"
+      uid=5_42 "更正理由（必填）"
+      uid=5_43 textbox "更正理由（必填）" multiline required
+      uid=5_44 button "保存更正并保留原版本"
+    uid=5_45 heading "用药原项与更正记录" level="3"
+    uid=5_46 "1. HTTP合成演示药 · 1 演示单位
+新增原项
+医生账号 2 · 2026/10/23 08:29:45"
+    uid=5_47 "2. HTTP合成演示药 · 2 演示单位
+更正原项 5d0c043f-b542-467c-9738-10e7a4c2684a
+医生账号 2 · 2026/10/23 08:29:45
+理由：合成核对更正"
+    uid=5_48 "3. 浏览器合成用药 · 1 演示单位
+新增原项
+医生账号 2 · 2026/10/23 08:32:01"
+    uid=5_49 "4. HTTP合成演示药 · 3 演示单位
+更正原项 5d0c043f-b542-467c-9738-10e7a4c2684a
+医生账号 2 · 2026/10/23 08:32:30
+理由：浏览器合成核对更正"
+    uid=5_50 form
+      uid=5_51 heading "追加用药或关联更正" level="3"
+      uid=5_52 combobox "用药操作" expandable haspopup="menu" value="追加新用药"
+        uid=5_53 option "追加新用药" selected
+        uid=5_54 option "更正已有项（原项保留）"
+      uid=5_55 "药品"
+      uid=5_56 textbox "药品"
+      uid=5_57 "用量"
+      uid=5_58 textbox "用量"
+      uid=5_59 "单位"
+      uid=5_60 textbox "单位"
+      uid=5_61 "更正理由"
+      uid=5_62 textbox "更正理由"
+      uid=5_63 button "保存追加记录"
+    uid=5_64 DisclosureTriangle "接待资料更正历史" expandable
+

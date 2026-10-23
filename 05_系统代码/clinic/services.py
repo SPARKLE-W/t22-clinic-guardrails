@@ -196,6 +196,10 @@ def _clinical(row, templates):
         raise DomainError('RECORD_UNAVAILABLE', 503)
     return {'record_ref': str(record.pk), 'encounter_ref': str(row.pk), 'template_version_ref': template['version'],
             'field_meanings': template['clinical']['field_types'], 'diagnosis': current.diagnosis, 'examination': current.examination,
+            'medication_chain': [{'entry_ref':str(item.pk),'original_entry_ref':str(item.original_id) if item.original_id else None,
+                                 'drug':item.drug,'amount':item.amount,'unit':item.unit,'actor_ref':item.actor_id,
+                                 'created_at':item.created_at.isoformat(),'reason':item.reason}
+                                for item in sorted(record.medicationentry_set.all(),key=lambda item:(item.created_at,str(item.pk)))],
             'clinical_versions': [{'version_ref': str(r.pk), 'version': r.version, 'diagnosis': r.diagnosis, 'examination': r.examination,
                                    'actor_ref': r.actor_id, 'created_at': r.created_at.isoformat(), 'reason': r.reason} for r in revisions]}
 
@@ -247,7 +251,7 @@ def read(actor_id, clinical=False, ref=None, query=None):
                 rows = list(values.select_for_update()[(page-1)*50:page*50])
             relations = ['template', 'receptionrevision_set']
             if clinical:
-                relations += ['clinicalrecord__template', 'clinicalrecord__clinicalrevision_set']
+                relations += ['clinicalrecord__template', 'clinicalrecord__clinicalrevision_set', 'clinicalrecord__medicationentry_set']
             prefetch_related_objects(rows, *relations)
             items, targets, templates = [], [], {}
             for row in rows:

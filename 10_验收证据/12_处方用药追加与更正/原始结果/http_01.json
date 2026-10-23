@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "check": "实际医生追加用药",
+      "passed": true
+    },
+    {
+      "check": "写入响应不返回药品正文",
+      "passed": true
+    },
+    {
+      "check": "成功重试引用一致",
+      "passed": true
+    },
+    {
+      "check": "同键不同内容拒绝",
+      "passed": true
+    },
+    {
+      "check": "追加关联更正",
+      "passed": true
+    },
+    {
+      "check": "原项不变且更正留真实责任",
+      "passed": true
+    },
+    {
+      "check": "缺更正理由被护栏阻断",
+      "passed": true
+    },
+    {
+      "check": "用药三字段不齐被护栏阻断",
+      "passed": true
+    },
+    {
+      "check": "其他角色和跨店医生不能写",
+      "passed": true
+    },
+    {
+      "check": "读取保留原模板",
+      "passed": true
+    }
+  ],
+  "encounter_ref": "2761a92b-f838-4f6f-8412-6e4d1309c2d3",
+  "saved_ref": "5d0c043f-b542-467c-9738-10e7a4c2684a",
+  "synthetic_only": true
+}

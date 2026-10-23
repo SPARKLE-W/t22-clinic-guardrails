@@ -113,3 +113,16 @@ class AlertOutbox(models.Model):
     alert = models.OneToOneField(Alert, on_delete=models.PROTECT)
     state = models.CharField(max_length=16, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class MedicationEntry(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    record = models.ForeignKey(ClinicalRecord, on_delete=models.PROTECT)
+    original = models.ForeignKey('self', null=True, on_delete=models.PROTECT)
+    evaluation = models.OneToOneField(ClinicalCheck, on_delete=models.PROTECT)
+    drug = models.TextField()
+    amount = models.CharField(max_length=256)
+    unit = models.CharField(max_length=100)
+    actor = models.ForeignKey(Account, on_delete=models.PROTECT)
+    reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)

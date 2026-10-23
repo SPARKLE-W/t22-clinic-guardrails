@@ -4,6 +4,8 @@ from governance.services import GENERATE, REVIEW, ACTIVATE
 from clinic import views as clinic
 
 urlpatterns = [
+    path('api/clinical/encounters/<uuid:encounter_id>/medications', clinic.medication('append')),
+    path('api/clinical/encounters/<uuid:encounter_id>/medications/corrections', clinic.medication('correct')),
     path('', views.home), path('api/login', views.signin), path('api/logout', views.signout),
     path('api/candidates', views.candidates), path('api/candidates/<uuid:candidate_id>', views.candidate_detail),
     path('api/example-definition', views.example), path('api/candidates/generate', views.mutation_view(GENERATE, 'generate')),
