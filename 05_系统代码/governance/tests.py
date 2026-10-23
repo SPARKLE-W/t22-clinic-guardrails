@@ -259,6 +259,25 @@ class GovernanceTests(TransactionTestCase):
             self.assertEqual(str(self.a.pk), row['event_store_ref'])
         self.assertNotIn('定义演示规则', json.dumps(data, ensure_ascii=False))
 
+    def test_wrong_role_refusal_is_visible_only_to_requesting_store_manager(self):
+        client = Client()
+        client.force_login(self.front)
+        response = client.get('/api/clinical/encounters')
+        self.assertEqual(403, response.status_code)
+        self.assertEqual('PERMISSION_DENIED', response.json()['error']['code'])
+
+        event = AuditEvent.objects.get(actor=self.front, action='clinical.read', normalized_reason='PERMISSION_DENIED')
+        self.assertEqual(self.a.pk, event.store_id)
+        self.assertIsNone(event.target)
+
+        client.force_login(self.manager)
+        local = client.get('/api/audit', {'operator_ref': str(self.front.pk)}).json()['items']
+        self.assertEqual([str(event.pk)], [row['event_ref'] for row in local])
+        self.assertEqual(str(self.a.pk), local[0]['event_store_ref'])
+        client.force_login(self.other)
+        foreign = client.get('/api/audit', {'operator_ref': str(self.front.pk)}).json()['items']
+        self.assertEqual([], foreign)
+
     def test_http_lifecycle_and_strict_body_route_and_csrf_boundaries(self):
         client = Client()
         client.force_login(self.manager)

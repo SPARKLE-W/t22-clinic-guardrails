@@ -74,7 +74,7 @@ def _refusal(actor_id, permission, error, ref=None):
             pass
     # This reads opaque target references only; no clinical values enter the event.
     exists = target and Encounter.objects.filter(pk=target).exists()
-    if exists and actor and actor.is_active:
+    if actor and actor.is_active and error.event_store is None:
         error.event_store = actor.store_id
     with transaction.atomic():
         event = write_audit(actor, permission, 'refused', error.code, target, error.event_store)
