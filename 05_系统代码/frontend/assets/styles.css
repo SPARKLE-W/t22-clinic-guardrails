@@ -79,6 +79,8 @@ code,.mono{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
 .login-notice{margin:14px 0 0;color:var(--muted);font-size:12.8px;line-height:1.65;border-top:1px solid var(--line-soft);padding-top:12px}
 
 /* ---------- 骨架 ---------- */
+.skip-link{position:fixed;left:12px;top:-60px;z-index:90;background:var(--ink);color:var(--sheet);padding:8px 12px;border:0;border-radius:2px;font:12px/1.4 var(--sans);cursor:pointer;transition:top .15s}
+.skip-link:focus{top:10px}
 .app{height:100vh;display:flex;flex-direction:column;min-height:0}
 .masthead{height:64px;flex:0 0 64px;display:flex;align-items:center;gap:16px;padding:0 26px;
   border-bottom:1px solid var(--line);background:var(--paper);position:relative;z-index:20}
