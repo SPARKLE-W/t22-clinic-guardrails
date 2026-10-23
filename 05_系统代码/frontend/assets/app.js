@@ -70,7 +70,9 @@ const ERRORS = {
   MISSING_PERMISSION_ENTRY: '接口未登记权限入口，已拒绝。',
   CSRF: '页面会话已失效，请刷新后重试。',
   NETWORK: '网络中断，结果暂无法确认。请保留输入，使用同一操作重试核对。',
-  UNPARSEABLE: '响应暂无法确认，请保留输入后重试核对。'
+  UNPARSEABLE: '响应暂无法确认，请保留输入后重试核对。',
+  EXPORT_INCOMPLETE: '导出文件未完整接收，请重新导出核对。',
+  EXPORT_FORMAT: '导出响应不是可核验的 CSV。'
 };
 
 const ROLES = { frontdesk: '前台', doctor: '医生', manager: '管理' };
@@ -376,6 +378,63 @@ async function write(path, body, options = {}) {
     }
     throw e;
   }
+}
+
+/* ---------------- 受限 CSV 导出 ---------------- */
+
+function exportFilename(disposition) {
+  const value = disposition || '';
+  const star = value.match(/filename\*=UTF-8''([^;]+)/i);
+  if (star) { try { return decodeURIComponent(star[1].trim().replace(/^"|"$/g, '')); } catch (e) { /* fall through */ } }
+  const plain = value.match(/filename="?([^";]+)"?/i);
+  return plain ? plain[1].trim() : 'export.csv';
+}
+
+async function sha256Hex(buffer) {
+  if (!crypto || !crypto.subtle) throw new ApiError('EXPORT_FORMAT', 200, null);
+  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function exportVerifyHeaders(headers, byteLength) {
+  const length = Number(headers.get('content-length'));
+  const byteCount = Number(headers.get('x-byte-count'));
+  const expected = (headers.get('x-content-sha256') || '').toLowerCase();
+  if (!Number.isSafeInteger(length) || length <= 0 || !Number.isSafeInteger(byteCount) || byteCount <= 0) {
+    throw new ApiError('EXPORT_INCOMPLETE', 200, null);
+  }
+  if (byteCount !== length || byteLength !== length || !/^[0-9a-f]{64}$/.test(expected)) {
+    throw new ApiError('EXPORT_INCOMPLETE', 200, null);
+  }
+  return expected;
+}
+
+async function downloadCsv(path, body) {
+  const res = await fetch(path, {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': cookie('csrftoken'), Accept: 'text/csv' },
+    body: JSON.stringify(body)
+  });
+  const type = (res.headers.get('content-type') || '').toLowerCase();
+  if (!res.ok || type.includes('application/json')) {
+    let payload = null;
+    try { payload = await res.json(); } catch (e) { /* non-JSON error body */ }
+    const code = payload && payload.error && payload.error.code ? payload.error.code : 'EXPORT_FORMAT';
+    throw new ApiError(code, res.status, payload, payload && payload.error && payload.error.message);
+  }
+  if (!type.includes('text/csv')) throw new ApiError('EXPORT_FORMAT', res.status, null);
+  const buffer = await res.arrayBuffer();
+  const expected = exportVerifyHeaders(res.headers, buffer.byteLength);
+  const actual = await sha256Hex(buffer);
+  if (actual !== expected) throw new ApiError('EXPORT_INCOMPLETE', res.status, null);
+  const filename = exportFilename(res.headers.get('content-disposition'));
+  const blob = new Blob([buffer], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  return { filename, bytes: buffer.byteLength, records: Number(res.headers.get('x-record-count') || 0), exportRef: res.headers.get('x-export-ref') || '' };
 }
 
 /* ---------------- 会话与路由 ---------------- */
@@ -1321,6 +1380,7 @@ async function viewClinicalList(view) {
       <div class="head-side"><div class="head-actions">
         <button class="btn ghost sm" data-action="reload">刷新</button>
         <a class="btn sm" href="#/alerts">查看告警${unhandledCount() ? ' · ' + unhandledCount() : ''}</a>
+        <button class="btn sm" data-action="export-clinical">导出病历</button>
       </div></div>
     </header>
     <div class="toolbar">
@@ -1590,7 +1650,7 @@ async function viewAlerts(view) {
         <h1>告警队列</h1>
         <p class="lede">需要你核对的告警。处理后记录处理人和结果。</p>
       </div>
-      <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button></div></div>
+      <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button><button class="btn sm" data-action="export-alert-hits">导出命中明细</button></div></div>
     </header>
     <div class="toolbar">
       <div class="seg" role="group" aria-label="处理状态">
@@ -1767,6 +1827,130 @@ async function viewGovernance(view, id) {
     </div>
     <footer class="page-foot"><span>门诊护栏 · 规则变更可追溯</span><span>规则版本 ${esc(list.generation)}</span></footer>
   </div>`;
+}
+
+function exportRangeFromValues(from, to) {
+  if (!from && !to) return { ok: true, range: null };
+  if (!from || !to) return { ok: false, range: null };
+  return { ok: true, range: { from: from + 'T00:00:00+08:00', to: addDays(to, 1) + 'T00:00:00+08:00' } };
+}
+
+function exportDateScope(form) {
+  return exportRangeFromValues(form.elements.from.value, form.elements.to.value);
+}
+
+function openClinicalExport() {
+  const today = dateFmt.format(new Date());
+  openModal({
+    title: '导出病历 CSV', subtitle: '只导出你负责的接诊；不包含未采纳建议',
+    body: `<form id="modal-form" data-form="export-clinical" novalidate>
+      <div class="field"><label>导出范围</label><div class="choice-row">
+        <label class="choice on"><input type="radio" name="scope_mode" value="time" checked><b>按时间段</b><span>选择接诊建档时间</span></label>
+        <label class="choice"><input type="radio" name="scope_mode" value="refs"><b>按病历编号</b><span>只导出指定病历</span></label>
+      </div></div>
+      <div class="form-grid">
+        <div class="field"><label for="export-from">开始日期</label><input id="export-from" name="from" type="date" value="${today}"></div>
+        <div class="field"><label for="export-to">结束日期</label><input id="export-to" name="to" type="date" value="${today}"></div>
+      </div>
+      <div class="field"><label for="export-refs">病历编号（按编号时填写）</label><textarea id="export-refs" name="refs" placeholder="每行一个 UUID"></textarea></div>
+      <div class="field"><label for="export-purpose">用途 <b>*</b></label><textarea id="export-purpose" name="purpose" maxlength="200" placeholder="例如：复诊对照"></textarea></div>
+      <p id="export-status" class="read-note">生成后会核对文件长度与 SHA-256；不匹配不会提示成功。</p>
+    </form>`,
+    foot: '<button class="btn ghost" data-action="close-modal">取消</button><button class="btn primary" type="submit" form="modal-form">导出</button>'
+  });
+}
+
+function openAlertHitsExport() {
+  openModal({
+    title: '导出告警命中明细', subtitle: '只导出你负责接诊的命中；不含命中值',
+    body: `<form id="modal-form" data-form="export-alert-hits" novalidate>
+      <div class="form-grid">
+        <div class="field"><label for="export-from">开始日期（可选）</label><input id="export-from" name="from" type="date"></div>
+        <div class="field"><label for="export-to">结束日期（可选）</label><input id="export-to" name="to" type="date"></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label for="export-rule">规则编号（可选）</label><input id="export-rule" name="rule_ref" placeholder="如 SR-02"></div>
+        <div class="field"><label for="export-state">处理状态</label><select id="export-state" name="handling_state"><option value="">全部</option><option value="unhandled">未处理</option><option value="handled">已处理</option></select></div>
+      </div>
+      <div class="field"><label for="export-encounters">接诊编号（可选，每行一个）</label><textarea id="export-encounters" name="encounters" placeholder="不填则导出全部获准范围"></textarea></div>
+      <p id="export-status" class="read-note">导出不会改变告警处理状态；完整接收会核对长度和摘要。</p>
+    </form>`,
+    foot: '<button class="btn ghost" data-action="close-modal">取消</button><button class="btn primary" type="submit" form="modal-form">导出</button>'
+  });
+}
+
+function openAlertSummaryExport() {
+  const today = dateFmt.format(new Date());
+  openModal({
+    title: '导出告警汇总', subtitle: '只导出本店聚合，不含病例明细',
+    body: `<form id="modal-form" data-form="export-alert-summary" novalidate>
+      <div class="form-grid">
+        <div class="field"><label for="export-from">开始日期（可选）</label><input id="export-from" name="from" type="date" value="${today}"></div>
+        <div class="field"><label for="export-to">结束日期（可选）</label><input id="export-to" name="to" type="date" value="${today}"></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label for="export-rule">规则编号（可选）</label><input id="export-rule" name="rule_ref" placeholder="如 SR-02"></div>
+        <div class="field"><label for="export-state">处理状态</label><select id="export-state" name="handling_state"><option value="">全部</option><option value="unhandled">未处理</option><option value="handled">已处理</option></select></div>
+      </div>
+      <div class="field"><label for="export-group">分组</label><select id="export-group" name="group_by"><option value="rule">按规则</option><option value="handling_state">按处理状态</option></select></div>
+      <p id="export-status" class="read-note">仅本店聚合计数；完整接收会核对长度和摘要。</p>
+    </form>`,
+    foot: '<button class="btn ghost" data-action="close-modal">取消</button><button class="btn primary" type="submit" form="modal-form">导出</button>'
+  });
+}
+
+function refsFromText(text) {
+  return String(text || '').split(/[\s,，]+/).map((s) => s.trim()).filter(Boolean);
+}
+
+async function submitExport(form) {
+  const f = form.elements;
+  const status = $('#export-status', form);
+  const kind = form.dataset.form;
+  let path;
+  let body;
+  if (kind === 'export-clinical') {
+    const purpose = f.purpose.value.trim();
+    if (!purpose) { markField(form, 'purpose', '请填写导出用途。'); return; }
+    const mode = f.scope_mode.value;
+    if (mode === 'refs') {
+      const refs = refsFromText(f.refs.value);
+      if (!refs.length || refs.some((r) => !isUuid(r))) { formError(form, '请填写一个或多个完整病历 UUID。'); return; }
+      body = { scope: { record_refs: refs }, purpose };
+    } else {
+      const check = exportDateScope(form);
+      if (!check.ok || !check.range) { formError(form, '请选择完整的起止日期。'); return; }
+      body = { scope: { time_range: check.range }, purpose };
+    }
+    path = '/api/exports/clinical-records';
+  } else if (kind === 'export-alert-hits') {
+    const check = exportDateScope(form);
+    if (!check.ok) { formError(form, '起止日期需同时填写或同时留空。'); return; }
+    body = {};
+    if (check.range) body.time_range = check.range;
+    if (f.rule_ref.value.trim()) body.rule_ref = f.rule_ref.value.trim();
+    if (f.handling_state.value) body.handling_state = f.handling_state.value;
+    const encounters = refsFromText(f.encounters.value);
+    if (encounters.length) {
+      if (encounters.some((r) => !isUuid(r))) { formError(form, '接诊编号格式不完整。'); return; }
+      body.scope = { encounter_refs: encounters };
+    }
+    path = '/api/exports/alert-hits';
+  } else {
+    const check = exportDateScope(form);
+    if (!check.ok) { formError(form, '起止日期需同时填写或同时留空。'); return; }
+    body = { group_by: f.group_by.value };
+    if (check.range) body.time_range = check.range;
+    if (f.rule_ref.value.trim()) body.rule_ref = f.rule_ref.value.trim();
+    if (f.handling_state.value) body.handling_state = f.handling_state.value;
+    path = '/api/exports/alert-summary';
+  }
+  if (status) status.textContent = '正在生成并核对文件…';
+  const result = await downloadCsv(path, body);
+  if (status) {
+    status.className = 'export-ok';
+    status.textContent = `已完整接收：${result.filename} · ${result.bytes} 字节${result.records ? ' · ' + result.records + ' 条记录' : ''}${result.exportRef ? ' · 导出引用 ' + result.exportRef : ''}`;
+  }
 }
 
 function workReviewFor(item) {
@@ -2046,7 +2230,7 @@ async function viewSummary(view) {
   view.innerHTML = `<div class="view">
     <header class="page-head">
       <div><h1>本店汇总</h1><p class="lede">本店的接诊与告警概览。数字来自门诊记录，不展示病例明细。</p></div>
-      <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button></div></div>
+      <div class="head-side"><div class="head-actions"><button class="btn ghost sm" data-action="reload">刷新</button><button class="btn sm" data-action="export-alert-summary">导出汇总</button></div></div>
     </header>
     <div class="toolbar">
       <div class="seg" role="group" aria-label="统计时间范围">
@@ -2738,6 +2922,7 @@ async function handleForm(form) {
   if (name === 'resolve-alert') return runForm(form, () => submitResolveAlert(form).catch((e) => writeError(e, form)));
   if (name === 'generate-candidate') return runForm(form, () => submitGenerate(form).catch((e) => writeError(e, form)));
   if (name === 'candidate-action') return runForm(form, () => submitCandidateAction(form).catch((e) => writeError(e, form)));
+  if (name === 'export-clinical' || name === 'export-alert-hits' || name === 'export-alert-summary') return runForm(form, () => submitExport(form).catch((e) => writeError(e, form)));
   if (name === 'work-division') return runForm(form, () => submitWorkDivision(form).catch((e) => writeError(e, form)));
   if (name === 'work-review') return runForm(form, () => submitWorkReview(form).catch((e) => writeError(e, form)));
 }
@@ -2839,6 +3024,9 @@ document.addEventListener('click', async (e) => {
       case 'alert-filter': state.alertFilter = btn.dataset.filter; await renderRoute(); return;
       case 'audit-reset': state.auditFilters = { record_ref: '', operator_ref: '' }; state.auditOutcome = 'all'; await renderRoute(); return;
       case 'audit-outcome': state.auditOutcome = btn.dataset.outcome || 'all'; await renderRoute(); return;
+      case 'export-clinical': openClinicalExport(); return;
+      case 'export-alert-hits': openAlertHitsExport(); return;
+      case 'export-alert-summary': openAlertSummaryExport(); return;
       case 'work-select': {
         state.workDivisionSelected = { work_item_ref: btn.dataset.ref, stage_ref: btn.dataset.stage };
         await renderRoute(); return;

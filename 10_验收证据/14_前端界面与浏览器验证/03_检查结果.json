@@ -7,7 +7,10 @@
     "edge_installed": "155.0.4283.62",
     "edge_independently_tested": false,
     "viewport_primary": "1366x768",
-    "viewport_supplement": ["1024x768", "1920x1080"],
+    "viewport_supplement": [
+      "1024x768",
+      "1920x1080"
+    ],
     "python": "3.12.14",
     "django": "5.2.18",
     "mysql": "8.4.13",
@@ -27,7 +30,21 @@
     "frontend_guardrails": {
       "script": "05_系统代码/frontend/tests/guardrails.test.cjs",
       "result": "ok",
-      "cases": ["draft scope/cleanup", "adopted examination escaped", "pending idempotency key survives refresh", "HTTP 200 unparseable keeps pending key", "clinical page 51 control", "misregistered medication correction", "late route response discarded", "copy-ref data-value and event handler", "management summary five counts and both groups", "malformed HTTP 200 summary never becomes a true zero", "work division comparison/evidence/review UI"],
+      "cases": [
+        "draft scope/cleanup",
+        "adopted examination escaped",
+        "pending idempotency key survives refresh",
+        "HTTP 200 unparseable keeps pending key",
+        "clinical page 51 control",
+        "misregistered medication correction",
+        "late route response discarded",
+        "copy-ref data-value and event handler",
+        "management summary five counts and both groups",
+        "malformed HTTP 200 summary never becomes a true zero",
+        "work division comparison/evidence/review UI",
+        "export filename and reference parsing",
+        "partial dates and unverified metadata"
+      ],
       "note": "Node VM with synthetic data; not a full browser or database integration test"
     },
     "ux_followup": {
@@ -55,18 +72,66 @@
     "horizontal_overflow": "none at 1366x768"
   },
   "flows": [
-    {"id": "frontdesk_create", "result": "pass", "observed": "created encounter a65c0bee..., redirected to detail"},
-    {"id": "frontdesk_correct", "result": "pass", "observed": "created v2, v1 retained"},
-    {"id": "frontdesk_conflict_409", "result": "pass", "observed": "STATE_OR_VERSION_CONFLICT shown in modal, input retained, reload-latest action offered"},
-    {"id": "clinical_target_forbidden", "result": "pass", "observed": "403 target unavailable page shown for unknown/unauthorized encounter"},
-    {"id": "doctor_first_diagnosis", "result": "pass", "observed": "clinical record v1"},
-    {"id": "doctor_diagnosis_correction", "result": "pass", "observed": "v3, prior versions retained"},
-    {"id": "doctor_medication_append", "result": "pass", "observed": "medication chain 0->1"},
-    {"id": "doctor_medication_correction", "result": "pass", "observed": "linked correction added, 1->2"},
-    {"id": "doctor_suggestion_adopt", "result": "pass", "observed": "adoption with source, reason, version"},
-    {"id": "doctor_alert_resolve", "result": "pass", "observed": "unhandled 6->5, handler/time/result recorded"},
-    {"id": "manager_generate_submit_approve_activate", "result": "pass", "observed": "generation 1->2, active candidate switched"},
-    {"id": "manager_audit", "result": "pass", "observed": "100 metadata rows, no clinical text"}
+    {
+      "id": "frontdesk_create",
+      "result": "pass",
+      "observed": "created encounter a65c0bee..., redirected to detail"
+    },
+    {
+      "id": "frontdesk_correct",
+      "result": "pass",
+      "observed": "created v2, v1 retained"
+    },
+    {
+      "id": "frontdesk_conflict_409",
+      "result": "pass",
+      "observed": "STATE_OR_VERSION_CONFLICT shown in modal, input retained, reload-latest action offered"
+    },
+    {
+      "id": "clinical_target_forbidden",
+      "result": "pass",
+      "observed": "403 target unavailable page shown for unknown/unauthorized encounter"
+    },
+    {
+      "id": "doctor_first_diagnosis",
+      "result": "pass",
+      "observed": "clinical record v1"
+    },
+    {
+      "id": "doctor_diagnosis_correction",
+      "result": "pass",
+      "observed": "v3, prior versions retained"
+    },
+    {
+      "id": "doctor_medication_append",
+      "result": "pass",
+      "observed": "medication chain 0->1"
+    },
+    {
+      "id": "doctor_medication_correction",
+      "result": "pass",
+      "observed": "linked correction added, 1->2"
+    },
+    {
+      "id": "doctor_suggestion_adopt",
+      "result": "pass",
+      "observed": "adoption with source, reason, version"
+    },
+    {
+      "id": "doctor_alert_resolve",
+      "result": "pass",
+      "observed": "unhandled 6->5, handler/time/result recorded"
+    },
+    {
+      "id": "manager_generate_submit_approve_activate",
+      "result": "pass",
+      "observed": "generation 1->2, active candidate switched"
+    },
+    {
+      "id": "manager_audit",
+      "result": "pass",
+      "observed": "100 metadata rows, no clinical text"
+    }
   ],
   "not_verified": [
     "Edge independent run",

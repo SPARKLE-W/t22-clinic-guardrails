@@ -289,6 +289,19 @@ const session = (c, role, store, username) => {
 
   {
     const c = context();
+    assert.deepEqual(JSON.parse(run(c, `JSON.stringify(exportRangeFromValues('', ''))`)), { ok: true, range: null });
+    assert.equal(JSON.parse(run(c, `JSON.stringify(exportRangeFromValues('', '2026-10-23'))`)).ok, false);
+    assert.equal(JSON.parse(run(c, `JSON.stringify(exportRangeFromValues('2026-10-23', '2026-10-23'))`)).ok, true);
+    const sha = 'a'.repeat(64);
+    assert.equal(run(c, `exportVerifyHeaders({get:(k)=>(({ 'content-length':'3','x-byte-count':'3','x-content-sha256':'${sha}' })[k])}, 3)`), sha);
+    assert.throws(() => run(c, `exportVerifyHeaders({get:()=>null}, 3)`), /未完整接收/);
+    assert.throws(() => run(c, `exportVerifyHeaders({get:(k)=>(({ 'content-length':'3','x-byte-count':'4','x-content-sha256':'${sha}' })[k])}, 3)`), /未完整接收/);
+    assert.throws(() => run(c, `exportVerifyHeaders({get:(k)=>(({ 'content-length':'3','x-byte-count':'3','x-content-sha256':'bad' })[k])}, 3)`), /未完整接收/);
+    results.push('F-04 partial dates and export metadata are rejected');
+  }
+
+  {
+    const c = context();
     const item = {
       work_item_ref: '11111111-1111-4111-8111-111111111111',
       stage_ref: 'rule_review',
@@ -339,6 +352,14 @@ const session = (c, role, store, username) => {
     await run(c, `handlers.click({ target: { closest: () => ({ dataset: { action: 'copy-ref', ref: '${full}' } }) } })`);
     assert.equal(run(c, 'captured.length'), before);
     results.push('F-01 copy-ref uses data-value, one handler case, empty data-ref does not report success');
+  }
+
+  {
+    const c = context();
+    assert.equal(run(c, `exportFilename('attachment; filename="clinic.csv"')`), 'clinic.csv');
+    assert.equal(run(c, `exportFilename("attachment; filename*=UTF-8''%E7%97%85%E5%8E%86.csv")`), '病历.csv');
+    assert.deepEqual(JSON.parse(run(c, `JSON.stringify(refsFromText('11111111-1111-4111-8111-111111111111, 22222222-2222-4222-8222-222222222222'))`)), ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222']);
+    results.push('F-04 export filename and reference parsing');
   }
 
   console.log(JSON.stringify({ ok: true, results }, null, 2));
