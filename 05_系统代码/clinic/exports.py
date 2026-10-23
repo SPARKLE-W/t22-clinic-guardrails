@@ -10,6 +10,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_protect
+from governance.models import Candidate
 from governance.services import DomainError, _uuid, require, write_audit
 from governance.views import _body, protected
 from .models import AuditTarget, ClinicalRecord, Encounter, ExportRequest, GuardHit
@@ -76,7 +77,7 @@ def _response(body, ref, count, name):
 
 def clinical(actor_id, payload):
     with transaction.atomic():
-        actor = require(actor_id, CLINICAL, lock=True)
+        actor = require(actor_id, CLINICAL)
         _object(payload, ['scope', 'purpose'], ['scope', 'purpose'])
         _text(payload['purpose'], 2000)
         scope = payload['scope']
@@ -99,12 +100,16 @@ def clinical(actor_id, payload):
         else:
             start, end = _range(scope['time_range'])
             rows = rows.filter(encounter__created_at__gte=start, encounter__created_at__lt=end)
-        rows = rows.select_related('encounter', 'template').prefetch_related(
+        rows = list(rows.select_related('encounter').prefetch_related(
             'clinicalrevision_set', 'medicationentry_set', 'suggestion_decisions__suggestion').order_by('encounter__created_at', 'pk')
+        )
+        template_rows = Candidate.objects.in_bulk({row.template_id for row in rows})
         templates = {}
         records = []
         for record in rows:
             encounter = record.encounter
+            encounter.clinicalrecord = record
+            record.template = template_rows[record.template_id]
             try:
                 clinical = _clinical(encounter, templates)
             except (KeyError, AttributeError, TypeError, UnicodeError):
@@ -149,7 +154,7 @@ def clinical_records(request):
 
 def guard(actor_id, permission, payload):
     with transaction.atomic():
-        actor = require(actor_id, permission, lock=True)
+        actor = require(actor_id, permission)
         allowed = ['scope', 'time_range', 'rule_ref', 'handling_state'] if permission == DETAIL else [
             'time_range', 'rule_ref', 'handling_state', 'group_by']
         _object(payload, allowed)

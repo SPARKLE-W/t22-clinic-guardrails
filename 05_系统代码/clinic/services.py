@@ -74,7 +74,7 @@ def _refusal(actor_id, permission, error, ref=None):
             pass
     # This reads opaque target references only; no clinical values enter the event.
     exists = target and Encounter.objects.filter(pk=target).exists()
-    if exists and actor and actor.is_active:
+    if actor and actor.is_active and error.event_store is None:
         error.event_store = actor.store_id
     with transaction.atomic():
         event = write_audit(actor, permission, 'refused', error.code, target, error.event_store)
@@ -113,6 +113,15 @@ def mutate(actor_id, mode, key, payload, encounter_ref=None):
                 _own(actor, previous.result['encounter_ref'])
                 return previous.result
             if mode == 'create':
+                doctor_ref = payload['doctor_ref']
+                if type(doctor_ref) not in (int, str) or not str(doctor_ref).isdigit() or len(str(doctor_ref)) > 16:
+                    raise DomainError('INVALID_REFERENCE', 422)
+                # Encounter insertion checks the doctor FK. Lock that account before
+                # PolicyHead, matching the doctor-write account -> policy order.
+                doctor = Account.objects.select_for_update().filter(
+                    pk=int(doctor_ref), store=actor.store, role='doctor', is_active=True).first()
+                if not doctor:
+                    raise DomainError('DOCTOR_UNAVAILABLE', 403)
                 head = PolicyHead.objects.select_for_update().filter(store=actor.store).first()
                 if not head or not head.candidate_id:
                     raise DomainError('TEMPLATE_UNAVAILABLE', 503)
@@ -120,12 +129,6 @@ def mutate(actor_id, mode, key, payload, encounter_ref=None):
                 _template(candidate, actor.store_id)
                 if 'template_ref' in payload and _uuid(payload['template_ref']) != candidate.pk:
                     raise DomainError('INVALID_TEMPLATE', 422)
-                doctor_ref = payload['doctor_ref']
-                if type(doctor_ref) not in (int, str) or not str(doctor_ref).isdigit() or len(str(doctor_ref)) > 16:
-                    raise DomainError('INVALID_REFERENCE', 422)
-                doctor = Account.objects.filter(pk=int(doctor_ref), store=actor.store, role='doctor', is_active=True).first()
-                if not doctor:
-                    raise DomainError('DOCTOR_UNAVAILABLE', 403)
                 _text(payload['species'], 100)
                 _text(payload['complaint'], 10000)
                 _text(payload.get('pet_name', ''), 100, False)
@@ -213,7 +216,7 @@ def read(actor_id, clinical=False, ref=None, query=None):
     explicit_ref = ref
     try:
         with transaction.atomic():
-            actor = require(actor_id, permission, lock=True)
+            actor = require(actor_id, permission)
             query = {} if query is None else query
             _object(query, ['encounter_ref', 'record_ref', 'time_range', 'page'])
             if ref is not None and query:
@@ -233,7 +236,7 @@ def read(actor_id, clinical=False, ref=None, query=None):
             if explicit_ref:
                 if 'time_range' in query or 'page' in query:
                     raise DomainError('INPUT_FIELDS_INVALID', 422)
-                rows = [_own(actor, explicit_ref, clinical, lock=True)]
+                rows = [_own(actor, explicit_ref, clinical)]
                 total, page = 1, 1
             else:
                 filters = {'store': actor.store, 'doctor' if clinical else 'receptionist': actor}
@@ -252,7 +255,7 @@ def read(actor_id, clinical=False, ref=None, query=None):
                 if type(page) is not int or not 1 <= page <= 100000:
                     raise DomainError('INPUT_INVALID', 422)
                 total = values.count()
-                rows = list(values.select_for_update()[(page-1)*50:page*50])
+                rows = list(values[(page-1)*50:page*50])
             relations = ['template', 'receptionrevision_set']
             if clinical:
                 relations += ['clinicalrecord__template', 'clinicalrecord__clinicalrevision_set', 'clinicalrecord__medicationentry_set',

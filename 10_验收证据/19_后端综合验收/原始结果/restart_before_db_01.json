@@ -1,0 +1,10 @@
+{
+  "clinic_encounter": 24049,
+  "clinic_clinicalrecord": 20000,
+  "clinic_clinicalrevision": 26076,
+  "governance_auditevent": 27065,
+  "clinic_alertoutbox": 12000,
+  "clinic_deliveryreceipt": 12000,
+  "revision_sample_sha256": "47198B82F75DE1AE6B9ED851C80107AE553E36D3A042F5C37CAEFB7C5FCF1572",
+  "audit_sample_sha256": "811D7F6310AA1692CC2FC8430A4D9CADEDD900BDC103691E91635234F3F8CB94"
+}

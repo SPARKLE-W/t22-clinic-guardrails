@@ -11,4 +11,4 @@ if __name__ == '__main__':
 
     settings.DATABASES['default']['TEST']['NAME'] = 't22_app_mq_test'
     assert settings.DATABASES['default']['TEST']['NAME'] == 't22_app_mq_test'
-    execute_from_command_line(['manage.py', 'test', 'tests', 'governance', 'clinic', '--noinput', '-v1'])
+    execute_from_command_line(['manage.py', 'test', 'vetcontrols', 'governance', 'clinic', 'tests', '--noinput', '-v1'])

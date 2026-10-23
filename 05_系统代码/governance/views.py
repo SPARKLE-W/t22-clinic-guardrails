@@ -56,8 +56,11 @@ def protected(permission, methods):
                             from clinic.services import _refusal
                             _refusal(request.user.pk, permission, exc, str(kwargs['encounter_id']))
                         else:
+                            event_store = exc.event_store
+                            if event_store is None and request.user.is_authenticated:
+                                event_store = request.user.store_id
                             write_audit(request.user if request.user.is_authenticated else None, permission, 'request_refused', exc.code,
-                                        target=target, store_id=exc.event_store)
+                                        target=target, store_id=event_store)
                 except DatabaseError:
                     return error('AUDIT_UNAVAILABLE', 503)
                 return error(exc.code, exc.status)

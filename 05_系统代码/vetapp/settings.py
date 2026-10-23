@@ -19,8 +19,12 @@ DATABASES = {'default': {**config['database'], 'ENGINE': 'django.db.backends.mys
                         'OPTIONS': {'charset': 'utf8mb4', 'isolation_level': 'read committed',
                                     'init_command': "SET sql_mode='STRICT_TRANS_TABLES', default_storage_engine=INNODB"},
                         'TEST': {'NAME': 't22_app_test'}}}
-if DATABASES['default']['NAME'] != 't22_app':
+database_name = DATABASES['default']['NAME']
+isolated_load = os.environ.get('T22_FORMAL_LOAD') == '1' and database_name.startswith('t22_perf_')
+if database_name != 't22_app' and not isolated_load:
     raise RuntimeError('Use the isolated t22_app database; existing probe databases are excluded.')
+if isolated_load:
+    DATABASES['default']['TEST']['NAME'] = database_name + '_test'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 USE_TZ = True
 TIME_ZONE = 'Asia/Shanghai'

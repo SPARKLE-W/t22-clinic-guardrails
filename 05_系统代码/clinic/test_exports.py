@@ -5,10 +5,13 @@ import json
 import uuid
 from unittest.mock import patch
 from django.db import DatabaseError
-from governance.models import AuditEvent
+from governance.models import Account, AuditEvent
+from governance.services import DomainError
 from .models import (Alert, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, Encounter,
                      ExportRequest, MedicationEntry, Suggestion, SuggestionDecision)
 from .tests import ClinicFixture
+from .exports import clinical
+from .services import read
 from .writes import diagnosis
 
 
@@ -48,6 +51,16 @@ class ClinicalExportTests(ClinicFixture):
         self.assertEqual(1, request.record_count)
         self.assertEqual('ready', request.state)
         self.assertNotIn('课程合成病例核对', json.dumps(list(AuditEvent.objects.values()), default=str, ensure_ascii=False))
+
+    def test_deactivated_doctor_cannot_read_or_export(self):
+        Account.objects.filter(pk=self.doctor.pk).update(is_active=False)
+        with self.assertRaises(DomainError) as read_error:
+            read(self.doctor.pk, clinical=True, ref=self.ref)
+        self.assertEqual('AUTH_REQUIRED', read_error.exception.code)
+        with self.assertRaises(DomainError) as export_error:
+            clinical(self.doctor.pk, {'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '核对'})
+        self.assertEqual('AUTH_REQUIRED', export_error.exception.code)
+        self.assertFalse(ExportRequest.objects.exists())
 
     def test_one_unavailable_record_rejects_entire_explicit_set(self):
         other = self.create(payload={**self.payload(), 'doctor_ref': self.doctor2.pk})['encounter_ref']

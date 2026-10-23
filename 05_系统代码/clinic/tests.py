@@ -189,6 +189,19 @@ class ClinicTests(ClinicFixture):
         self.assertEqual(1, len(result.json()['items']))
         self.assertNotIn('仅医生可见', result.content.decode())
 
+    def test_unknown_target_refusal_is_scoped_to_requesting_store(self):
+        unknown = str(uuid.uuid4())
+        client = Client()
+        client.force_login(self.doctor)
+        response = client.get('/api/clinical/encounters/' + unknown)
+        self.assertEqual(403, response.status_code)
+        event = AuditEvent.objects.get(actor=self.doctor, action='clinical.read', normalized_reason='TARGET_UNAVAILABLE')
+        self.assertEqual(self.a.pk, event.store_id)
+        self.assertEqual(uuid.UUID(unknown), event.target)
+        client.force_login(self.manager)
+        local = client.get('/api/audit', {'operator_ref': str(self.doctor.pk)}).json()['items']
+        self.assertIn(str(event.pk), [row['event_ref'] for row in local])
+
     def test_http_unknown_fields_invalid_ids_and_no_formal_record_are_explicit(self):
         ref = self.create()['encounter_ref']
         client = Client()
