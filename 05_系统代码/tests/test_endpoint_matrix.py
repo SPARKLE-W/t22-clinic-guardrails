@@ -46,3 +46,44 @@ class ProtectedEndpointMatrixTests(TestCase):
                 response = Client().generic('PATCH', path, data='{}', content_type='application/json')
                 self.assertEqual(405, response.status_code)
                 self.assertEqual('METHOD_NOT_ALLOWED', response.json()['error']['code'])
+
+    def test_every_protected_post_route_rejects_malformed_json_with_audit(self):
+        routes = [(str(pattern.pattern), pattern.callback) for pattern in get_resolver().url_patterns
+                  if getattr(pattern.callback, 'permission_key', None)]
+        post_routes = [(route, callback) for route, callback in routes
+                       if 'POST' in inspect.getclosurevars(callback).nonlocals['methods']]
+        self.assertEqual(20, len(post_routes))
+        for route, callback in post_routes:
+            permission = callback.permission_key
+            path = '/' + re.sub(r'<uuid:[^>]+>', str(uuid.UUID('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')), route)
+            client = Client()
+            client.force_login(self.accounts[ROLES[permission]])
+            with self.subTest(route=route):
+                audits = AuditEvent.objects.filter(actor=self.accounts[ROLES[permission]],
+                                                  action=permission, normalized_reason='INPUT_INVALID')
+                before = audits.count()
+                response = client.generic('POST', path, data='{', content_type='application/json')
+                self.assertEqual(422, response.status_code)
+                self.assertEqual('INPUT_INVALID', response.json()['error']['code'])
+                self.assertEqual(before + 1, audits.count())
+
+    def test_every_protected_get_route_rejects_unknown_query_field(self):
+        routes = [(str(pattern.pattern), pattern.callback) for pattern in get_resolver().url_patterns
+                  if getattr(pattern.callback, 'permission_key', None)]
+        get_routes = [(route, callback) for route, callback in routes
+                      if 'GET' in inspect.getclosurevars(callback).nonlocals['methods']]
+        self.assertEqual(15, len(get_routes))
+        for route, callback in get_routes:
+            permission = callback.permission_key
+            path = '/' + re.sub(r'<uuid:[^>]+>', str(uuid.UUID('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')), route)
+            client = Client()
+            client.force_login(self.accounts[ROLES[permission]])
+            with self.subTest(route=route):
+                before = AuditEvent.objects.filter(actor=self.accounts[ROLES[permission]],
+                                                   action=permission).count()
+                response = client.get(path, {'unexpected': '1'})
+                self.assertEqual(422, response.status_code)
+                self.assertIn(response.json()['error']['code'], {'INPUT_INVALID', 'INPUT_FIELDS_INVALID'})
+                audits = AuditEvent.objects.filter(actor=self.accounts[ROLES[permission]], action=permission)
+                self.assertEqual(before + 1, audits.count())
+                self.assertEqual(response.json()['error']['code'], audits.order_by('-created_at', '-pk').first().normalized_reason)
