@@ -1,0 +1,28 @@
+{
+  "method": "physical nonblank lines, excluding whole-line Python # and JS // comments",
+  "excluded": "tests, mq_test_tools.py, binary files; backend_python excludes migrations, which are reported separately",
+  "backend_python": {
+    "files": 34,
+    "lines": 2840
+  },
+  "frontend_javascript": {
+    "files": 1,
+    "lines": 2952
+  },
+  "frontend_html": {
+    "files": 1,
+    "lines": 25
+  },
+  "frontend_css": {
+    "files": 1,
+    "lines": 591
+  },
+  "storage_migrations": {
+    "files": 11,
+    "lines": 1323
+  },
+  "backend_with_storage_schema": 4163,
+  "backend_plus_javascript": 5792,
+  "backend_plus_all_frontend": 6408,
+  "fullstack_with_storage_schema": 7731
+}
