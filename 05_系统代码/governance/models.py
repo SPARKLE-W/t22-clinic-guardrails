@@ -1,5 +1,6 @@
 import uuid
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.hashers import identify_hasher, is_password_usable
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 
 
@@ -8,9 +9,46 @@ class Store(models.Model):
     name = models.CharField(max_length=80)
 
 
+def _reject_password_write(reason, store_id=None):
+    AuditEvent.objects.create(store_id=store_id, action='identity.credential.persist',
+                              outcome='refused', normalized_reason=reason)
+    raise ValueError('Direct credential persistence rejected')
+
+
+class AccountQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        if 'password' in kwargs:
+            _reject_password_write('CREDENTIAL_WRITE_BYPASS_REJECTED')
+        return super().update(**kwargs)
+
+    def bulk_create(self, objs, **kwargs):
+        if objs:
+            _reject_password_write('CREDENTIAL_WRITE_BYPASS_REJECTED')
+        return super().bulk_create(objs, **kwargs)
+
+    def bulk_update(self, objs, fields, **kwargs):
+        if 'password' in fields:
+            _reject_password_write('CREDENTIAL_WRITE_BYPASS_REJECTED')
+        return super().bulk_update(objs, fields, **kwargs)
+
+
+class AccountManager(UserManager.from_queryset(AccountQuerySet)):
+    pass
+
+
 class Account(AbstractUser):
+    objects = AccountManager()
     store = models.ForeignKey(Store, on_delete=models.PROTECT)
     role = models.CharField(max_length=12, choices=[(x, x) for x in ['frontdesk', 'doctor', 'manager']])
+
+    def save(self, *args, **kwargs):
+        if is_password_usable(self.password):
+            try:
+                identify_hasher(self.password)
+            except ValueError:
+                store_id = self.store_id if self.store_id and Store.objects.filter(pk=self.store_id).exists() else None
+                _reject_password_write('PLAINTEXT_PASSWORD_REJECTED', store_id)
+        return super().save(*args, **kwargs)
 
     class Meta:
         constraints = [models.CheckConstraint(condition=models.Q(role__in=['frontdesk', 'doctor', 'manager']), name='account_three_roles')]
