@@ -195,6 +195,42 @@ class GovernanceTests(TransactionTestCase):
             self.call(ACTIVATE, {'candidate_ref': second, 'expected_generation': 0, 'reason': '过期'})
         self.assertEqual(uuid.UUID(first), PolicyHead.objects.get(store=self.a).candidate_id)
 
+    def test_http_generation_and_activation_errors_preserve_state_and_audit_reason(self):
+        self.client.force_login(self.manager)
+
+        def post(path, payload):
+            return self.client.post(path, json.dumps(payload), content_type='application/json',
+                                    HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()))
+
+        foreign = copy.deepcopy(self.definition)
+        foreign['scope']['store_id'] = str(self.b.pk)
+        response = post('/api/candidates/generate', {'definition': foreign, 'reason': '跨店生成'})
+        self.assertEqual((403, 'SCOPE_DENIED'), (response.status_code, response.json()['error']['code']))
+        self.assertFalse(Candidate.objects.exists())
+        self.assertFalse(Demand.objects.exists())
+        self.assertFalse(Operation.objects.exists())
+        self.assertTrue(AuditEvent.objects.filter(actor=self.manager, store=self.a,
+                                                  normalized_reason='SCOPE_DENIED').exists())
+
+        unapproved = self.generate()
+        response = post('/api/candidates/activate', {'candidate_ref': unapproved,
+                                                      'expected_generation': 0, 'reason': '未批准'})
+        self.assertEqual((409, 'APPROVAL_REQUIRED'), (response.status_code, response.json()['error']['code']))
+        self.assertFalse(Activation.objects.exists())
+        self.assertIsNone(PolicyHead.objects.get(store=self.a).candidate_id)
+        self.assertTrue(AuditEvent.objects.filter(actor=self.manager, store=self.a,
+                                                  normalized_reason='APPROVAL_REQUIRED').exists())
+
+        first, second = self.ready(), self.ready()
+        self.call(ACTIVATE, {'candidate_ref': first, 'expected_generation': 0, 'reason': '启用首版'})
+        response = post('/api/candidates/activate', {'candidate_ref': second,
+                                                      'expected_generation': 0, 'reason': '过期版本'})
+        self.assertEqual((409, 'POLICY_VERSION_CONFLICT'), (response.status_code, response.json()['error']['code']))
+        self.assertEqual(uuid.UUID(first), PolicyHead.objects.get(store=self.a).candidate_id)
+        self.assertEqual(1, Activation.objects.count())
+        self.assertTrue(AuditEvent.objects.filter(actor=self.manager, store=self.a,
+                                                  normalized_reason='POLICY_VERSION_CONFLICT').exists())
+
     def test_valid_rehashed_replacement_cannot_reuse_old_approval(self):
         from vetcontrols import compile_demand
         ref = self.ready()

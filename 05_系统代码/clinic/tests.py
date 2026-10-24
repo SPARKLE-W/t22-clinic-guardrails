@@ -117,6 +117,50 @@ class ClinicTests(ClinicFixture):
         self.assertEqual(0, Encounter.objects.count())
         self.assertEqual(0, PetIdentity.objects.count())
 
+    def test_http_reception_business_errors_leave_no_partial_change(self):
+        client = Client()
+        client.force_login(self.front)
+
+        def post(path, payload):
+            return client.post(path, json.dumps(payload), content_type='application/json',
+                               HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()))
+
+        foreign_pet = PetIdentity.objects.create(store=self.b)
+        payload = {**self.payload(), 'pet_identity_choice': 'known', 'pet_ref': str(foreign_pet.pk)}
+        response = post('/api/encounters', payload)
+        self.assertEqual((403, 'PET_UNAVAILABLE'), (response.status_code, response.json()['error']['code']))
+        self.assertFalse(Encounter.objects.exists())
+        self.assertTrue(AuditEvent.objects.filter(actor=self.front, store=self.a,
+                                                  normalized_reason='PET_UNAVAILABLE').exists())
+
+        response = post('/api/encounters', {**self.payload(), 'template_ref': str(uuid.uuid4())})
+        self.assertEqual((422, 'INVALID_TEMPLATE'), (response.status_code, response.json()['error']['code']))
+        self.assertFalse(Encounter.objects.exists())
+        self.assertFalse(ReceptionRevision.objects.exists())
+        self.assertTrue(AuditEvent.objects.filter(actor=self.front, store=self.a,
+                                                  normalized_reason='INVALID_TEMPLATE').exists())
+
+        result = self.create()
+        ref = result['encounter_ref']
+        old_version = result['reception_versions'][-1]['version_ref']
+        correction_url = '/api/encounters/' + ref + '/corrections'
+        correction = {'complaint': '已更正', 'original_version_ref': old_version, 'reason': '核对旧值'}
+        self.assertEqual(200, post(correction_url, correction).status_code)
+        response = post(correction_url, {**correction, 'complaint': '过期提交'})
+        self.assertEqual((409, 'STATE_OR_VERSION_CONFLICT'),
+                         (response.status_code, response.json()['error']['code']))
+        self.assertEqual(2, ReceptionRevision.objects.filter(encounter_id=ref).count())
+        self.assertEqual('已更正', Encounter.objects.get(pk=ref).complaint)
+
+        mark_url = '/api/encounters/' + ref + '/misregistration'
+        self.assertEqual(200, post(mark_url, {'reason': '误建'}).status_code)
+        response = post(mark_url, {'reason': '再次误建'})
+        self.assertEqual((409, 'STATE_CONFLICT'), (response.status_code, response.json()['error']['code']))
+        self.assertTrue(Encounter.objects.get(pk=ref).error_mark)
+        for code in ['STATE_OR_VERSION_CONFLICT', 'STATE_CONFLICT']:
+            self.assertTrue(AuditEvent.objects.filter(actor=self.front, store=self.a,
+                                                      normalized_reason=code).exists())
+
     def test_correct_keeps_history_and_cannot_change_ownership(self):
         result = self.create()
         ref = result['encounter_ref']
@@ -165,6 +209,21 @@ class ClinicTests(ClinicFixture):
             response = client.get('/api/clinical/encounters/' + ref)
         self.assertEqual(503, response.status_code)
         self.assertNotIn('仅医生可见', response.content.decode())
+
+    def test_corrupt_current_clinical_revision_is_not_released(self):
+        ref = self.create()['encounter_ref']
+        record = self.record_fixture(ref)
+        ClinicalRevision.objects.filter(record=record).update(diagnosis='')
+        client = Client()
+        client.force_login(self.doctor)
+        response = client.get('/api/clinical/encounters/' + ref)
+        self.assertEqual((503, 'RECORD_UNAVAILABLE'),
+                         (response.status_code, response.json()['error']['code']))
+        self.assertNotIn('合成检查', response.content.decode())
+        event = AuditEvent.objects.get(actor=self.doctor, action='clinical.read',
+                                       normalized_reason='RECORD_UNAVAILABLE')
+        self.assertEqual(self.a.pk, event.store_id)
+        self.assertTrue(AuditTarget.objects.filter(event=event, target=record.pk, kind='record').exists())
 
     def test_list_target_links_and_record_operator_audit_query_are_scoped(self):
         ref = self.create()['encounter_ref']

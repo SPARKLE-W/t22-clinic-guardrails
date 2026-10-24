@@ -187,7 +187,8 @@ def mutate(actor_id, permission, operation_id, payload):
                 target = _uuid(payload['candidate_ref'])
             except DomainError:
                 pass
-        write_audit(actor, permission, 'refused', error.code, target, error.event_store or verified_store)
+        write_audit(actor, permission, 'refused', error.code, target,
+                    error.event_store or verified_store or (actor.store_id if actor else None))
         error.audit_recorded = True
         raise
 

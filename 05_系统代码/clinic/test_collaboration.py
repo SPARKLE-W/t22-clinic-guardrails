@@ -5,6 +5,7 @@ from django.db import DatabaseError
 from django.test import Client
 from governance.models import Account, AuditEvent, Review
 from .tests import ClinicFixture
+from .models import WorkDivisionReview
 
 
 class WorkDivisionTests(ClinicFixture):
@@ -74,7 +75,12 @@ class WorkDivisionTests(ClinicFixture):
         self.assertEqual('manager_declaration', data['manual_evidence_provenance'][0]['kind'])
         review = {k: data[k] for k in ['work_item_ref', 'stage_ref', 'plan_version_ref', 'actual_version_ref']}
         review.update(redacted_evidence=[], conclusion='confirmed_difference', reason='无证据不能复核成功')
-        self.assertEqual(409, self.post(review, suffix='/reviews').status_code)
+        response = self.post(review, suffix='/reviews')
+        self.assertEqual((409, 'EVIDENCE_INSUFFICIENT'),
+                         (response.status_code, response.json()['error']['code']))
+        self.assertFalse(WorkDivisionReview.objects.exists())
+        self.assertTrue(AuditEvent.objects.filter(actor=self.manager, store=self.a,
+                                                  normalized_reason='EVIDENCE_INSUFFICIENT').exists())
 
     def test_unknown_or_other_work_event_cannot_be_attached(self):
         self.registration['source_event_refs'] = [str(uuid.uuid4())]
@@ -153,9 +159,17 @@ class WorkDivisionTests(ClinicFixture):
         data = self.post().json()
         review = {k: data[k] for k in ['work_item_ref', 'stage_ref', 'plan_version_ref', 'actual_version_ref']}
         review.update(redacted_evidence=[str(uuid.uuid4())], conclusion='confirmed_difference', reason='测试')
-        self.assertEqual(409, self.post(review, suffix='/reviews').status_code)
+        response = self.post(review, suffix='/reviews')
+        self.assertEqual((409, 'EVIDENCE_VERSION_CONFLICT'),
+                         (response.status_code, response.json()['error']['code']))
         review.update(redacted_evidence=data['source_event_refs'], conclusion='confirmed_consistent')
-        self.assertEqual(409, self.post(review, suffix='/reviews').status_code)
+        response = self.post(review, suffix='/reviews')
+        self.assertEqual((409, 'REVIEW_CONCLUSION_CONFLICT'),
+                         (response.status_code, response.json()['error']['code']))
+        self.assertFalse(WorkDivisionReview.objects.exists())
+        for code in ['EVIDENCE_VERSION_CONFLICT', 'REVIEW_CONCLUSION_CONFLICT']:
+            self.assertTrue(AuditEvent.objects.filter(actor=self.manager, store=self.a,
+                                                      normalized_reason=code).exists())
 
     def test_review_evidence_wrong_shape_is_input_error(self):
         data = self.post().json()
