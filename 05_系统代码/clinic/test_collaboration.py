@@ -202,6 +202,19 @@ class WorkDivisionTests(ClinicFixture):
         self.assertEqual([], self.client.get(self.url, {'plan_version_ref': data['plan_version_ref']}).json()['items'])
         self.assertEqual(1, self.client.get(self.url, {'actual_version_ref': updated['actual_version_ref']}).json()['total'])
 
+    def test_query_rejects_invalid_stage_comparison_and_page_with_audit(self):
+        self.assertEqual(200, self.post().status_code)
+        for params in [{'stage_ref': 'unknown'}, {'comparison_state': 'completed'}, {'page': '0'}]:
+            with self.subTest(params=params):
+                before = AuditEvent.objects.filter(actor=self.manager, store=self.a,
+                    action='collaboration.assignment.write', normalized_reason='INPUT_INVALID').count()
+                response = self.client.get(self.url, params)
+                self.assertEqual((422, 'INPUT_INVALID'),
+                                 (response.status_code, response.json()['error']['code']))
+                self.assertEqual(before + 1, AuditEvent.objects.filter(actor=self.manager, store=self.a,
+                    action='collaboration.assignment.write', normalized_reason='INPUT_INVALID').count())
+        self.assertEqual(1, self.client.get(self.url).json()['total'])
+
     def test_two_managers_cannot_overwrite_the_same_version(self):
         from concurrent.futures import ThreadPoolExecutor
         from threading import Barrier

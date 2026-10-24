@@ -2,8 +2,9 @@ import uuid
 from unittest.mock import patch
 from django.db import DatabaseError
 from django.test import Client
+from governance.models import AuditEvent, Operation
 from .tests import ClinicFixture
-from .models import ClinicalRecord, ClinicalRevision, Encounter, Alert, AlertOutbox
+from .models import ClinicalRecord, ClinicalRevision, Encounter, Alert, AlertOutbox, MedicationEntry
 from .services import read
 
 
@@ -116,10 +117,19 @@ class MedicationTests(ClinicFixture):
 
     def test_no_record_or_policy_cannot_be_bypassed(self):
         ref = self.create()['encounter_ref']
-        self.assertEqual(409,self.post(self.values(),ref=ref).status_code)
+        missing_record = self.post(self.values(),ref=ref)
+        self.assertEqual((409,'STATE_CONFLICT'),
+                         (missing_record.status_code,missing_record.json()['error']['code']))
         from governance.models import PolicyHead
         PolicyHead.objects.filter(store=self.a).update(candidate=None)
-        self.assertEqual(503,self.post(self.values()).status_code)
+        missing_policy = self.post(self.values())
+        self.assertEqual((503,'POLICY_UNAVAILABLE'),
+                         (missing_policy.status_code,missing_policy.json()['error']['code']))
+        self.assertFalse(MedicationEntry.objects.exists())
+        self.assertFalse(Operation.objects.filter(permission='medication.record').exists())
+        for code in ['STATE_CONFLICT','POLICY_UNAVAILABLE']:
+            self.assertTrue(AuditEvent.objects.filter(actor=self.doctor,store=self.a,
+                action='medication.record',normalized_reason=code,outcome='refused').exists())
 
     def test_concurrent_same_key_is_one_immutable_entry(self):
         from concurrent.futures import ThreadPoolExecutor
