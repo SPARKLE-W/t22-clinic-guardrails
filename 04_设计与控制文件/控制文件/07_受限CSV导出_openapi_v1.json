@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "T22 restricted CSV exports",
-    "version": "1.0",
-    "description": "Requires clinic migration0008. Browser must verify full response bytes and checksum; server ready is not proof of client receipt. See design20."
+    "version": "1.1",
+    "description": "Requires clinic migrations0008–0009 for optional template fields. Browser must verify full response bytes and checksum; server ready is not proof of client receipt. Clinical CSV includes extra_fields and per-version values. See design20."
   },
   "paths": {
     "/api/exports/clinical-records": {

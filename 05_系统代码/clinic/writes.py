@@ -6,7 +6,7 @@ from governance.services import DomainError, _check_candidate, _uuid, require, w
 from vetcontrols.compiler import _digest, _normalize
 from .guards import evaluate
 from .models import Alert, AlertOutbox, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, GuardHit
-from .services import _clinical, _object, _own, _refusal, _template, _text, read
+from .services import _clinical, _extra_values, _object, _own, _refusal, _template, _text, read
 
 WRITE = 'clinical.diagnosis.write'
 ALERT = 'clinical.alert.handle'
@@ -35,7 +35,7 @@ def diagnosis(actor_id, mode, key, payload, ref):
             operation_key = _uuid(key)
             head = PolicyHead.objects.select_for_update().filter(store=actor.store).first()
             row = _own(actor, ref, clinical=True, lock=True)
-            allowed = ['diagnosis', 'examination']
+            allowed = ['diagnosis', 'examination', 'extra_fields']
             if mode == 'correct':
                 allowed += ['original_content_ref', 'original_version_ref', 'reason']
             _object(payload, allowed, ['original_content_ref', 'original_version_ref', 'reason'] if mode == 'correct' else [])
@@ -63,7 +63,7 @@ def diagnosis(actor_id, mode, key, payload, ref):
                     raise DomainError('RECORD_UNAVAILABLE', 503)
                 if _uuid(payload['original_content_ref']) != record.pk or _uuid(payload['original_version_ref']) != current.pk:
                     raise DomainError('STATE_OR_VERSION_CONFLICT')
-                if not set(payload) & {'diagnosis', 'examination'}:
+                if not (set(payload) & {'diagnosis', 'examination'} or payload.get('extra_fields')):
                     raise DomainError('INPUT_FIELDS_INVALID', 422)
                 values = {field: payload.get(field, getattr(current, field)) for field in ['diagnosis', 'examination']}
             if not head or not head.candidate:
@@ -71,8 +71,7 @@ def diagnosis(actor_id, mode, key, payload, ref):
             template_candidate = record.template if record else row.template
             template = _validated(template_candidate, actor.store_id)
             _validated(head.candidate, actor.store_id)
-            if template['clinical']['extra_fields']:
-                raise DomainError('RULE_EXECUTION_UNAVAILABLE', 503)
+            extra_fields = _extra_values(template, payload.get('extra_fields', {}), current.extra_fields if current else None)
             checks, hits = evaluate(head.candidate.envelope['payload']['demand'], template, values, mode)
             check = ClinicalCheck.objects.create(encounter=row, record=record, original_version=current, actor=actor, mode=mode,
                          template=template_candidate, policy=head.candidate, policy_digest=head.candidate.digest,
@@ -91,7 +90,7 @@ def diagnosis(actor_id, mode, key, payload, ref):
                     record.current_version += 1
                     record.save(update_fields=['current_version'])
                 version = ClinicalRevision.objects.create(record=record, version=record.current_version, actor=actor,
-                                                          reason=payload.get('reason', ''), **values)
+                                                          reason=payload.get('reason', ''), extra_fields=extra_fields, **values)
                 check.record = record
                 check.result_version = version
                 check.save(update_fields=['record', 'result_version'])

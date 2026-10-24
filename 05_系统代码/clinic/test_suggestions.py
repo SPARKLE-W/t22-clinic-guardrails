@@ -66,6 +66,25 @@ class SuggestionTests(ClinicFixture):
         self.assertEqual(1,len(clinical['adoptions']))
         self.assertEqual(saved['suggestion_ref'],clinical['adoptions'][0]['suggestion_ref'])
 
+    def test_adoption_on_extended_template_preserves_optional_fields(self):
+        template = self.template_fixture('template-extra-adoption', extra_fields=[
+            {'id':'x_followup_note','type':'text','required':False,'visible_role':'doctor'}])
+        PolicyHead.objects.filter(store=self.a).update(candidate=template, generation=2)
+        self.ref = self.create()['encounter_ref']
+        items = self.seed()
+        first = self.post(items[0], self.adoption_payload(items[0], {
+            'diagnosis':'医生核对的合成诊断', 'extra_fields':{'x_followup_note':'三日后复诊'}}))
+        self.assertEqual(200, first.status_code)
+        record = ClinicalRecord.objects.get(encounter_id=self.ref)
+        current = ClinicalRevision.objects.get(record=record)
+        self.assertEqual({'x_followup_note':'三日后复诊'}, current.extra_fields)
+        second_payload = {**self.adoption_payload(items[1], {
+            'extra_fields':{'x_followup_note':'五日后复诊'}, 'original_version_ref':str(current.pk)}),
+            'record_ref':str(record.pk)}
+        self.assertEqual(200, self.post(items[1], second_payload).status_code)
+        self.assertEqual({'x_followup_note':'五日后复诊'}, ClinicalRevision.objects.get(record=record,version=2).extra_fields)
+        self.assertEqual({'x_followup_note':'三日后复诊'}, ClinicalRevision.objects.get(pk=current.pk).extra_fields)
+
     def test_decline_without_reason_survives_missing_policy_and_error_mark(self):
         item=self.seed()[0]
         Encounter.objects.filter(pk=self.ref).update(error_mark=True)

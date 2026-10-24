@@ -25,12 +25,14 @@ class ClinicFixture(TransactionTestCase):
         PolicyHead.objects.create(store=self.a, candidate=self.template, generation=1)
         PolicyHead.objects.create(store=self.b)
 
-    def template_fixture(self, version='template-0.2', additional_rules=None):
+    def template_fixture(self, version='template-0.2', additional_rules=None, extra_fields=None):
         definition = json.loads((Path(__file__).parents[1] / 'examples/01_完整定义需求_v0.2.json').read_text(encoding='utf-8'))
         definition['scope']['store_id'] = str(self.a.pk)
         definition['templates']['version'] = version
         if additional_rules is not None:
             definition['additional_rules'] = additional_rules
+        if extra_fields is not None:
+            definition['templates']['clinical']['extra_fields'] = extra_fields
         result = compile_demand(definition)
         self.assertTrue(result['ok'])
         demand = Demand.objects.create(store=self.a, actor=self.manager, reason='合成测试夹具', input_digest=result['candidate']['input_digest'], definition=definition, report={'ok': True})

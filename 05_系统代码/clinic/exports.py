@@ -18,7 +18,7 @@ from .services import _clinical, _object, _text
 
 CLINICAL = 'export.clinical'
 CLINICAL_COLUMNS = ['record_ref', 'encounter_ref', 'template_version_ref', 'field_meanings',
-                    'diagnosis', 'examination', 'adopted_content', 'responsibility_metadata',
+                    'diagnosis', 'examination', 'extra_fields', 'adopted_content', 'responsibility_metadata',
                     'medication_chain', 'clinical_versions', 'error_mark', 'related_encounter_refs']
 DETAIL = 'export.guard_detail'
 SUMMARY = 'export.guard_summary'
@@ -121,7 +121,8 @@ def clinical(actor_id, payload):
             records.append({'record_ref': str(record.pk), 'encounter_ref': str(encounter.pk),
                             'template_version_ref': clinical['template_version_ref'],
                             'field_meanings': encode(clinical['field_meanings']), 'diagnosis': clinical['diagnosis'],
-                            'examination': clinical['examination'], 'adopted_content': encode(clinical['adoptions']),
+                            'examination': clinical['examination'], 'extra_fields': encode(clinical['extra_fields']),
+                            'adopted_content': encode(clinical['adoptions']),
                             'responsibility_metadata': encode({'doctor_ref': encounter.doctor_id,
                                                                'receptionist_ref': encounter.receptionist_id,
                                                                'created_at': encounter.created_at.isoformat()}),

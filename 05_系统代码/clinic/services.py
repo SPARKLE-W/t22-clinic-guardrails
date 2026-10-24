@@ -27,6 +27,25 @@ def _text(value, maximum, required=True):
     return value
 
 
+def _extra_values(template, supplied, existing=None):
+    fields = {item['id']: item['type'] for item in template['clinical']['extra_fields']}
+    if type(supplied) is not dict or set(supplied) - set(fields):
+        raise DomainError('INPUT_FIELDS_INVALID', 422)
+    values = dict(existing or {})
+    for name, value in supplied.items():
+        if value is None:
+            values.pop(name, None)
+        elif fields[name] == 'text' and type(value) is str and len(value) <= 10000:
+            values[name] = value
+        elif fields[name] == 'integer' and type(value) is int and -(2**63) <= value < 2**63:
+            values[name] = value
+        elif fields[name] == 'boolean' and type(value) is bool:
+            values[name] = value
+        else:
+            raise DomainError('INPUT_INVALID', 422)
+    return values
+
+
 def _template(candidate, store_id):
     try:
         payload = candidate.envelope['payload']
@@ -197,13 +216,17 @@ def _clinical(row, templates):
     current = next((r for r in revisions if r.version == record.current_version), None)
     if not current or not current.diagnosis.strip():
         raise DomainError('RECORD_UNAVAILABLE', 503)
+    meanings = {**template['clinical']['field_types'],
+                **{item['id']: item['type'] for item in template['clinical']['extra_fields']}}
     return {'record_ref': str(record.pk), 'encounter_ref': str(row.pk), 'template_version_ref': template['version'],
-            'field_meanings': template['clinical']['field_types'], 'diagnosis': current.diagnosis, 'examination': current.examination,
+            'field_meanings': meanings, 'diagnosis': current.diagnosis, 'examination': current.examination,
+            'extra_fields': current.extra_fields,
             'medication_chain': [{'entry_ref':str(item.pk),'original_entry_ref':str(item.original_id) if item.original_id else None,
                                  'drug':item.drug,'amount':item.amount,'unit':item.unit,'actor_ref':item.actor_id,
                                  'created_at':item.created_at.isoformat(),'reason':item.reason}
                                 for item in sorted(record.medicationentry_set.all(),key=lambda item:(item.created_at,str(item.pk)))],
             'clinical_versions': [{'version_ref': str(r.pk), 'version': r.version, 'diagnosis': r.diagnosis, 'examination': r.examination,
+                                   'extra_fields': r.extra_fields,
                                    'actor_ref': r.actor_id, 'created_at': r.created_at.isoformat(), 'reason': r.reason} for r in revisions],
             'adoptions': [{'decision_ref':str(item.pk),'suggestion_ref':str(item.suggestion_id),'source':item.suggestion.source,
                            'adopted_content':item.adopted_content,'actor_ref':item.actor_id,'created_at':item.created_at.isoformat(),

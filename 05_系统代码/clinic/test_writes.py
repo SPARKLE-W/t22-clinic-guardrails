@@ -24,6 +24,52 @@ class ClinicalWriteTests(ClinicFixture):
         self.assertEqual(200, response.status_code)
         self.assertEqual('合成诊断', response.json()['diagnosis'])
 
+    def test_optional_template_fields_preserve_types_versions_and_export(self):
+        import csv
+        import io
+        import json
+        from .exports import CLINICAL_COLUMNS
+        extra = [{'id': 'x_followup_note', 'type': 'text', 'required': False, 'visible_role': 'doctor'},
+                 {'id': 'x_visit_count', 'type': 'integer', 'required': False, 'visible_role': 'doctor'},
+                 {'id': 'x_is_urgent', 'type': 'boolean', 'required': False, 'visible_role': 'doctor'}]
+        template = self.template_fixture('template-extra-1', extra_fields=extra)
+        PolicyHead.objects.filter(store=self.a).update(candidate=template, generation=2)
+        ref = self.create()['encounter_ref']
+        first = self.post(ref, {'diagnosis': '初诊', 'extra_fields': {
+            'x_followup_note': '七日后复诊', 'x_visit_count': 1, 'x_is_urgent': False}})
+        self.assertEqual(200, first.status_code)
+        self.assertEqual({'x_followup_note': '七日后复诊', 'x_visit_count': 1, 'x_is_urgent': False},
+                         first.json()['extra_fields'])
+        record = ClinicalRecord.objects.get(encounter_id=ref)
+        original = ClinicalRevision.objects.get(record=record, version=1)
+        self.assertEqual('template-extra-1', first.json()['template_version_ref'])
+        changed = {'original_content_ref': str(record.pk), 'original_version_ref': str(original.pk),
+                   'reason': '核对后更正', 'extra_fields': {'x_followup_note': '十日后复诊', 'x_is_urgent': None}}
+        second = self.post(ref, changed, mode='correct')
+        self.assertEqual(200, second.status_code)
+        self.assertEqual({'x_followup_note': '十日后复诊', 'x_visit_count': 1}, second.json()['extra_fields'])
+        original.refresh_from_db()
+        self.assertEqual(False, original.extra_fields['x_is_urgent'])
+        self.assertEqual('七日后复诊', original.extra_fields['x_followup_note'])
+        self.assertEqual(2, len(second.json()['clinical_versions']))
+        self.assertEqual(original.extra_fields, second.json()['clinical_versions'][0]['extra_fields'])
+
+        self.assertEqual(422, self.post(ref, {'original_content_ref': str(record.pk),
+            'original_version_ref': second.json()['clinical_versions'][-1]['version_ref'],
+            'reason': '非法字段', 'extra_fields': {'x_unknown': '不得存入'}}, mode='correct').status_code)
+        self.assertEqual(422, self.post(ref, {'original_content_ref': str(record.pk),
+            'original_version_ref': second.json()['clinical_versions'][-1]['version_ref'],
+            'reason': '类型不符', 'extra_fields': {'x_visit_count': True}}, mode='correct').status_code)
+        self.assertEqual(2, ClinicalRevision.objects.filter(record=record).count())
+
+        from .exports import clinical
+        body, _, count = clinical(self.doctor.pk, {'scope': {'record_refs': [str(record.pk)]}, 'purpose': '合成模板回归'})
+        self.assertEqual(1, count)
+        row = next(csv.DictReader(io.StringIO(body.decode('utf-8'))))
+        self.assertIn('extra_fields', CLINICAL_COLUMNS)
+        self.assertEqual(second.json()['extra_fields'], json.loads(row['extra_fields']))
+        self.assertEqual(2, len(json.loads(row['clinical_versions'])))
+
     def test_correction_keeps_original_and_rejects_stale_or_forged_parent(self):
         ref = self.create()['encounter_ref']
         first = self.post(ref, {'diagnosis': '初版', 'examination': '原检查'})

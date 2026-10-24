@@ -14,7 +14,7 @@
 
 权限`export.clinical`。请求必需且仅有`scope`和非空`purpose`。scope二选一：`{"record_refs":["UUID",...]}`或`{"time_range":{"from":"2026-10-23T00:00:00+08:00","to":"2026-10-24T00:00:00+08:00"}}`。显式集合不能空或重复，任何一个编号不存在、跨店或不属于当前医生则整次403，不静默删除其余行。时间范围可真实返回空集合，仅输出表头。
 
-列顺序：`record_ref,encounter_ref,template_version_ref,field_meanings,diagnosis,examination,adopted_content,responsibility_metadata,medication_chain,clinical_versions,error_mark,related_encounter_refs`。每病历一行；复杂链按JSON文本置于CSV单元格。保留各版诊断/检查、操作人/时间/理由、用药原项与追加更正引用、正式采纳内容/责任，标识误建及无正文的关联编号。未采纳和待决建议不混入正式病历。原模板字段含义按记录引用模板解释，不以当前生效模板替换。导出登记保存用途和范围，管理审计只见脱敏操作元数据，不见用途或临床内容；按病历编号可查到这次导出事件。
+列顺序：`record_ref,encounter_ref,template_version_ref,field_meanings,diagnosis,examination,extra_fields,adopted_content,responsibility_metadata,medication_chain,clinical_versions,error_mark,related_encounter_refs`。每病历一行；复杂链按JSON文本置于CSV单元格。`extra_fields`为现版可选模板扩展值（无值时为`{}`），`clinical_versions`逐版保留扩展值。保留各版诊断/检查、操作人/时间/理由、用药原项与追加更正引用、正式采纳内容/责任，标识误建及无正文的关联编号。未采纳和待决建议不混入正式病历。原模板字段含义按记录引用模板解释，不以当前生效模板替换。导出登记保存用途和范围，管理审计只见脱敏操作元数据，不见用途或临床内容；按病历编号可查到这次导出事件。
 
 ## 医生命中明细：`POST /api/exports/alert-hits`
 
