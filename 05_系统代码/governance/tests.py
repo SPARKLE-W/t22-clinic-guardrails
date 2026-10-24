@@ -271,6 +271,48 @@ class GovernanceTests(TransactionTestCase):
         Account.objects.filter(pk=self.manager.pk).update(role='doctor')
         self.assertEqual(403, client.get('/api/candidates').status_code)
 
+    def test_direct_plaintext_password_storage_is_rejected_and_redacted(self):
+        secret = 'synthetic-plaintext-credential'
+        with self.assertRaises(ValueError):
+            Account.objects.create(username='unsafe', password=secret, store=self.a, role='doctor')
+        self.assertFalse(Account.objects.filter(username='unsafe').exists())
+        event = AuditEvent.objects.get(action='identity.credential.persist',
+                                       normalized_reason='PLAINTEXT_PASSWORD_REJECTED')
+        self.assertEqual((self.a.pk, 'refused', None), (event.store_id, event.outcome, event.actor_id))
+        self.assertNotIn(secret, str(event.__dict__))
+
+        original_hash = self.manager.password
+        self.manager.password = secret
+        with self.assertRaises(ValueError):
+            self.manager.save(update_fields=['password'])
+        self.manager.refresh_from_db()
+        self.assertEqual(original_hash, self.manager.password)
+        self.assertEqual(2, AuditEvent.objects.filter(normalized_reason='PLAINTEXT_PASSWORD_REJECTED').count())
+
+        with self.assertRaises(ValueError):
+            Account.objects.filter(pk=self.manager.pk).update(password=secret)
+        with self.assertRaises(ValueError):
+            Account.objects.bulk_create([Account(username='unsafe-bulk', password=secret,
+                                                 store=self.a, role='doctor')])
+        self.manager.password = secret
+        with self.assertRaises(ValueError):
+            Account.objects.bulk_update([self.manager], ['password'])
+        self.manager.refresh_from_db()
+        self.assertEqual(original_hash, self.manager.password)
+        self.assertFalse(Account.objects.filter(username='unsafe-bulk').exists())
+        self.assertEqual(3, AuditEvent.objects.filter(normalized_reason='CREDENTIAL_WRITE_BYPASS_REJECTED').count())
+
+    def test_sql_injection_shaped_audit_filter_is_rejected_and_redacted(self):
+        attack = "1' OR '1'='1"
+        self.client.force_login(self.manager)
+        response = self.client.get('/api/audit', {'operator_ref': attack})
+        self.assertEqual((422, 'INVALID_REFERENCE'), (response.status_code, response.json()['error']['code']))
+        self.assertNotIn(attack, response.content.decode())
+        event = AuditEvent.objects.get(actor=self.manager, action='audit.metadata.read',
+                                       normalized_reason='INVALID_REFERENCE')
+        self.assertEqual(self.a.pk, event.store_id)
+        self.assertNotIn(attack, str(event.__dict__))
+
     def test_missing_permission_entry_is_denied_before_view_runs(self):
         module = types.ModuleType('unregistered_test_urls')
         module.urlpatterns = [path('forgotten', lambda request: JsonResponse({'clinical': 'DO-NOT-EXPOSE'}))]
