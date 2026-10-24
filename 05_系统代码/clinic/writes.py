@@ -66,15 +66,17 @@ def diagnosis(actor_id, mode, key, payload, ref):
                 if not (set(payload) & {'diagnosis', 'examination'} or payload.get('extra_fields')):
                     raise DomainError('INPUT_FIELDS_INVALID', 422)
                 values = {field: payload.get(field, getattr(current, field)) for field in ['diagnosis', 'examination']}
-            if not head or not head.candidate:
+            if not head or not head.candidate_id:
                 raise DomainError('POLICY_UNAVAILABLE', 503)
             template_candidate = record.template if record else row.template
             template = _validated(template_candidate, actor.store_id)
-            _validated(head.candidate, actor.store_id)
+            policy_candidate = template_candidate if head.candidate_id == template_candidate.pk else head.candidate
+            if policy_candidate.pk != template_candidate.pk:
+                _validated(policy_candidate, actor.store_id)
             extra_fields = _extra_values(template, payload.get('extra_fields', {}), current.extra_fields if current else None)
-            checks, hits = evaluate(head.candidate.envelope['payload']['demand'], template, values, mode)
+            checks, hits = evaluate(policy_candidate.envelope['payload']['demand'], template, values, mode)
             check = ClinicalCheck.objects.create(encounter=row, record=record, original_version=current, actor=actor, mode=mode,
-                         template=template_candidate, policy=head.candidate, policy_digest=head.candidate.digest,
+                         template=template_candidate, policy=policy_candidate, policy_digest=policy_candidate.digest,
                          status='blocked' if hits else 'passed', checks=checks)
             if hits:
                 for item in hits:
@@ -97,7 +99,7 @@ def diagnosis(actor_id, mode, key, payload, ref):
                 _audit(actor, WRITE, row, 'success', 'COMPLETED', record)
                 # Load through the same explicit, doctor-only serializer as reads.
                 row = type(row).objects.get(pk=row.pk)
-                result = _clinical(row, {})
+                result = _clinical(row, {template_candidate.pk: template})
             Operation.objects.create(actor=actor, permission=WRITE, key=operation_key, digest=digest, result=result)
             return result
     except DomainError as error:
