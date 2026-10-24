@@ -7,12 +7,14 @@ const {Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
 
 const root = path.resolve(__dirname, '../../..');
 const name = process.argv[2] || '06_测试与实测报告';
-if (!['06_测试与实测报告', '09_运行与提交说明'].includes(name)) throw new Error('Unknown report');
+if (!['06_测试与实测报告', '09_运行与提交说明',
+  '04_设计与控制文件/21_AI可执行规格提交索引与说明',
+  '04_设计与控制文件/22_系统设计报告'].includes(name)) throw new Error('Unknown report');
 const source = path.join(root, name + '.md');
 const target = path.join(root, name + '.docx');
 const lines = fs.readFileSync(source, 'utf8').replace(/\r\n/g, '\n').split('\n');
 const font = 'Microsoft YaHei';
-const landscape = name.startsWith('06_');
+const landscape = name.startsWith('06_') || name.startsWith('04_');
 const contentWidth = landscape ? 15138 : 10206;
 const border = {style: BorderStyle.SINGLE, size: 4, color: 'D7DCE2'};
 const borders = {top: border, bottom: border, left: border, right: border};
