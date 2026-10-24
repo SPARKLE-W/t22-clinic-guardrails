@@ -242,6 +242,46 @@ class ClinicalWriteTests(ClinicFixture):
         self.assertEqual(str(ref), str(event.target))
         self.assertTrue(AuditTarget.objects.filter(event=event, target=alert.pk, kind='alert').exists())
 
+    def test_alert_resolution_business_errors_keep_state_and_audit(self):
+        from .models import Alert, AuditTarget
+
+        ref = self.create()['encounter_ref']
+        self.assertEqual(422, self.post(ref, {}).status_code)
+        alert = Alert.objects.get()
+        client = Client()
+        client.force_login(self.doctor)
+        url = '/api/clinical/alerts/' + str(alert.pk) + '/resolution'
+
+        def resolve(body, key=None):
+            return client.post(url, body, content_type='application/json',
+                               HTTP_IDEMPOTENCY_KEY=key or str(uuid.uuid4()))
+
+        body = {'alert_ref': str(alert.pk), 'handling_result': '合成处理结果'}
+        for changed, status, code in [
+            ({**body, 'alert_ref': str(uuid.uuid4())}, 403, 'TARGET_UNAVAILABLE'),
+            ({**body, 'handling_result': ''}, 422, 'INPUT_INVALID'),
+        ]:
+            response = resolve(changed)
+            self.assertEqual((status, code), (response.status_code, response.json()['error']['code']))
+            event = AuditEvent.objects.filter(actor=self.doctor, action='clinical.alert.handle',
+                                              normalized_reason=code).latest('created_at')
+            self.assertEqual(self.a.pk, event.store_id)
+            self.assertTrue(AuditTarget.objects.filter(event=event, target=alert.pk, kind='alert').exists())
+            self.assertIsNone(Alert.objects.get(pk=alert.pk).handled_at)
+
+        key = str(uuid.uuid4())
+        self.assertEqual(200, resolve(body, key).status_code)
+        for changed, key_used, code in [
+            ({**body, 'handling_result': '同键不同内容'}, key, 'OPERATION_CONTENT_CONFLICT'),
+            (body, str(uuid.uuid4()), 'STATE_CONFLICT'),
+        ]:
+            response = resolve(changed, key_used)
+            self.assertEqual((409, code), (response.status_code, response.json()['error']['code']))
+            self.assertTrue(AuditEvent.objects.filter(actor=self.doctor, store=self.a,
+                                                      action='clinical.alert.handle', normalized_reason=code).exists())
+            self.assertEqual('合成处理结果', Alert.objects.get(pk=alert.pk).handling_result)
+        self.assertEqual(1, Operation.objects.filter(actor=self.doctor, permission='clinical.alert.handle').count())
+
     def test_additional_rule_uses_server_facts_and_preserves_distinct_rule_hits(self):
         rule = {'id': 'EXT-MISSING', 'version': '1', 'checker': 'referenced_template',
                 'phases': ['clinical_change'], 'source': ['SR-02'], 'depends_on': ['SR-02'],

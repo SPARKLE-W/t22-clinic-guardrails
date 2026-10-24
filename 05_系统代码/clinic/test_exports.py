@@ -278,6 +278,30 @@ class GuardExportTests(ClinicFixture):
         self.assertEqual(403, self.download(self.summary_url, {}).status_code)
         self.assertEqual(403, self.download(self.detail_url, {'scope': {'encounter_refs': [str(uuid.uuid4())]}}).status_code)
 
+    def test_guard_export_business_errors_are_json_audited_and_have_no_file(self):
+        self.client.force_login(self.doctor)
+        for payload, status, code in [
+            ({'scope': {'encounter_refs': [str(uuid.uuid4())]}}, 403, 'TARGET_UNAVAILABLE'),
+            ({'handling_state': 'unknown'}, 422, 'INPUT_INVALID'),
+            ({'time_range': {'from': '2026-10-24', 'to': '2026-10-23'}}, 422, 'INPUT_INVALID'),
+        ]:
+            response = self.download(self.detail_url, payload)
+            self.assertEqual((status, code), (response.status_code, response.json()['error']['code']))
+            self.assertFalse(response['Content-Type'].startswith('text/csv'))
+            self.assertTrue(AuditEvent.objects.filter(actor=self.doctor, store=self.a,
+                                                      action='export.guard_detail', normalized_reason=code).exists())
+        self.client.force_login(self.manager)
+        for payload, code in [
+            ({'scope': {'encounter_refs': [self.ref]}}, 'INPUT_FIELDS_INVALID'),
+            ({'group_by': 'record'}, 'INPUT_INVALID'),
+        ]:
+            response = self.download(self.summary_url, payload)
+            self.assertEqual((422, code), (response.status_code, response.json()['error']['code']))
+            self.assertFalse(response['Content-Type'].startswith('text/csv'))
+            self.assertTrue(AuditEvent.objects.filter(actor=self.manager, store=self.a,
+                                                      action='export.guard_summary', normalized_reason=code).exists())
+        self.assertFalse(ExportRequest.objects.exists())
+
     def test_audit_failure_prevents_csv(self):
         self.client.force_login(self.manager)
         with patch('clinic.exports.write_audit', side_effect=DatabaseError('synthetic')):

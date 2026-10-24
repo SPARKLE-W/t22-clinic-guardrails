@@ -4,9 +4,9 @@ from unittest.mock import patch
 from django.core.management import call_command
 from django.db import DatabaseError
 from django.test import Client
-from governance.models import AuditEvent, PolicyHead
+from governance.models import AuditEvent, Operation, PolicyHead
 from .tests import ClinicFixture
-from .models import Alert, AlertOutbox, ClinicalRecord, ClinicalRevision, Encounter, MedicationEntry
+from .models import Alert, AlertOutbox, ClinicalRecord, ClinicalRevision, Encounter, MedicationEntry, SuggestionDecision
 
 
 class SuggestionTests(ClinicFixture):
@@ -171,10 +171,24 @@ class SuggestionTests(ClinicFixture):
         first=self.post(item,values,key=key)
         self.assertEqual(200,first.status_code)
         self.assertEqual(first.json(),self.post(item,values,key=key).json())
-        self.assertEqual(409,self.post(item,{**values,'reason':'其他理由'},key=key).status_code)
-        self.assertEqual(409,self.post(item,values).status_code)
+        changed_replay=self.post(item,{**values,'reason':'其他理由'},key=key)
+        self.assertEqual((409,'OPERATION_CONTENT_CONFLICT'),
+                         (changed_replay.status_code,changed_replay.json()['error']['code']))
+        already_final=self.post(item,values)
+        self.assertEqual((409,'DECISION_FINAL'),
+                         (already_final.status_code,already_final.json()['error']['code']))
         decline={'encounter_ref':self.ref,'suggestion_ref':item['suggestion_ref'],'decision':'declined'}
-        self.assertEqual(409,self.post(item,decline,'decline').status_code)
+        declined_after_adoption=self.post(item,decline,'decline')
+        self.assertEqual((409,'DECISION_FINAL'),
+                         (declined_after_adoption.status_code,declined_after_adoption.json()['error']['code']))
+        self.assertEqual(1,SuggestionDecision.objects.count())
+        self.assertEqual(1,Operation.objects.filter(permission='clinical.suggestion.adopt').count())
+        self.assertFalse(Operation.objects.filter(permission='clinical.suggestion.decline').exists())
+        for action,code in [('clinical.suggestion.adopt','OPERATION_CONTENT_CONFLICT'),
+                            ('clinical.suggestion.adopt','DECISION_FINAL'),
+                            ('clinical.suggestion.decline','DECISION_FINAL')]:
+            self.assertTrue(AuditEvent.objects.filter(actor=self.doctor,store=self.a,
+                action=action,normalized_reason=code,outcome='refused').exists())
         Encounter.objects.filter(pk=self.ref).update(doctor=self.doctor2)
         self.assertEqual(403,self.post(item,values,key=key).status_code)
 
