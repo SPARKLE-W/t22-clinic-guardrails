@@ -1,0 +1,23 @@
+{
+  "trial_only": true,
+  "template_version": "template-maintenance-trial-v1",
+  "extra_field": {
+    "id": "x_followup_note",
+    "type": "text",
+    "required": false,
+    "visible_role": "doctor"
+  },
+  "additional_rule": {
+    "id": "EXT-MAINT-MISSING",
+    "version": "1",
+    "checker": "referenced_template",
+    "phases": ["clinical_change"],
+    "source": ["SR-02"],
+    "depends_on": ["SR-02"],
+    "when": {
+      "op": "eq",
+      "fact": "template.required_fields_valid",
+      "value": false
+    }
+  }
+}
