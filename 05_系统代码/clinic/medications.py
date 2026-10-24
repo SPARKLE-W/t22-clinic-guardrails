@@ -42,8 +42,6 @@ def mutate(actor_id, mode, key, payload, ref):
                 raise DomainError('POLICY_UNAVAILABLE',503)
             template = _validated(record.template,actor.store_id)
             _validated(head.candidate,actor.store_id)
-            if template['clinical']['extra_fields']:
-                raise DomainError('RULE_EXECUTION_UNAVAILABLE',503)
             current = ClinicalRevision.objects.filter(record=record,version=record.current_version).first()
             if not current:
                 raise DomainError('RECORD_UNAVAILABLE',503)

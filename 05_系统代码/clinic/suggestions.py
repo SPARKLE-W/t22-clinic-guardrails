@@ -5,7 +5,7 @@ from governance.services import DomainError, _uuid, require
 from vetcontrols.compiler import _digest, _normalize
 from .guards import evaluate
 from .models import Alert, AlertOutbox, ClinicalCheck, ClinicalRecord, ClinicalRevision, GuardHit, MedicationEntry, Suggestion, SuggestionDecision
-from .services import _object, _own, _refusal, _template, _text
+from .services import _extra_values, _object, _own, _refusal, _template, _text
 from .writes import _audit, _validated
 
 ADOPT = 'clinical.suggestion.adopt'
@@ -87,8 +87,8 @@ def mutate(actor_id, mode, key, payload, ref):
                 if row.error_mark:
                     raise DomainError('STATE_CONFLICT')
                 adopted = payload['adopted_content']
-                _object(adopted,['diagnosis','examination','medication','original_version_ref'])
-                if not set(adopted) & {'diagnosis','examination','medication'}:
+                _object(adopted,['diagnosis','examination','extra_fields','medication','original_version_ref'])
+                if not (set(adopted) & {'diagnosis','examination','medication'} or adopted.get('extra_fields')):
                     raise DomainError('INPUT_FIELDS_INVALID',422)
                 for field in ['diagnosis','examination']:
                     if field in adopted:
@@ -112,8 +112,7 @@ def mutate(actor_id, mode, key, payload, ref):
                 template_candidate = record.template if record else row.template
                 template = _validated(template_candidate,actor.store_id)
                 _validated(head.candidate,actor.store_id)
-                if template['clinical']['extra_fields']:
-                    raise DomainError('RULE_EXECUTION_UNAVAILABLE',503)
+                extra_fields = _extra_values(template,adopted.get('extra_fields',{}),current.extra_fields if current else None)
                 if saved.source.get('type') != 'demo' or not saved.source.get('label') or saved.source.get('version') != saved.source_version:
                     raise DomainError('SUGGESTION_SOURCE_UNAVAILABLE',503)
                 checks,hits = evaluate(head.candidate.envelope['payload']['demand'],template,values,'adopt',
@@ -132,11 +131,12 @@ def mutate(actor_id, mode, key, payload, ref):
                     return result
                 if not record:
                     record = ClinicalRecord.objects.create(encounter=row,template=template_candidate)
-                if current is None or set(adopted) & {'diagnosis','examination'}:
+                if current is None or set(adopted) & {'diagnosis','examination'} or adopted.get('extra_fields'):
                     if current:
                         record.current_version += 1
                         record.save(update_fields=['current_version'])
-                    version = ClinicalRevision.objects.create(record=record,version=record.current_version,actor=actor,reason=reason,**values)
+                    version = ClinicalRevision.objects.create(record=record,version=record.current_version,actor=actor,
+                                                              reason=reason,extra_fields=extra_fields,**values)
                 else:
                     version = current
                 check.record,check.result_version = record,version

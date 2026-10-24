@@ -58,6 +58,7 @@ class ClinicalRevision(models.Model):
     version = models.PositiveIntegerField()
     diagnosis = models.TextField()
     examination = models.TextField(blank=True)
+    extra_fields = models.JSONField(default=dict)
     actor = models.ForeignKey(Account, on_delete=models.PROTECT)
     reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

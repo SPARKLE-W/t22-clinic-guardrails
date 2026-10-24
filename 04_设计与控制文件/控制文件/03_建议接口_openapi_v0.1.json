@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "T22 suggestion backend slice",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Only the three implemented suggestion routes. Session login and CSRF bootstrap currently use existing / and /api/login; not a complete system OpenAPI. Synthetic data only; no model connection."
   },
   "servers": [
@@ -360,6 +360,21 @@
             "type": "string",
             "maxLength": 10000
           },
+          "extra_fields": {
+            "type": "object",
+            "patternProperties": {
+              "^x_[a-z][a-z0-9_]{0,47}$": {
+                "oneOf": [
+                  {"type": "string", "maxLength": 10000},
+                  {"type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807},
+                  {"type": "boolean"},
+                  {"type": "null"}
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "description": "Only fields declared by the encounter's approved template; null clears an optional value."
+          },
           "medication": {
             "$ref": "#/components/schemas/Medication"
           },
@@ -400,7 +415,7 @@
           "adopted_content"
         ],
         "additionalProperties": false,
-        "description": "Business-required nonblank reason is enforced by SR-04 and returns GUARD_BLOCKED when absent. Existing records require record_ref and adopted_content.original_version_ref. First record requires diagnosis. At least one clinical field is required."
+        "description": "Business-required nonblank reason is enforced by SR-04 and returns GUARD_BLOCKED when absent. Existing records require record_ref and adopted_content.original_version_ref. First record requires diagnosis. At least one diagnosis, examination, medication or nonempty declared extra_fields object is required."
       },
       "Decline": {
         "type": "object",

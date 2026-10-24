@@ -35,6 +35,20 @@ class MedicationTests(ClinicFixture):
         self.assertEqual('合成演示药品', entry['drug'])
         self.assertIsNone(entry['original_entry_ref'])
 
+    def test_medication_preserves_extended_template_clinical_values(self):
+        from governance.models import PolicyHead
+        from .writes import diagnosis
+        template = self.template_fixture('template-extra-medication', extra_fields=[
+            {'id':'x_followup_note','type':'text','required':False,'visible_role':'doctor'}])
+        PolicyHead.objects.filter(store=self.a).update(candidate=template, generation=2)
+        ref = self.create()['encounter_ref']
+        diagnosis(self.doctor.pk, 'record', str(uuid.uuid4()),
+                  {'diagnosis':'合成诊断','extra_fields':{'x_followup_note':'一周后复诊'}}, ref)
+        self.assertEqual(200, self.post(self.values(), ref=ref).status_code)
+        clinical = read(self.doctor.pk, clinical=True, ref=ref)['clinical']
+        self.assertEqual({'x_followup_note':'一周后复诊'}, clinical['extra_fields'])
+        self.assertEqual(1, len(clinical['medication_chain']))
+
     def test_corrections_append_and_keep_full_original_chain(self):
         first = self.post(self.values())
         self.assertEqual(200, first.status_code)
