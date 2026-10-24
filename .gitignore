@@ -119,6 +119,7 @@ Thumbs.db
 !/10_验收证据/19_后端综合验收/原始结果/coverage_full_01.txt
 !/10_验收证据/19_后端综合验收/原始结果/coverage_report_01.txt
 !/10_验收证据/19_后端综合验收/原始结果/code_scale_01.json
+!/10_验收证据/19_后端综合验收/原始结果/code_scale_07.json
 !/10_验收证据/19_后端综合验收/原始结果/shared_http_smoke_01.json
 !/10_验收证据/19_后端综合验收/原始结果/shared_http_smoke_02.json
 !/10_验收证据/19_后端综合验收/原始结果/restart_before_01.json

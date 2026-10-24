@@ -24,8 +24,8 @@ ACTIVE = 0
 STOP = threading.Event()
 SAMPLES = []
 RESOURCES = []
-KIND_WEIGHTS = {'query': 35, 'guard': 15, 'write': 25,
-                'clinical_export': 2, 'detail_export': 1}
+KIND_WEIGHTS = {'query': 34, 'guard': 15, 'write': 25,
+                'clinical_export': 2, 'detail_export': 2}
 
 
 def ref(kind, shop, number):
@@ -315,6 +315,7 @@ def main():
     summary = summarize(results, start, args.warmup_seconds, args.formal_seconds, unique_sessions,
                         len({person['username'] for person in people}))
     summary['target_offset'] = args.target_offset
+    summary['protocol_version'] = 'course-v1.1'
     if args.target_offset:
         summary['kind'] = 'diagnostic_preflight_not_AC06'
     prefix = args.output_prefix
