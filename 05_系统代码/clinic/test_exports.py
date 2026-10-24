@@ -66,8 +66,15 @@ class ClinicalExportTests(ClinicFixture):
         other = self.create(payload={**self.payload(), 'doctor_ref': self.doctor2.pk})['encounter_ref']
         foreign_record = self.record_fixture(other)
         response = self.download({'scope': {'record_refs': [str(self.record.pk), str(foreign_record.pk)]}, 'purpose': '核对'})
-        self.assertEqual(403, response.status_code)
+        self.assertEqual((403, 'TARGET_UNAVAILABLE'),
+                         (response.status_code, response.json()['error']['code']))
         self.assertNotIn('仅医生可见', response.content.decode())
+        self.assertFalse(ExportRequest.objects.exists())
+        event = AuditEvent.objects.get(actor=self.doctor, action='export.clinical',
+                                       normalized_reason='TARGET_UNAVAILABLE')
+        self.assertEqual(self.a.pk, event.store_id)
+        self.assertEqual({self.record.pk, foreign_record.pk},
+                         set(AuditTarget.objects.filter(event=event, kind='record').values_list('target', flat=True)))
 
     def test_cross_store_refusal_is_queryable_only_by_requesting_store(self):
         from governance.models import Account
@@ -118,6 +125,15 @@ class ClinicalExportTests(ClinicFixture):
         self.assertEqual(503, response.status_code)
         self.assertEqual('EXPORT_GENERATION_UNAVAILABLE', response.json()['error']['code'])
         self.assertFalse(ExportRequest.objects.exists())
+        ClinicalRevision.objects.filter(record=self.record).update(diagnosis='')
+        response = self.download(payload)
+        self.assertEqual((503, 'RECORD_UNAVAILABLE'),
+                         (response.status_code, response.json()['error']['code']))
+        self.assertFalse(response['Content-Type'].startswith('text/csv'))
+        self.assertFalse(ExportRequest.objects.exists())
+        self.assertTrue(AuditEvent.objects.filter(actor=self.doctor, store=self.a,
+                                                  action='export.clinical',
+                                                  normalized_reason='RECORD_UNAVAILABLE').exists())
 
     def test_time_range_is_complete_not_a_list_page(self):
         from datetime import timedelta
