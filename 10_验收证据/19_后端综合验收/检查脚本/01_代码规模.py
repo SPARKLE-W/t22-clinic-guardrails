@@ -20,14 +20,18 @@ def total(paths):
 python = [path for path in CODE.rglob('*.py')
           if 'migrations' not in path.parts and 'tests' not in path.parts and path.name != 'tests.py'
           and not path.name.startswith('test_') and path.name != 'mq_test_tools.py']
+migrations = [path for path in CODE.rglob('*.py') if 'migrations' in path.parts and path.name != '__init__.py']
 javascript = list((CODE / 'frontend').rglob('*.js'))
 javascript = [path for path in javascript if 'tests' not in path.parts]
 html = list((CODE / 'frontend').rglob('*.html'))
 css = list((CODE / 'frontend').rglob('*.css'))
 report = {'method': 'physical nonblank lines, excluding whole-line Python # and JS // comments',
-          'excluded': 'tests, migrations, mq_test_tools.py, generated/binary files',
+          'excluded': 'tests, mq_test_tools.py, binary files; backend_python excludes migrations, which are reported separately',
           'backend_python': total(python), 'frontend_javascript': total(javascript),
           'frontend_html': total(html), 'frontend_css': total(css)}
+report['storage_migrations'] = total(migrations)
+report['backend_with_storage_schema'] = report['backend_python']['lines'] + report['storage_migrations']['lines']
 report['backend_plus_javascript'] = report['backend_python']['lines'] + report['frontend_javascript']['lines']
 report['backend_plus_all_frontend'] = report['backend_plus_javascript'] + report['frontend_html']['lines'] + report['frontend_css']['lines']
+report['fullstack_with_storage_schema'] = report['backend_plus_all_frontend'] + report['storage_migrations']['lines']
 print(json.dumps(report, ensure_ascii=False, indent=2))
