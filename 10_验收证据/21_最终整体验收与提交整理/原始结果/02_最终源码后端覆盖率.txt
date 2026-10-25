@@ -1,0 +1,33 @@
+Name                                                  Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------------------------
+clinic\__init__.py                                        0      0   100%
+clinic\collaboration.py                                 210     14    93%   47, 53, 141, 147, 149, 153, 159, 162, 165, 170, 203, 211, 215, 244
+clinic\delivery.py                                      159     11    93%   37, 39-40, 89, 102, 114, 135, 157-158, 161, 186
+clinic\exports.py                                       201      9    96%   50-52, 91, 119, 170, 173, 196-197
+clinic\guards.py                                         46      1    98%   54
+clinic\management\__init__.py                             0      0   100%
+clinic\management\commands\__init__.py                    0      0   100%
+clinic\management\commands\alert_delivery.py             41     13    68%   20, 26-29, 36-40, 43-45
+clinic\management\commands\seed_demo_suggestions.py      28      3    89%   24-25, 29
+clinic\medications.py                                    60      2    97%   40, 47
+clinic\models.py                                        191      0   100%
+clinic\mq_transport.py                                   55     11    80%   16-17, 35, 43-46, 62-65, 73
+clinic\reports.py                                        52      0   100%
+clinic\services.py                                      256     27    89%   18-19, 92-93, 137, 146, 162, 173, 182-185, 197-200, 246, 249, 252, 254-258, 261, 276, 314
+clinic\suggestions.py                                   128      7    95%   62, 80, 85, 92, 104, 108, 117
+clinic\views.py                                          86      6    93%   14, 17, 19-21, 39
+clinic\writes.py                                        163     15    91%   63, 67, 124-125, 136, 147-149, 153, 155, 157, 159-161, 178
+governance\__init__.py                                    0      0   100%
+governance\apps.py                                        5      0   100%
+governance\entry.py                                      28      3    89%   21, 34-35
+governance\management\__init__.py                         0      0   100%
+governance\management\commands\__init__.py                0      0   100%
+governance\management\commands\seed_demo.py              33     33     0%   2-38
+governance\models.py                                    100      2    98%   27, 32
+governance\services.py                                  172     12    93%   53, 76-77, 79, 90, 95-97, 115, 151, 160, 188-189
+governance\views.py                                     168     19    89%   64-65, 84, 87, 96, 110, 120, 124, 127-128, 130, 134-137, 143, 171-173
+vetcontrols\__init__.py                                   2      0   100%
+vetcontrols\__main__.py                                  59     59     0%   2-73
+vetcontrols\compiler.py                                 249     23    91%   51, 53, 55, 60, 62, 109, 120, 124, 133, 156, 165, 177-178, 199, 212, 215, 224, 271, 294, 308, 315-316, 318
+-----------------------------------------------------------------------------------
+TOTAL                                                  2492    270    89%
