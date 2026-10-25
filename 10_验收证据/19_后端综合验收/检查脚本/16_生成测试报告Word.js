@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const {Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-  HeadingLevel, WidthType, BorderStyle, ShadingType, PageOrientation,
+  HeadingLevel, WidthType, BorderStyle, ShadingType, PageOrientation, ImageRun,
   Footer, PageNumber, AlignmentType} = require('docx');
 
 const root = path.resolve(__dirname, '../../..');
@@ -49,6 +49,20 @@ const children = [];
 for (let index = 0; index < lines.length;) {
   const line = lines[index].trim();
   if (!line) { index++; continue; }
+  const figure = /^!\[([^\]]+)\]\(([^)]+\.png)\)$/.exec(line);
+  if (figure) {
+    const imagePath = path.resolve(path.dirname(source), figure[2]);
+    if (path.relative(root, imagePath).startsWith('..')) throw new Error('Figure outside project');
+    const data = fs.readFileSync(imagePath);
+    const ratio = Math.min(930 / data.readUInt32BE(16), 480 / data.readUInt32BE(20));
+    children.push(new Paragraph({alignment: AlignmentType.CENTER, spacing: {before: 120, after: 80},
+      children: [new ImageRun({type: 'png', data, transformation: {
+        width: Math.round(data.readUInt32BE(16) * ratio),
+        height: Math.round(data.readUInt32BE(20) * ratio)},
+        altText: {title: figure[1], description: figure[1], name: figure[1]}})]}));
+    index++;
+    continue;
+  }
   if (line.startsWith('|')) {
     const group = [];
     while (index < lines.length && lines[index].trim().startsWith('|')) group.push(lines[index++].trim());
