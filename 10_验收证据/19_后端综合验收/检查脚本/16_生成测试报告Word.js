@@ -77,7 +77,7 @@ const doc = new Document({creator: 'AI assisted course project', title: name,
     orientation: landscape ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT},
     margin: {top: 850, right: 850, bottom: 850, left: 850}}},
     footers: {default: new Footer({children: [new Paragraph({alignment: AlignmentType.CENTER,
-      children: [new TextRun({text: 'T22 课程工作稿 · 第 ', font, size: 16}),
+      children: [new TextRun({text: 'T22 课程报告 · 第 ', font, size: 16}),
         new TextRun({children: [PageNumber.CURRENT], font, size: 16}),
         new TextRun({text: ' 页', font, size: 16})]})]})},
     children}]});
