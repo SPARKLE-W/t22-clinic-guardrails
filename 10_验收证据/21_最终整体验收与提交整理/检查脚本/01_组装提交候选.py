@@ -3,10 +3,13 @@ import hashlib
 import io
 import json
 import os
+import posixpath
+import re
 import subprocess
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import unquote
 from lxml import etree
 
 
@@ -14,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[3]
 PRIVATE = Path(os.environ.get('T22_FINAL_RAW_DIR', Path.home() / '.cache/t22-runtime/private'))
 OUTPUT = ROOT / '11_最终提交候选' / '包体'
 EXTRAS = [
-    'README.md', '00_作业导航.md',
+    'README.md', '00_作业导航.md', '.github/workflows/ci.yml',
     '03_需求规格说明书.md', '03_需求规格说明书.docx',
     '04_设计与控制文件/architecture.md',
     '04_设计与控制文件/02_权限矩阵与字段投影.md',
@@ -124,6 +127,57 @@ def portable_srs_word(original):
     return output.getvalue(), removed_links
 
 
+def portable_markdown(name, original, bundled_names):
+    """Keep traceable references without leaving dead local links in the selected bundle."""
+    count = {'repository': 0, 'machine': 0}
+
+    def replace(match):
+        image, label, raw_target = match.groups()
+        target = raw_target.split('#', 1)[0].strip('<>')
+        if not target or target.startswith(('https:', 'http:', 'mailto:')):
+            return match.group(0)
+        if re.match(r'^[A-Za-z]:[/\\]', target) or target.startswith('file:'):
+            count['machine'] += 1
+            source_name = Path(target.replace('\\', '/')).name
+            if image:
+                return f'图：{label}（见随附Word；原图文件{source_name}未随包）'
+            return f'{label}（原始来源：{source_name}；未随包）'
+        if re.match(r'^[A-Za-z][A-Za-z0-9+.-]*:', target):
+            return match.group(0)
+        resolved = posixpath.normpath(posixpath.join(posixpath.dirname(name), unquote(target)))
+        if resolved in bundled_names or any(
+                item.startswith(resolved.rstrip('/') + '/') for item in bundled_names):
+            return match.group(0)
+        if image:
+            count['repository'] += 1
+            return f'图：{label}（完整仓库路径：{resolved}）'
+        count['repository'] += 1
+        return f'{label}（完整仓库路径：{resolved}）'
+
+    text = original.decode('utf-8')
+    rewritten = re.sub(r'(!?)\[([^\]]+)\]\(([^)]+)\)', replace, text)
+    return rewritten.encode('utf-8'), count
+
+
+def check_bundled_markdown_links(entries):
+    """Fail if any local Markdown link would point outside the selected bundle."""
+    names = set(entries)
+    count = 0
+    for name, content in entries.items():
+        if not name.endswith('.md'):
+            continue
+        for match in re.finditer(r'!?\[[^\]]+\]\(([^)]+)\)', content.decode('utf-8')):
+            target = match.group(1).split('#', 1)[0].strip('<>')
+            if not target or re.match(r'^[A-Za-z][A-Za-z0-9+.-]*:', target):
+                continue
+            resolved = posixpath.normpath(posixpath.join(posixpath.dirname(name), unquote(target)))
+            if resolved not in names and not any(
+                    item.startswith(resolved.rstrip('/') + '/') for item in names):
+                raise ValueError(f'Broken selected-bundle link in {name}: {target}')
+            count += 1
+    return count
+
+
 def main():
     if git('status', '--porcelain').strip():
         raise SystemExit('Commit and merge changes before creating the candidate bundle.')
@@ -152,6 +206,16 @@ def main():
         if sha(data) != expected:
             raise SystemExit(f'Raw load result changed: {name}')
         entries[f'10_验收证据/21_最终整体验收与提交整理/负载原始结果/{name}'] = data
+    markdown_changes = []
+    bundled_names = set(entries)
+    for name in sorted(entries):
+        if not name.endswith('.md'):
+            continue
+        original = entries[name]
+        entries[name], counts = portable_markdown(name, original, bundled_names)
+        if any(counts.values()):
+            markdown_changes.append({'path': name, 'source_sha256': sha(original), **counts})
+    working_links = check_bundled_markdown_links(entries)
     manifest = {
         'purpose': 'T22 review candidate; personal report requires the student final sign-off',
         'git_commit': commit,
@@ -159,6 +223,13 @@ def main():
         'srs_word_portability': {'source_sha256': srs_source_hash,
                                  'machine_local_links_changed_to_plain_text': local_links,
                                  'source_baseline_unchanged': True},
+        'markdown_portability': {'source_files_unchanged': True,
+                                 'working_local_links': working_links,
+                                 'links_to_unbundled_repository_files': sum(
+                                     item['repository'] for item in markdown_changes),
+                                 'machine_local_source_links': sum(
+                                     item['machine'] for item in markdown_changes),
+                                 'changed_files': markdown_changes},
         'files': [{'path': name, 'bytes': len(data), 'sha256': sha(data)}
                   for name, data in sorted(entries.items())],
     }
