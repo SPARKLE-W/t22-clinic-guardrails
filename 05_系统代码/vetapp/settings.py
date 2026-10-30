@@ -15,7 +15,9 @@ AUTH_USER_MODEL = 'governance.Account'
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware', 'django.contrib.sessions.middleware.SessionMiddleware',
               'django.middleware.common.CommonMiddleware', 'django.middleware.csrf.CsrfViewMiddleware',
               'django.contrib.auth.middleware.AuthenticationMiddleware', 'governance.entry.PermissionEntryMiddleware']
-DATABASES = {'default': {**config['database'], 'ENGINE': 'django.db.backends.mysql', 'CONN_MAX_AGE': 0,
+DATABASES = {'default': {**config['database'], 'ENGINE': 'django.db.backends.mysql',
+                        'CONN_MAX_AGE': int(config['database'].get('CONN_MAX_AGE', 0)),
+                        'CONN_HEALTH_CHECKS': bool(config['database'].get('CONN_HEALTH_CHECKS', False)),
                         'OPTIONS': {'charset': 'utf8mb4', 'isolation_level': 'read committed',
                                     'init_command': "SET sql_mode='STRICT_TRANS_TABLES', default_storage_engine=INNODB"},
                         'TEST': {'NAME': 't22_app_test'}}}

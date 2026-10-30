@@ -59,6 +59,8 @@ Python3.12环境按requirements.lock安装；创建独立`t22_app`数据库、�
 {"secret_key":"随机生成的密钥","database":{"HOST":"127.0.0.1","PORT":13322,"NAME":"t22_app","USER":"t22_app","PASSWORD":"本机数据库口令"}}
 ```
 
+`database`还可选设`CONN_MAX_AGE`（秒，默认0，按请求关闭连接）及`CONN_HEALTH_CHECKS`（布尔值，默认false）。启用持久连接时，每个Web工作线程可能保留一个数据库连接；应据实际工作线程数预留MySQL连接额度，并建议同时开启连接健康检查。
+
 在本目录执行：
 
 ```powershell

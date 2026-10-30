@@ -304,6 +304,7 @@ def summarize(rows, samples, start, end, warmup):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--base', default='http://127.0.0.1:18830')
+    parser.add_argument('--tunnel-base', action='append', default=[])
     parser.add_argument('--private-accounts', type=Path, required=True)
     parser.add_argument('--output-prefix', type=Path, required=True)
     parser.add_argument('--concurrency', type=int, default=360)
@@ -311,6 +312,8 @@ def main():
     parser.add_argument('--formal-seconds', type=int, default=600)
     parser.add_argument('--server-pid', type=int)
     parser.add_argument('--mysql-pid', type=int)
+    parser.add_argument('--only-group', choices=['query', 'guard', 'reception', 'write',
+                                                  'clinical_export', 'detail_export', 'summary_export'])
     args = parser.parse_args()
     if args.concurrency < 1 or args.output_prefix.with_suffix('.summary.json').exists():
         parser.error('Invalid concurrency or existing result; results are never overwritten')
@@ -318,7 +321,10 @@ def main():
     if not private.get('synthetic_only') or private['manifest']['seed'] != 20261024:
         parser.error('Expected only the deterministic synthetic fixture')
     actors = {a['username']: a for a in private['accounts']}
-    cookies = authentication(args.base.rstrip('/'), private)
+    if args.only_group:
+        MIX[:] = [args.only_group]
+    bases = [base.rstrip('/') for base in (args.tunnel_base or [args.base])]
+    cookies = authentication(bases[0], private)
     total = args.warmup_seconds + args.formal_seconds
     start = time.perf_counter()
     end = start + total
@@ -330,7 +336,7 @@ def main():
                                         args=(start, args.server_pid, args.mysql_pid), daemon=True)
     resource_watcher.start()
     with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
-        futures = [pool.submit(worker, n, gate, end, args.base.rstrip('/'), cookies, actors, results)
+        futures = [pool.submit(worker, n, gate, end, bases[n % len(bases)], cookies, actors, results)
                    for n in range(args.concurrency)]
         gate.wait(timeout=180)
         for future in futures:
@@ -349,8 +355,12 @@ def main():
     summary = summarize(results, SAMPLES, start, end, args.warmup_seconds)
     if args.concurrency != 360:
         summary['kind'] = 'preflight_not_AC06'
+    if args.only_group:
+        summary['kind'] = 'preflight_not_AC06'
+        summary['only_group'] = args.only_group
     summary.update({'concurrency': args.concurrency, 'sample_count': len(SAMPLES),
                     'actual_duration_seconds': time.perf_counter() - start,
+                    'tunnel_count': len(bases),
                     'resource_samples': len(RESOURCES), 'os': platform.platform(),
                     'python': platform.python_version(), 'requests': requests.__version__,
                     'psutil': psutil.__version__,
