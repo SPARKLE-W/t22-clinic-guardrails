@@ -1,12 +1,12 @@
 """Atomic clinical writes, guard refusals and doctor alert handling."""
 from django.db import transaction
 from django.utils import timezone
-from governance.models import Operation, PolicyHead
+from governance.models import Operation
 from governance.services import DomainError, _check_candidate, _uuid, require, write_audit
 from vetcontrols.compiler import _digest, _normalize
 from .guards import evaluate
 from .models import Alert, AlertOutbox, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, GuardHit
-from .services import _clinical, _extra_values, _object, _own, _refusal, _template, _text, read
+from .services import _clinical, _extra_values, _object, _own, _policy_head_for_share, _refusal, _template, _text, read
 
 WRITE = 'clinical.diagnosis.write'
 ALERT = 'clinical.alert.handle'
@@ -33,7 +33,7 @@ def diagnosis(actor_id, mode, key, payload, ref):
         with transaction.atomic():
             actor = require(actor_id, WRITE, lock=True)
             operation_key = _uuid(key)
-            head = PolicyHead.objects.select_for_update().filter(store=actor.store).first()
+            head = _policy_head_for_share(actor.store)
             row = _own(actor, ref, clinical=True, lock=True)
             allowed = ['diagnosis', 'examination', 'extra_fields']
             if mode == 'correct':

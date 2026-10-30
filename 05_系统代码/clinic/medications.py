@@ -1,11 +1,11 @@
 """Medication commands only insert entries; there is no update/delete route."""
 from django.db import transaction
-from governance.models import Operation, PolicyHead
+from governance.models import Operation
 from governance.services import DomainError, _uuid, require
 from vetcontrols.compiler import _digest, _normalize
 from .guards import evaluate
 from .models import Alert, AlertOutbox, ClinicalCheck, ClinicalRecord, ClinicalRevision, GuardHit, MedicationEntry
-from .services import _object, _own, _refusal, _text
+from .services import _object, _own, _policy_head_for_share, _refusal, _text
 from .writes import _audit, _validated
 
 PERMISSION = 'medication.record'
@@ -16,7 +16,7 @@ def mutate(actor_id, mode, key, payload, ref):
         with transaction.atomic():
             actor = require(actor_id, PERMISSION, lock=True)
             operation_key = _uuid(key)
-            head = PolicyHead.objects.select_for_update().filter(store=actor.store).first()
+            head = _policy_head_for_share(actor.store)
             row = _own(actor, ref, clinical=True, lock=True)
             _object(payload, ['drug', 'amount', 'unit'] + (['original_entry_ref', 'reason'] if mode == 'correct' else []))
             values = {field: _text(payload.get(field, ''), maximum, False) for field, maximum in [('drug',2000),('amount',256),('unit',100)]}

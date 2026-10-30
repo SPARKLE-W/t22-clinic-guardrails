@@ -1,6 +1,6 @@
 """Reception writes and scoped reads; no clinical write operation in this slice."""
 import uuid
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.db.models import prefetch_related_objects
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -58,6 +58,17 @@ def _template(candidate, store_id):
         return template
     except (KeyError, TypeError, ValueError, AttributeError):
         raise DomainError('TEMPLATE_UNAVAILABLE', 503) from None
+
+
+def _policy_head_for_share(store):
+    if connection.vendor == 'mysql':
+        table = connection.ops.quote_name(PolicyHead._meta.db_table)
+        store_column = connection.ops.quote_name(PolicyHead._meta.get_field('store').column)
+        rows = PolicyHead.objects.raw(
+            f'SELECT * FROM {table} WHERE {store_column} = %s FOR SHARE',
+            [store.pk.hex])
+        return next(iter(rows), None)
+    return PolicyHead.objects.select_for_update().filter(store=store).first()
 
 
 def _own(actor, ref, clinical=False, lock=False):
@@ -135,13 +146,15 @@ def mutate(actor_id, mode, key, payload, encounter_ref=None):
                 doctor_ref = payload['doctor_ref']
                 if type(doctor_ref) not in (int, str) or not str(doctor_ref).isdigit() or len(str(doctor_ref)) > 16:
                     raise DomainError('INVALID_REFERENCE', 422)
-                # Encounter insertion checks the doctor FK. Lock that account before
-                # PolicyHead, matching the doctor-write account -> policy order.
-                doctor = Account.objects.select_for_update().filter(
-                    pk=int(doctor_ref), store=actor.store, role='doctor', is_active=True).first()
-                if not doctor:
+                # The shared account check keeps assignment valid until commit while
+                # allowing the doctor's concurrent clinical requests to proceed.
+                try:
+                    doctor = require(int(doctor_ref), 'clinical.read', lock=True)
+                except DomainError:
+                    raise DomainError('DOCTOR_UNAVAILABLE', 403) from None
+                if doctor.store_id != actor.store_id:
                     raise DomainError('DOCTOR_UNAVAILABLE', 403)
-                head = PolicyHead.objects.select_for_update().filter(store=actor.store).first()
+                head = _policy_head_for_share(actor.store)
                 if not head or not head.candidate_id:
                     raise DomainError('TEMPLATE_UNAVAILABLE', 503)
                 candidate = Candidate.objects.get(pk=head.candidate_id)

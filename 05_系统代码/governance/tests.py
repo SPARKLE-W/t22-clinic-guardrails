@@ -3,7 +3,7 @@ import json
 import uuid
 import types
 from concurrent.futures import ThreadPoolExecutor
-from threading import Barrier
+from threading import Barrier, Event
 from pathlib import Path
 from unittest.mock import patch
 
@@ -13,7 +13,7 @@ from django.test import Client, TransactionTestCase, override_settings
 from django.urls import path
 
 from .models import Account, Activation, AuditEvent, Candidate, Demand, Operation, PolicyHead, Review, Store
-from .services import DomainError, detail, mutate
+from .services import DomainError, detail, mutate, require
 
 GENERATE = 'governance.candidate.generate'
 REVIEW = 'governance.candidate.review'
@@ -417,3 +417,66 @@ class GovernanceTests(TransactionTestCase):
         self.assertEqual(0, Activation.objects.count())
         result = self.call(ACTIVATE, {'candidate_ref': ref, 'expected_generation': 0, 'reason': '锁等待'}, key=key)
         self.assertEqual(1, result['generation'])
+
+    def test_account_authorization_allows_parallel_checks_and_serializes_deactivation(self):
+        if connection.vendor != 'mysql':
+            self.skipTest('Requires MySQL row-lock behavior')
+        actor = Account.objects.create_user(username='shared-lock-doctor', password='test-only-password',
+                                            store=self.a, role='doctor')
+        acquired = Event()
+        release = Event()
+        second_acquired = Event()
+        revocation_started = Event()
+        revoked = Event()
+
+        def hold_authorization():
+            close_old_connections()
+            try:
+                with transaction.atomic():
+                    require(actor.pk, 'clinical.read', lock=True)
+                    acquired.set()
+                    if not release.wait(timeout=8):
+                        raise TimeoutError('authorization lock release timed out')
+            finally:
+                connection.close()
+
+        def second_authorization():
+            close_old_connections()
+            try:
+                with transaction.atomic():
+                    require(actor.pk, 'clinical.read', lock=True)
+                    second_acquired.set()
+            finally:
+                connection.close()
+
+        def deactivate():
+            close_old_connections()
+            try:
+                revocation_started.set()
+                Account.objects.filter(pk=actor.pk).update(is_active=False)
+                revoked.set()
+            finally:
+                connection.close()
+
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            first = pool.submit(hold_authorization)
+            self.assertTrue(acquired.wait(timeout=5))
+            second = pool.submit(second_authorization)
+            try:
+                self.assertTrue(second_acquired.wait(timeout=1),
+                                'same-account authorization should use compatible shared locks')
+                deactivation = pool.submit(deactivate)
+                self.assertTrue(revocation_started.wait(timeout=3))
+                self.assertFalse(revoked.wait(timeout=0.2),
+                                 'account deactivation must wait for in-flight authorization')
+            finally:
+                release.set()
+            first.result(timeout=5)
+            second.result(timeout=5)
+            if 'deactivation' in locals():
+                deactivation.result(timeout=5)
+
+        self.assertTrue(revoked.is_set())
+        with self.assertRaises(DomainError) as caught:
+            require(actor.pk, 'clinical.read')
+        self.assertEqual('AUTH_REQUIRED', caught.exception.code)

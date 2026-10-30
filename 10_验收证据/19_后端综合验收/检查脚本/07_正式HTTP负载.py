@@ -243,6 +243,7 @@ def run_one(session, base, cookies, actors, number, kind, rng):
                     valid = valid and bool(obj.get('encounter_ref'))
         else:
             valid = False
+            error_detail = body[:500].decode('utf-8', 'replace')
             try:
                 code = json.loads(body).get('error', {}).get('code')
             except (ValueError, UnicodeError):
@@ -251,10 +252,12 @@ def run_one(session, base, cookies, actors, number, kind, rng):
                 'code': code, 'ok': bool(valid), 'started': started, 'first': first, 'ended': ended,
                 'bytes': len(body), 'rows': rows, 'sha256_match': digest_match,
                 'expected_count': expected_count if 'export' in kind else None,
-                'server_ref': response.headers.get('X-Export-Ref')}
+                'server_ref': response.headers.get('X-Export-Ref'),
+                'error_detail': error_detail if response.status_code != 200 else None}
     except Exception as error:
         return {'request_id': number, 'kind': kind, 'tier': tier, 'status': None,
-                'code': type(error).__name__, 'ok': False, 'started': started, 'first': first,
+                'code': type(error).__name__, 'error_detail': str(error)[:500],
+                'ok': False, 'started': started, 'first': first,
                 'ended': time.perf_counter(), 'bytes': 0, 'rows': None, 'sha256_match': None,
                 'expected_count': expected_count if 'export' in kind else None, 'server_ref': None}
     finally:
