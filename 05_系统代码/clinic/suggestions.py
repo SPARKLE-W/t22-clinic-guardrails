@@ -1,11 +1,11 @@
 """Saved demo suggestions and doctor decisions; no source can write a record."""
 from django.db import transaction
-from governance.models import Operation, PolicyHead
+from governance.models import Operation
 from governance.services import DomainError, _uuid, require
 from vetcontrols.compiler import _digest, _normalize
 from .guards import evaluate
 from .models import Alert, AlertOutbox, ClinicalCheck, ClinicalRecord, ClinicalRevision, GuardHit, MedicationEntry, Suggestion, SuggestionDecision
-from .services import _extra_values, _object, _own, _refusal, _template, _text
+from .services import _extra_values, _object, _own, _policy_head_for_share, _refusal, _template, _text
 from .writes import _audit, _validated
 
 ADOPT = 'clinical.suggestion.adopt'
@@ -56,7 +56,7 @@ def mutate(actor_id, mode, key, payload, ref):
         with transaction.atomic():
             actor = require(actor_id, permission, lock=True)
             operation_key = _uuid(key)
-            head = PolicyHead.objects.select_for_update().filter(store=actor.store).first() if mode == 'adopt' else None
+            head = _policy_head_for_share(actor.store) if mode == 'adopt' else None
             saved = Suggestion.objects.filter(pk=_uuid(ref)).only('encounter_id').first()
             if not saved:
                 raise DomainError('TARGET_UNAVAILABLE',403)

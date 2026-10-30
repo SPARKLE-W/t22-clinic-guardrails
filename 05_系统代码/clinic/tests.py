@@ -1,12 +1,14 @@
 import copy
 import json
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event
 from unittest.mock import patch
 from django.test import Client, TransactionTestCase
-from django.db import DatabaseError
+from django.db import DatabaseError, close_old_connections, connection, transaction
 from governance.models import Account, Activation, AuditEvent, Candidate, Demand, PolicyHead, Review, Store
-from governance.services import DomainError
+from governance.services import DomainError, require
 from vetcontrols import compile_demand
 from .models import AuditTarget, ClinicalRecord, ClinicalRevision, Encounter, PetIdentity, ReceptionRevision
 from .services import auxiliary, mutate, read
@@ -55,6 +57,110 @@ class ClinicFixture(TransactionTestCase):
         return record
 
 class ClinicTests(ClinicFixture):
+    def test_reception_and_clinical_request_share_policy_head_lock(self):
+        if connection.vendor != 'mysql':
+            self.skipTest('Requires MySQL row-lock behavior')
+        locked = Event()
+        release = Event()
+        created = Event()
+        activation_started = Event()
+        activated = Event()
+        payload = self.payload()
+
+        def hold_policy_head():
+            close_old_connections()
+            try:
+                with transaction.atomic():
+                    table = connection.ops.quote_name(PolicyHead._meta.db_table)
+                    column = connection.ops.quote_name(PolicyHead._meta.get_field('store').column)
+                    with connection.cursor() as cursor:
+                        cursor.execute(f'SELECT {column} FROM {table} WHERE {column} = %s FOR SHARE',
+                                       [self.a.pk.hex])
+                        if cursor.fetchone() is None:
+                            raise AssertionError('expected policy head was not locked')
+                    locked.set()
+                    if not release.wait(timeout=8):
+                        raise TimeoutError('policy lock release timed out')
+            finally:
+                connection.close()
+
+        def create_reception():
+            close_old_connections()
+            try:
+                mutate(self.front.pk, 'create', str(uuid.uuid4()), payload)
+                created.set()
+            finally:
+                connection.close()
+
+        def activate_policy():
+            close_old_connections()
+            try:
+                activation_started.set()
+                PolicyHead.objects.filter(store=self.a).update(generation=2)
+                activated.set()
+            finally:
+                connection.close()
+
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            holder = pool.submit(hold_policy_head)
+            self.assertTrue(locked.wait(timeout=5))
+            reception = pool.submit(create_reception)
+            try:
+                self.assertTrue(created.wait(timeout=1),
+                                'reception should share the active policy head read lock')
+                activation = pool.submit(activate_policy)
+                self.assertTrue(activation_started.wait(timeout=3))
+                self.assertFalse(activated.wait(timeout=0.2),
+                                 'activation must wait until in-flight policy readers finish')
+            finally:
+                release.set()
+            holder.result(timeout=5)
+            reception.result(timeout=5)
+            if 'activation' in locals():
+                activation.result(timeout=5)
+
+        self.assertTrue(activated.is_set())
+        self.assertEqual(2, PolicyHead.objects.get(store=self.a).generation)
+
+    def test_reception_and_doctor_authorization_can_share_the_doctor_account_lock(self):
+        if connection.vendor != 'mysql':
+            self.skipTest('Requires MySQL row-lock behavior')
+        locked = Event()
+        release = Event()
+        created = Event()
+        payload = self.payload()
+
+        def hold_doctor_authorization():
+            close_old_connections()
+            try:
+                with transaction.atomic():
+                    require(self.doctor.pk, 'clinical.read', lock=True)
+                    locked.set()
+                    if not release.wait(timeout=8):
+                        raise TimeoutError('doctor lock release timed out')
+            finally:
+                connection.close()
+
+        def create_reception():
+            close_old_connections()
+            try:
+                mutate(self.front.pk, 'create', str(uuid.uuid4()), payload)
+                created.set()
+            finally:
+                connection.close()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            holder = pool.submit(hold_doctor_authorization)
+            self.assertTrue(locked.wait(timeout=5))
+            reception = pool.submit(create_reception)
+            try:
+                self.assertTrue(created.wait(timeout=1),
+                                'reception should share the assigned doctor account row lock')
+            finally:
+                release.set()
+            holder.result(timeout=5)
+            reception.result(timeout=5)
+
     def test_creation_is_snapshot_with_server_owned_fixed_identity(self):
         result = self.create()
         row = Encounter.objects.get(pk=result['encounter_ref'])

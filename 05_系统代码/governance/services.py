@@ -1,6 +1,6 @@
 """Governance transactions. All identity comes from the current account row."""
 import uuid
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils import timezone
 from vetcontrols import compile_demand, verify_candidate
 from vetcontrols.compiler import _digest, _normalize, _tree_check, parse_text, PERMISSIONS
@@ -27,8 +27,17 @@ def write_audit(actor, action, outcome, normalized_reason, target=None, store_id
 
 
 def require(actor_id, permission, lock=False):
-    rows = Account.objects.select_for_update() if lock else Account.objects
-    actor = rows.filter(pk=actor_id, is_active=True).first()
+    if lock and connection.vendor == 'mysql':
+        table = connection.ops.quote_name(Account._meta.db_table)
+        pk = connection.ops.quote_name(Account._meta.pk.column)
+        active = connection.ops.quote_name(Account._meta.get_field('is_active').column)
+        rows = Account.objects.raw(
+            f'SELECT * FROM {table} WHERE {pk} = %s AND {active} = %s FOR SHARE',
+            [actor_id, True])
+        actor = next(iter(rows), None)
+    else:
+        rows = Account.objects.select_for_update() if lock else Account.objects
+        actor = rows.filter(pk=actor_id, is_active=True).first()
     if not actor:
         raise DomainError('AUTH_REQUIRED', 401)
     if permission not in ROLES or actor.role != ROLES[permission]:
