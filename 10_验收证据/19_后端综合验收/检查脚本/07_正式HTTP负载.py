@@ -29,6 +29,11 @@ ACTIVE = 0
 SAMPLES = []
 RESOURCES = []
 STOP_SAMPLER = threading.Event()
+VERSION_BY_TARGET = {}
+VERSION_LOCK = threading.Lock()
+GUARD_TARGETS = 6670
+DIAGNOSIS_TARGETS = 6665
+ADOPTION_TARGETS = 6665
 
 
 def ref(kind, shop, number):
@@ -50,6 +55,22 @@ def next_target(label):
         number = TARGETS[label]
         TARGETS[label] += 1
     return number
+
+
+def current_version_ref(shop, number):
+    key = (shop, number)
+    with VERSION_LOCK:
+        return VERSION_BY_TARGET.setdefault(key, ref('revision2' if number % 20 == 0 else 'revision1', shop, number))
+
+
+def update_current_version(key, item):
+    versions = item.get('clinical_versions') or []
+    version_ref = versions[-1].get('version_ref') if versions else None
+    if key and version_ref:
+        with VERSION_LOCK:
+            VERSION_BY_TARGET[key] = version_ref
+        return True
+    return False
 
 
 def monitor(start):
@@ -120,31 +141,27 @@ def select_request(kind, sequence, rng):
                    'doctor_ref': None, 'pet_name': '合成负载新宠物'}
         return actor, 'POST', '/api/encounters', payload, 'json', shop
     if kind == 'guard':
-        target = next_target('guard')
-        if target >= 8000:
-            raise RuntimeError('Guard target pool exhausted')
+        target = next_target('guard') % GUARD_TARGETS
         shop = target % 5
-        slot = target // 5
-        number = 10 * (slot // 4) + (3, 5, 7, 9)[slot % 4]
+        number = 3 * (target // 5)
         doctor = 0 if shop == 0 else number % 2
         payload = {'original_content_ref': ref('record', shop, number),
-                   'original_version_ref': ref('revision1', shop, number),
-                   'diagnosis': f'合成护栏校验通过 {sequence}', 'reason': '合成负载校验'}
+                   'original_version_ref': current_version_ref(shop, number),
+                   'diagnosis': f'合成护栏校验通过 {sequence}', 'reason': '合成负载校验',
+                   '_load_target_key': (shop, number)}
         return choose_actor(None, 'doctor', shop, doctor), 'POST', \
             f'/api/clinical/encounters/{ref("encounter", shop, number)}/diagnosis/corrections', payload, 'json', None
     if kind == 'write':
         subtype = sequence % 5
         if subtype in (0, 1):
-            target = next_target('write_diagnosis')
-            if target >= 8000:
-                raise RuntimeError('Diagnosis target pool exhausted')
+            target = next_target('write_diagnosis') % DIAGNOSIS_TARGETS
             shop = target % 5
-            slot = target // 5
-            number = 10 * (slot // 4) + (2, 4, 6, 8)[slot % 4]
+            number = 3 * (target // 5) + 1
             doctor = 0 if shop == 0 else number % 2
             payload = {'original_content_ref': ref('record', shop, number),
-                       'original_version_ref': ref('revision1', shop, number),
-                       'diagnosis': f'合成病历更正 {sequence}', 'reason': '合成负载写入'}
+                       'original_version_ref': current_version_ref(shop, number),
+                       'diagnosis': f'合成病历更正 {sequence}', 'reason': '合成负载写入',
+                       '_load_target_key': (shop, number)}
             return choose_actor(None, 'doctor', shop, doctor), 'POST', \
                 f'/api/clinical/encounters/{ref("encounter", shop, number)}/diagnosis/corrections', payload, 'json', None
         if subtype in (2, 3):
@@ -152,15 +169,15 @@ def select_request(kind, sequence, rng):
             return choose_actor(None, 'doctor', shop, doctor), 'POST', \
                 f'/api/clinical/encounters/{ref("encounter", shop, number)}/medications', payload, 'json', None
         target = next_target('write_adoption')
-        if target >= 2000:
+        if target >= ADOPTION_TARGETS:
             raise RuntimeError('Suggestion target pool exhausted')
         shop = target % 5
-        number = 10 * (target // 5) + 1
+        number = 3 * (target // 5) + 2
         doctor = 0 if shop == 0 else number % 2
         payload = {'encounter_ref': ref('encounter', shop, number),
                    'suggestion_ref': ref('suggestion', shop, number),
                    'record_ref': ref('record', shop, number), 'reason': '合成负载人工采纳',
-                   'adopted_content': {'original_version_ref': ref('revision1', shop, number),
+                   'adopted_content': {'original_version_ref': current_version_ref(shop, number),
                                        'medication': {'drug': '合成建议药品', 'amount': '1', 'unit': '片'}}}
         return choose_actor(None, 'doctor', shop, doctor), 'POST', \
             f'/api/clinical/suggestions/{ref("suggestion", shop, number)}/adoption', payload, 'json', None
@@ -201,6 +218,7 @@ def select_request(kind, sequence, rng):
 
 def run_one(session, base, cookies, actors, number, kind, rng):
     actor, method, path, payload, tier, expected_count = select_request(kind, number, rng)
+    target_key = payload.pop('_load_target_key', None) if payload else None
     if kind == 'reception':
         payload['doctor_ref'] = actors[f'load_{expected_count + 1}_doctor_1']['account_ref']
     request_cookies = cookies[actor]
@@ -239,6 +257,8 @@ def run_one(session, base, cookies, actors, number, kind, rng):
             else:
                 obj = json.loads(body)
                 valid = obj.get('ok') is not False
+                if target_key:
+                    valid = update_current_version(target_key, obj) and valid
                 if kind == 'reception':
                     valid = valid and bool(obj.get('encounter_ref'))
         else:
@@ -361,6 +381,10 @@ def main():
     summary.update({'concurrency': args.concurrency, 'sample_count': len(SAMPLES),
                     'actual_duration_seconds': time.perf_counter() - start,
                     'tunnel_count': len(bases),
+                    'target_pool_sizes': {'guard': GUARD_TARGETS,
+                                          'diagnosis_correction': DIAGNOSIS_TARGETS,
+                                          'suggestion_adoption': ADOPTION_TARGETS},
+                    'target_assignments': dict(TARGETS),
                     'resource_samples': len(RESOURCES), 'os': platform.platform(),
                     'python': platform.python_version(), 'requests': requests.__version__,
                     'psutil': psutil.__version__,
