@@ -258,6 +258,8 @@ def summarize(results, start, warmup, duration, unique_sessions, account_count):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--base', default='http://127.0.0.1:18830')
+    parser.add_argument('--tunnel-base', action='append', default=[],
+                        help='HTTP base for one SSH tunnel; repeat to distribute sessions round-robin')
     parser.add_argument('--private-accounts', type=Path, required=True)
     parser.add_argument('--output-prefix', type=Path, required=True)
     parser.add_argument('--warmup-seconds', type=int, default=60)
@@ -274,6 +276,7 @@ def main():
     if not private.get('synthetic_only') or private['manifest']['seed'] != 20261024:
         parser.error('Expected only the deterministic synthetic fixture')
     people = persona_pool(private['accounts'])
+    bases = [base.rstrip('/') for base in (args.tunnel_base or [args.base])]
     accounts = {item['username']: item for item in private['accounts']}
     doctor_ids = {shop: [accounts[f'load_{shop + 1}_doctor_{person + 1}']['account_ref']
                          for person in range(2)] for shop in range(5)}
@@ -291,7 +294,8 @@ def main():
                 TARGETS[(kind, person['username'])] = args.target_offset
     with ThreadPoolExecutor(max_workers=12) as preparation:
         sessions = list(preparation.map(
-            lambda person: login(args.base.rstrip('/'), person, private['password']), people))
+            lambda pair: login(bases[pair[0] % len(bases)], pair[1], private['password']),
+            enumerate(people)))
     unique_sessions = len({session.cookies['sessionid'] for session in sessions})
     if unique_sessions != 360:
         raise RuntimeError('Distinct login sessions were not established')
@@ -303,7 +307,7 @@ def main():
     watcher.start()
     try:
         with ThreadPoolExecutor(max_workers=360) as pool:
-            futures = [pool.submit(worker, index, session, person, args.base.rstrip('/'), pools,
+            futures = [pool.submit(worker, index, session, person, bases[index % len(bases)], pools,
                                    gate, start, end, results)
                        for index, (session, person) in enumerate(zip(sessions, people))]
             gate.wait(timeout=180)
@@ -315,7 +319,9 @@ def main():
     summary = summarize(results, start, args.warmup_seconds, args.formal_seconds, unique_sessions,
                         len({person['username'] for person in people}))
     summary['target_offset'] = args.target_offset
-    summary['protocol_version'] = 'course-v1.1'
+    summary['protocol_version'] = 'course-v1.1.1'
+    summary['tunnel_count'] = len(bases)
+    summary['tunnel_bases'] = bases
     if args.target_offset:
         summary['kind'] = 'diagnostic_preflight_not_AC06'
     prefix = args.output_prefix
