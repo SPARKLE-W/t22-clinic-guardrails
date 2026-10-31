@@ -111,7 +111,8 @@ def mutate(actor_id, mode, key, payload, ref):
                     raise DomainError('POLICY_UNAVAILABLE',503)
                 template_candidate = record.template if record else row.template
                 template = _validated(template_candidate,actor.store_id)
-                _validated(head.candidate,actor.store_id)
+                if head.candidate_id != template_candidate.pk:
+                    _validated(head.candidate,actor.store_id)
                 extra_fields = _extra_values(template,adopted.get('extra_fields',{}),current.extra_fields if current else None)
                 if saved.source.get('type') != 'demo' or not saved.source.get('label') or saved.source.get('version') != saved.source_version:
                     raise DomainError('SUGGESTION_SOURCE_UNAVAILABLE',503)

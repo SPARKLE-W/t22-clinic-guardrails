@@ -2,8 +2,11 @@ import copy
 import json
 import math
 import unittest
+import uuid
 from pathlib import Path
+from unittest.mock import patch
 from vetcontrols import compile_demand, compile_text, verify_candidate
+from vetcontrols import compiler
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -201,6 +204,25 @@ class CompilerTests(unittest.TestCase):
         import hashlib
         changed['content_digest'] = hashlib.sha256(json.dumps(changed['payload'],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest().upper()
         self.assertFalse(verify_candidate(changed)['ok'])
+
+    def test_verified_candidate_cache_is_content_bound_and_positive_only(self):
+        data = demand()
+        data['scope']['store_id'] = str(uuid.uuid4())
+        candidate = compile_demand(data)['candidate']
+        original_verifier = compiler.verify_candidate
+        with patch.object(compiler, 'verify_candidate', wraps=original_verifier) as verifier:
+            self.assertTrue(compiler.is_verified_candidate(candidate))
+            self.assertTrue(compiler.is_verified_candidate(candidate))
+            self.assertEqual(1, verifier.call_count)
+
+            tampered = copy.deepcopy(candidate)
+            tampered['governance']['state'] = 'active'
+            self.assertFalse(compiler.is_verified_candidate(tampered))
+            self.assertEqual(2, verifier.call_count)
+            self.assertFalse(compiler.is_verified_candidate(tampered))
+            self.assertEqual(3, verifier.call_count)
+
+        self.assertTrue(compiler.is_verified_candidate(candidate))
 
     def test_generated_candidate_always_fits_its_verifier_limits(self):
         data = demand()

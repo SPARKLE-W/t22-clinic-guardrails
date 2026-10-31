@@ -2,8 +2,8 @@
 from django.db import transaction
 from django.utils import timezone
 from governance.models import Operation
-from governance.services import DomainError, _check_candidate, _uuid, require, write_audit
-from vetcontrols.compiler import _digest, _normalize
+from governance.services import DomainError, _uuid, require, write_audit
+from vetcontrols.compiler import _digest, _normalize, is_verified_candidate
 from .guards import evaluate
 from .models import Alert, AlertOutbox, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, GuardHit
 from .services import _clinical, _extra_values, _object, _own, _policy_head_for_share, _refusal, _template, _text, read
@@ -14,7 +14,8 @@ ALERT = 'clinical.alert.handle'
 
 def _validated(candidate, store_id):
     try:
-        _check_candidate(candidate)
+        if not is_verified_candidate(candidate.envelope) or candidate.digest != candidate.envelope['content_digest']:
+            raise DomainError('CONTENT_CHANGED')
         return _template(candidate, store_id)
     except (DomainError, AttributeError, KeyError, TypeError, ValueError):
         raise DomainError('POLICY_UNAVAILABLE', 503) from None

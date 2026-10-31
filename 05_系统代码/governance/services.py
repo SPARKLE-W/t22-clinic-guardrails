@@ -2,8 +2,8 @@
 import uuid
 from django.db import connection, transaction
 from django.utils import timezone
-from vetcontrols import compile_demand, verify_candidate
-from vetcontrols.compiler import _digest, _normalize, _tree_check, parse_text, PERMISSIONS
+from vetcontrols import compile_demand
+from vetcontrols.compiler import _digest, _normalize, _tree_check, is_verified_candidate, parse_text, PERMISSIONS
 from .models import Account, Activation, AuditEvent, Candidate, Demand, Operation, PolicyHead, Review
 
 GENERATE = 'governance.candidate.generate'
@@ -55,7 +55,7 @@ def _uuid(value):
 
 
 def _check_candidate(candidate):
-    if not verify_candidate(candidate.envelope)['ok'] or candidate.digest != candidate.envelope['content_digest']:
+    if not is_verified_candidate(candidate.envelope) or candidate.digest != candidate.envelope['content_digest']:
         raise DomainError('CONTENT_CHANGED')
     definition = candidate.envelope['payload']['demand']
     if _uuid(definition['scope']['store_id']) != candidate.store_id:
