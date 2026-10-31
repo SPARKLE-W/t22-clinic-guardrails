@@ -22,9 +22,10 @@ def _validated(candidate, store_id):
 
 def _audit(actor, permission, row, result, reason, record=None):
     event = write_audit(actor, permission, result, reason, row.pk, actor.store_id)
-    AuditTarget.objects.create(event=event, target=row.pk, kind='encounter')
+    targets = [AuditTarget(event=event, target=row.pk, kind='encounter')]
     if record:
-        AuditTarget.objects.create(event=event, target=record.pk, kind='record')
+        targets.append(AuditTarget(event=event, target=record.pk, kind='record'))
+    AuditTarget.objects.bulk_create(targets)
     return event
 
 
