@@ -5,7 +5,7 @@ import io
 import json
 import logging
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, prefetch_related_objects
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -93,16 +93,16 @@ def clinical(actor_id, payload):
             if len(set(refs)) != len(refs):
                 raise DomainError('INPUT_INVALID', 422)
             rows = rows.filter(pk__in=refs)
-            if rows.count() != len(refs):
-                error = DomainError('TARGET_UNAVAILABLE', 403)
-                error.export_targets = ('record', refs)
-                raise error
         else:
             start, end = _range(scope['time_range'])
             rows = rows.filter(encounter__created_at__gte=start, encounter__created_at__lt=end)
-        rows = list(rows.select_related('encounter').prefetch_related(
-            'clinicalrevision_set', 'medicationentry_set', 'suggestion_decisions__suggestion').order_by('encounter__created_at', 'pk')
-        )
+        rows = list(rows.select_related('encounter').order_by('encounter__created_at', 'pk'))
+        if 'record_refs' in scope and len(rows) != len(refs):
+            error = DomainError('TARGET_UNAVAILABLE', 403)
+            error.export_targets = ('record', refs)
+            raise error
+        prefetch_related_objects(rows, 'clinicalrevision_set', 'medicationentry_set',
+                                 'suggestion_decisions__suggestion')
         template_rows = Candidate.objects.in_bulk({row.template_id for row in rows})
         templates = {}
         records = []
