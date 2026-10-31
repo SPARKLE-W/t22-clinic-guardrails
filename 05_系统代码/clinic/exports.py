@@ -5,7 +5,7 @@ import io
 import json
 import logging
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, prefetch_related_objects
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -93,51 +93,55 @@ def clinical(actor_id, payload):
             if len(set(refs)) != len(refs):
                 raise DomainError('INPUT_INVALID', 422)
             rows = rows.filter(pk__in=refs)
-            if rows.count() != len(refs):
-                error = DomainError('TARGET_UNAVAILABLE', 403)
-                error.export_targets = ('record', refs)
-                raise error
         else:
             start, end = _range(scope['time_range'])
             rows = rows.filter(encounter__created_at__gte=start, encounter__created_at__lt=end)
-        rows = list(rows.select_related('encounter').prefetch_related(
-            'clinicalrevision_set', 'medicationentry_set', 'suggestion_decisions__suggestion').order_by('encounter__created_at', 'pk')
-        )
+        rows = list(rows.select_related('encounter').order_by('encounter__created_at', 'pk'))
+        if 'record_refs' in scope and len(rows) != len(refs):
+            error = DomainError('TARGET_UNAVAILABLE', 403)
+            error.export_targets = ('record', refs)
+            raise error
+        prefetch_related_objects(rows, 'clinicalrevision_set', 'medicationentry_set',
+                                 'suggestion_decisions__suggestion')
         template_rows = Candidate.objects.in_bulk({row.template_id for row in rows})
         templates = {}
-        records = []
-        for record in rows:
-            encounter = record.encounter
-            encounter.clinicalrecord = record
-            record.template = template_rows[record.template_id]
-            try:
-                clinical = _clinical(encounter, templates)
-            except (KeyError, AttributeError, TypeError, UnicodeError):
-                logger.exception('Clinical export generation failed')
-                raise DomainError('EXPORT_GENERATION_UNAVAILABLE', 503) from None
-            if clinical is None:
-                raise DomainError('RECORD_UNAVAILABLE', 503)
-            encode = lambda value: json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
-            records.append({'record_ref': str(record.pk), 'encounter_ref': str(encounter.pk),
-                            'template_version_ref': clinical['template_version_ref'],
-                            'field_meanings': encode(clinical['field_meanings']), 'diagnosis': clinical['diagnosis'],
-                            'examination': clinical['examination'], 'extra_fields': encode(clinical['extra_fields']),
-                            'adopted_content': encode(clinical['adoptions']),
-                            'responsibility_metadata': encode({'doctor_ref': encounter.doctor_id,
-                                                               'receptionist_ref': encounter.receptionist_id,
-                                                               'created_at': encounter.created_at.isoformat()}),
-                            'medication_chain': encode(clinical['medication_chain']),
-                            'clinical_versions': encode(clinical['clinical_versions']),
-                            'error_mark': 'true' if encounter.error_mark else 'false',
-                            'related_encounter_refs': encode([str(encounter.rebuilt_id)] if encounter.rebuilt_id else [])})
-        body = _csv(CLINICAL_COLUMNS, records)
+        target_refs = []
+
+        def export_rows():
+            for record in rows:
+                encounter = record.encounter
+                encounter.clinicalrecord = record
+                record.template = template_rows[record.template_id]
+                try:
+                    clinical = _clinical(encounter, templates)
+                except (KeyError, AttributeError, TypeError, UnicodeError):
+                    logger.exception('Clinical export generation failed')
+                    raise DomainError('EXPORT_GENERATION_UNAVAILABLE', 503) from None
+                if clinical is None:
+                    raise DomainError('RECORD_UNAVAILABLE', 503)
+                encode = lambda value: json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+                target_refs.append(str(record.pk))
+                yield {'record_ref': str(record.pk), 'encounter_ref': str(encounter.pk),
+                       'template_version_ref': clinical['template_version_ref'],
+                       'field_meanings': encode(clinical['field_meanings']), 'diagnosis': clinical['diagnosis'],
+                       'examination': clinical['examination'], 'extra_fields': encode(clinical['extra_fields']),
+                       'adopted_content': encode(clinical['adoptions']),
+                       'responsibility_metadata': encode({'doctor_ref': encounter.doctor_id,
+                                                          'receptionist_ref': encounter.receptionist_id,
+                                                          'created_at': encounter.created_at.isoformat()}),
+                       'medication_chain': encode(clinical['medication_chain']),
+                       'clinical_versions': encode(clinical['clinical_versions']),
+                       'error_mark': 'true' if encounter.error_mark else 'false',
+                       'related_encounter_refs': encode([str(encounter.rebuilt_id)] if encounter.rebuilt_id else [])}
+
+        body = _csv(CLINICAL_COLUMNS, export_rows())
         entry = ExportRequest.objects.create(store=actor.store, actor=actor, permission=CLINICAL,
-                                              scope=scope, purpose=payload['purpose'], record_count=len(records),
-                                              row_count=len(records), byte_count=len(body))
+                                              scope=scope, purpose=payload['purpose'], record_count=len(target_refs),
+                                              row_count=len(target_refs), byte_count=len(body))
         event = write_audit(actor, CLINICAL, 'success', 'COMPLETED', entry.pk, actor.store_id)
-        AuditTarget.objects.bulk_create([AuditTarget(event=event, target=row['record_ref'], kind='record')
-                                         for row in records])
-    return body, entry.pk, len(records)
+        AuditTarget.objects.bulk_create([AuditTarget(event=event, target=ref, kind='record')
+                                         for ref in target_refs])
+    return body, entry.pk, len(target_refs)
 
 
 @protected(CLINICAL, ['POST'])

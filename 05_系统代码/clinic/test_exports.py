@@ -52,6 +52,21 @@ class ClinicalExportTests(ClinicFixture):
         self.assertEqual('ready', request.state)
         self.assertNotIn('课程合成病例核对', json.dumps(list(AuditEvent.objects.values()), default=str, ensure_ascii=False))
 
+    def test_clinical_export_serializes_rows_lazily(self):
+        def consume(columns, rows):
+            self.assertIs(iter(rows), rows)
+            self.assertEqual([str(self.record.pk)], [row['record_ref'] for row in rows])
+            return b'csv bytes'
+
+        with patch('clinic.exports._csv', side_effect=consume):
+            body, export_ref, count = clinical(self.doctor.pk, {
+                'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '惰性序列化检查'})
+
+        self.assertEqual((b'csv bytes', 1), (body, count))
+        self.assertTrue(ExportRequest.objects.filter(pk=export_ref, record_count=1, row_count=1).exists())
+        self.assertTrue(AuditTarget.objects.filter(target=self.record.pk, kind='record',
+                                                   event__action='export.clinical').exists())
+
     def test_deactivated_doctor_cannot_read_or_export(self):
         Account.objects.filter(pk=self.doctor.pk).update(is_active=False)
         with self.assertRaises(DomainError) as read_error:
