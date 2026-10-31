@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Event
 from unittest.mock import patch
-from django.test import Client, TransactionTestCase
+from django.test import Client, RequestFactory, TransactionTestCase
 from django.db import DatabaseError, close_old_connections, connection, transaction
 from governance.models import Account, Activation, AuditEvent, Candidate, Demand, PolicyHead, Review, Store
 from governance.services import DomainError, require
@@ -89,6 +89,20 @@ class ClinicTests(ClinicFixture):
 
         self.assertEqual(401, response.status_code)
         self.assertEqual('AUTH_REQUIRED', response.json()['error']['code'])
+
+    def test_alert_reference_is_not_looked_up_after_account_is_deactivated_mid_request(self):
+        from clinic import views as clinic_views
+
+        stale_actor = self.doctor
+        Account.objects.filter(pk=stale_actor.pk).update(is_active=False)
+        request = RequestFactory().get('/api/clinical/alerts/' + str(uuid.uuid4()) + '/encounter')
+        request.user = stale_actor
+
+        with patch('clinic.views.writes.alert_encounter', return_value={}) as lookup:
+            response = clinic_views.alert_encounter(request, uuid.uuid4())
+
+        self.assertEqual(401, response.status_code)
+        lookup.assert_not_called()
 
     def test_reception_and_clinical_request_share_policy_head_lock(self):
         if connection.vendor != 'mysql':
