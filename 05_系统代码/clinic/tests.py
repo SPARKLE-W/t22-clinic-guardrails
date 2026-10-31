@@ -57,6 +57,39 @@ class ClinicFixture(TransactionTestCase):
         return record
 
 class ClinicTests(ClinicFixture):
+    def test_clinical_read_checks_database_authorization_once_after_session_load(self):
+        from django.test.utils import CaptureQueriesContext
+
+        client = Client()
+        client.force_login(self.doctor)
+        with CaptureQueriesContext(connection) as queries:
+            response = client.get('/api/clinical/encounters')
+
+        self.assertEqual(200, response.status_code)
+        account_reads = [query['sql'] for query in queries
+                         if Account._meta.db_table.lower() in query['sql'].lower()
+                         and query['sql'].lstrip().lower().startswith('select')]
+        self.assertEqual(2, len(account_reads), account_reads)
+
+    def test_clinical_role_preflight_denies_wrong_role_before_query_validation(self):
+        client = Client()
+        client.force_login(self.front)
+
+        response = client.get('/api/clinical/encounters', {'page': 'invalid'})
+
+        self.assertEqual(403, response.status_code)
+        self.assertEqual('PERMISSION_DENIED', response.json()['error']['code'])
+
+    def test_inactive_session_is_rejected_before_clinical_read(self):
+        client = Client()
+        client.force_login(self.doctor)
+        Account.objects.filter(pk=self.doctor.pk).update(is_active=False)
+
+        response = client.get('/api/clinical/encounters')
+
+        self.assertEqual(401, response.status_code)
+        self.assertEqual('AUTH_REQUIRED', response.json()['error']['code'])
+
     def test_reception_and_clinical_request_share_policy_head_lock(self):
         if connection.vendor != 'mysql':
             self.skipTest('Requires MySQL row-lock behavior')

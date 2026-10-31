@@ -10,7 +10,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from vetcontrols.compiler import parse_text
 from .models import AuditEvent, Candidate, PolicyHead
-from .services import ACTIVATE, GENERATE, REVIEW, DomainError, detail, mutate, require, write_audit
+from .services import ACTIVATE, GENERATE, REVIEW, ROLES, DomainError, detail, mutate, require, write_audit
 
 FRONTEND_ROOT = Path(__file__).resolve().parent.parent / 'frontend'
 
@@ -29,7 +29,8 @@ def _body(request):
     return value
 
 
-def protected(permission, methods):
+def protected(permission, methods, database_preflight=True):
+    """Skip the entry DB read only when the handler rechecks via its service."""
     def wrap(view):
         @functools.wraps(view)
         def call(request, *args, **kwargs):
@@ -38,7 +39,15 @@ def protected(permission, methods):
                     return error('METHOD_NOT_ALLOWED', 405)
                 if not request.user.is_authenticated:
                     raise DomainError('AUTH_REQUIRED', 401)
-                require(request.user.pk, permission)
+                if database_preflight:
+                    actor = require(request.user.pk, permission)
+                else:
+                    actor = request.user
+                    if not actor.is_active:
+                        raise DomainError('AUTH_REQUIRED', 401)
+                    if permission not in ROLES or actor.role != ROLES[permission]:
+                        raise DomainError('PERMISSION_DENIED', 403)
+                request.authorized_actor = actor
                 return view(request, *args, **kwargs)
             except DomainError as exc:
                 try:
@@ -149,7 +158,7 @@ def signout(request):
 def candidates(request):
     if request.GET:
         raise DomainError('INPUT_FIELDS_INVALID', 422)
-    actor = require(request.user.pk, REVIEW)
+    actor = request.authorized_actor
     head = PolicyHead.objects.get(store=actor.store)
     rows = Candidate.objects.filter(store=actor.store).order_by('-demand__created_at')[:100]
     return JsonResponse({'ok': True, 'generation': head.generation, 'active_candidate_ref': str(head.candidate_id) if head.candidate_id else None,
@@ -157,7 +166,7 @@ def candidates(request):
                                     'version': row.envelope['package_version'], 'created_at': row.demand.created_at.isoformat()} for row in rows]})
 
 
-@protected(REVIEW, ['GET'])
+@protected(REVIEW, ['GET'], database_preflight=False)
 def candidate_detail(request, candidate_id):
     if request.GET:
         raise DomainError('INPUT_FIELDS_INVALID', 422)
@@ -174,7 +183,7 @@ def example(request):
 
 
 def mutation_view(permission, action=None):
-    @protected(permission, ['POST'])
+    @protected(permission, ['POST'], database_preflight=False)
     def view(request):
         payload = _body(request)
         if action and ('definition' in payload) != (action == 'generate'):
@@ -188,7 +197,7 @@ def mutation_view(permission, action=None):
 def audit(request):
     if set(request.GET) - {'record_ref', 'operator_ref'} or any(len(request.GET.getlist(k)) != 1 for k in request.GET):
         raise DomainError('INPUT_FIELDS_INVALID', 422)
-    actor = require(request.user.pk, 'audit.metadata.read')
+    actor = request.authorized_actor
     rows = AuditEvent.objects.filter(store=actor.store)
     if 'operator_ref' in request.GET:
         operator = request.GET['operator_ref']

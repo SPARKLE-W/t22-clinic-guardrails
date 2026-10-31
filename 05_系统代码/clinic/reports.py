@@ -48,7 +48,7 @@ def summary(actor_id, query):
                 'grouped_counts': {'group_by': group_by, 'items': groups}}
 
 
-@protected(PERMISSION, ['GET'])
+@protected(PERMISSION, ['GET'], database_preflight=False)
 def store_summary(request):
     try:
         if any(len(request.GET.getlist(key)) != 1 for key in request.GET):
