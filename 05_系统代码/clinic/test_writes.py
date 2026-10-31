@@ -2,8 +2,9 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from unittest.mock import patch
-from django.db import DatabaseError, close_old_connections
+from django.db import DatabaseError, close_old_connections, connection
 from django.test import Client
+from django.test.utils import CaptureQueriesContext
 from governance.models import AuditEvent, Operation, PolicyHead
 from .models import ClinicalRecord, ClinicalRevision, Encounter
 from .services import mutate
@@ -23,6 +24,21 @@ class ClinicalWriteTests(ClinicFixture):
         response = self.post(ref, {'diagnosis': '合成诊断', 'examination': '合成检查'})
         self.assertEqual(200, response.status_code)
         self.assertEqual('合成诊断', response.json()['diagnosis'])
+
+    def test_successful_write_inserts_audit_targets_in_one_statement(self):
+        from .models import AuditTarget
+
+        ref = self.create()['encounter_ref']
+        with CaptureQueriesContext(connection) as captured:
+            response = self.post(ref, {'diagnosis': '合成诊断'})
+
+        self.assertEqual(200, response.status_code)
+        record = ClinicalRecord.objects.get(encounter_id=ref)
+        event = AuditEvent.objects.filter(actor=self.doctor, action='clinical.diagnosis.write', outcome='success').latest('created_at')
+        targets = AuditTarget.objects.filter(event=event)
+        self.assertEqual({('encounter', uuid.UUID(ref)), ('record', record.pk)}, set(targets.values_list('kind', 'target')))
+        target_inserts = [query['sql'] for query in captured if 'clinic_audittarget' in query['sql'].lower() and query['sql'].lstrip().lower().startswith('insert')]
+        self.assertEqual(1, len(target_inserts))
 
     def test_optional_template_fields_preserve_types_versions_and_export(self):
         import csv
