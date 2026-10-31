@@ -144,7 +144,7 @@ def clinical(actor_id, payload):
     return body, entry.pk, len(target_refs)
 
 
-@protected(CLINICAL, ['POST'])
+@protected(CLINICAL, ['POST'], database_preflight=False)
 @csrf_protect
 def clinical_records(request):
     try:
@@ -248,7 +248,7 @@ def guard(actor_id, permission, payload):
     return body, entry.pk, entry.record_count
 
 
-@protected(DETAIL, ['POST'])
+@protected(DETAIL, ['POST'], database_preflight=False)
 @csrf_protect
 def alert_hits(request):
     try:
@@ -261,7 +261,7 @@ def alert_hits(request):
         raise
 
 
-@protected(SUMMARY, ['POST'])
+@protected(SUMMARY, ['POST'], database_preflight=False)
 @csrf_protect
 def alert_summary(request):
     try:

@@ -194,7 +194,7 @@ def query(request):
     return request.GET.dict()
 
 
-@protected(WRITE, ['GET', 'POST'])
+@protected(WRITE, ['GET', 'POST'], database_preflight=False)
 @csrf_protect
 def registry(request):
     try:
@@ -236,7 +236,7 @@ def registry(request):
         raise
 
 
-@protected(REVIEW, ['POST'])
+@protected(REVIEW, ['POST'], database_preflight=False)
 @csrf_protect
 def review_registry(request):
     try:
@@ -248,7 +248,7 @@ def review_registry(request):
         raise
 
 
-@protected(WRITE, ['GET'])
+@protected(WRITE, ['GET'], database_preflight=False)
 def available_evidence(request):
     try:
         with transaction.atomic():
