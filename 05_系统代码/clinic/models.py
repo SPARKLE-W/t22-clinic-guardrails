@@ -32,7 +32,7 @@ class Encounter(models.Model):
 
 class ReceptionRevision(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    encounter = models.ForeignKey(Encounter, on_delete=models.PROTECT)
+    encounter = models.ForeignKey(Encounter, on_delete=models.PROTECT, db_index=False)
     version = models.PositiveIntegerField()
     species = models.CharField(max_length=100)
     complaint = models.TextField()
@@ -54,7 +54,7 @@ class ClinicalRecord(models.Model):
 
 class ClinicalRevision(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    record = models.ForeignKey(ClinicalRecord, on_delete=models.PROTECT)
+    record = models.ForeignKey(ClinicalRecord, on_delete=models.PROTECT, db_index=False)
     version = models.PositiveIntegerField()
     diagnosis = models.TextField()
     examination = models.TextField(blank=True)
@@ -68,7 +68,7 @@ class ClinicalRevision(models.Model):
 
 
 class AuditTarget(models.Model):
-    event = models.ForeignKey(AuditEvent, on_delete=models.PROTECT)
+    event = models.ForeignKey(AuditEvent, on_delete=models.PROTECT, db_index=False)
     target = models.UUIDField(db_index=True)
     kind = models.CharField(max_length=12)
 
