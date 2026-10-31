@@ -107,7 +107,7 @@ class Activation(models.Model):
 
 
 class Operation(models.Model):
-    actor = models.ForeignKey(Account, on_delete=models.PROTECT)
+    actor = models.ForeignKey(Account, on_delete=models.PROTECT, db_index=False)
     permission = models.CharField(max_length=80)
     key = models.UUIDField()
     digest = models.CharField(max_length=64)
