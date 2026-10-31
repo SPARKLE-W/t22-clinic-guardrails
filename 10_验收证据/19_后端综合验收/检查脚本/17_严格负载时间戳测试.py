@@ -1,4 +1,7 @@
 import importlib.util
+import json
+import tempfile
+import time
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +33,47 @@ class AbsoluteTimestampTests(unittest.TestCase):
         row = {'started': 300.0, 'first': None, 'ended': 301.0}
 
         self.assertIsNone(strict_load.request_timestamps(row, 0.0, origin)['first_byte_at_utc'])
+
+
+class StreamingArtifactTests(unittest.TestCase):
+    def test_request_result_is_flushed_while_run_is_active(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory) / 'round'
+            origin = datetime(2026, 10, 31, 5, 44, 6, tzinfo=timezone.utc)
+            writer = strict_load.JsonlRunRecorder(prefix)
+            writer.set_clock(100.0, origin)
+            try:
+                writer.request({'request_id': 1, 'started': 100.1, 'first': 100.2,
+                                'ended': 100.3, 'kind': 'query', 'ok': True})
+                writer.sample('inflight', {'seconds': 0.2, 'in_flight': 360})
+                writer.sample('resources', {'seconds': 0.2, 'host_cpu_percent': 10})
+                path = prefix.with_suffix('.requests.jsonl')
+                sample_paths = [prefix.with_suffix('.inflight.jsonl'),
+                                prefix.with_suffix('.resources.jsonl')]
+                deadline = time.monotonic() + 3
+                while time.monotonic() < deadline:
+                    if all(item.exists() and item.stat().st_size for item in [path, *sample_paths]):
+                        break
+                    time.sleep(0.05)
+                rows = path.read_text(encoding='utf-8').splitlines()
+                self.assertEqual(1, len(rows))
+                row = json.loads(rows[0])
+                self.assertAlmostEqual(0.1, row['started'])
+                self.assertEqual('2026-10-31T05:44:06.100Z', row['started_at_utc'])
+                self.assertEqual(360, json.loads(sample_paths[0].read_text(encoding='utf-8'))['in_flight'])
+                self.assertEqual(10, json.loads(sample_paths[1].read_text(encoding='utf-8'))['host_cpu_percent'])
+            finally:
+                writer.close()
+
+    def test_existing_artifact_is_not_truncated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory) / 'round'
+            path = prefix.with_suffix('.requests.jsonl')
+            path.write_text('keep me\n', encoding='utf-8')
+            with self.assertRaises(FileExistsError):
+                strict_load.JsonlRunRecorder(
+                    prefix)
+            self.assertEqual('keep me\n', path.read_text(encoding='utf-8'))
 
 
 if __name__ == '__main__':

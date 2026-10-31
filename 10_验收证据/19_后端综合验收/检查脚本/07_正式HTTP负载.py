@@ -8,6 +8,7 @@ import json
 import math
 import os
 import platform
+import queue
 import random
 import threading
 import time
@@ -35,6 +36,101 @@ VERSION_LOCK = threading.Lock()
 GUARD_TARGETS = 6670
 DIAGNOSIS_TARGETS = 6665
 ADOPTION_TARGETS = 6665
+
+
+class JsonlRunRecorder:
+    """Stream run evidence to disk so an interrupted run keeps completed samples."""
+
+    def __init__(self, prefix):
+        self.paths = {
+            'requests': prefix.with_suffix('.requests.jsonl'),
+            'inflight': prefix.with_suffix('.inflight.jsonl'),
+            'resources': prefix.with_suffix('.resources.jsonl'),
+        }
+        outputs = [*self.paths.values(), prefix.with_suffix('.summary.json')]
+        existing = [path for path in outputs if path.exists()]
+        if existing:
+            raise FileExistsError(f'Results are never overwritten: {existing[0]}')
+        prefix.parent.mkdir(parents=True, exist_ok=True)
+        self.start = None
+        self.started_at_utc = None
+        self.events = queue.Queue()
+        self.stop = object()
+        self.error = None
+        self.files = {}
+        created = []
+        try:
+            for name, path in self.paths.items():
+                self.files[name] = path.open('x', encoding='utf-8')
+                created.append(path)
+        except Exception:
+            for stream in self.files.values():
+                stream.close()
+            for path in created:
+                path.unlink(missing_ok=True)
+            raise
+        self.thread = threading.Thread(target=self._write, daemon=True)
+        self.thread.start()
+
+    def set_clock(self, start, started_at_utc):
+        self.start = start
+        self.started_at_utc = started_at_utc
+
+    def request(self, row):
+        self._put('requests', row)
+
+    def sample(self, kind, row):
+        if kind not in ('inflight', 'resources'):
+            raise ValueError('Unknown run sample kind')
+        self._put(kind, row)
+
+    def _put(self, kind, row):
+        if self.error:
+            raise RuntimeError('Run evidence writer failed') from self.error
+        self.events.put((kind, row))
+
+    def _write(self):
+        last_flush = time.monotonic()
+        try:
+            while True:
+                try:
+                    item = self.events.get(timeout=0.25)
+                except queue.Empty:
+                    item = None
+                if item is self.stop:
+                    self.events.task_done()
+                    break
+                if item is not None:
+                    kind, row = item
+                    if kind == 'requests':
+                        row = {**row, 'started': row['started'] - self.start,
+                               'first': row['first'] - self.start if row['first'] else None,
+                               'ended': row['ended'] - self.start,
+                               **request_timestamps(row, self.start, self.started_at_utc)}
+                    self.files[kind].write(json.dumps(row, ensure_ascii=False) + '\n')
+                    self.events.task_done()
+                if time.monotonic() - last_flush >= 0.25:
+                    for stream in self.files.values():
+                        stream.flush()
+                    last_flush = time.monotonic()
+        except Exception as error:
+            self.error = error
+        finally:
+            for stream in self.files.values():
+                try:
+                    stream.flush()
+                except Exception as error:
+                    self.error = self.error or error
+
+    def close(self):
+        self.events.put(self.stop)
+        self.thread.join(timeout=10)
+        if self.thread.is_alive():
+            raise TimeoutError('Run evidence writer did not stop')
+        for stream in self.files.values():
+            stream.close()
+        if self.error:
+            raise RuntimeError('Run evidence writer failed') from self.error
 
 
 def utc_at(origin, elapsed):
@@ -88,16 +184,19 @@ def update_current_version(key, item):
     return False
 
 
-def monitor(start, started_at_utc):
+def monitor(start, started_at_utc, recorder=None):
     while not STOP_SAMPLER.is_set():
         elapsed = time.perf_counter() - start
         with LOCK:
-            SAMPLES.append({'seconds': elapsed, 'timestamp_utc': utc_at(started_at_utc, elapsed),
-                            'in_flight': ACTIVE})
+            sample = {'seconds': elapsed, 'timestamp_utc': utc_at(started_at_utc, elapsed),
+                      'in_flight': ACTIVE}
+            SAMPLES.append(sample)
+        if recorder:
+            recorder.sample('inflight', sample)
         STOP_SAMPLER.wait(0.1)
 
 
-def monitor_resources(start, started_at_utc, server_pid, mysql_pid):
+def monitor_resources(start, started_at_utc, server_pid, mysql_pid, recorder=None):
     processes = {'load': psutil.Process(os.getpid())}
     if server_pid:
         processes['web'] = psutil.Process(server_pid)
@@ -120,6 +219,8 @@ def monitor_resources(start, started_at_utc, server_pid, mysql_pid):
             except psutil.NoSuchProcess:
                 sample[name + '_missing'] = True
         RESOURCES.append(sample)
+        if recorder:
+            recorder.sample('resources', sample)
         STOP_SAMPLER.wait(1)
 
 
@@ -303,7 +404,7 @@ def run_one(session, base, cookies, actors, number, kind, rng):
             ACTIVE -= 1
 
 
-def worker(index, gate, end_at, base, cookies, actors, results):
+def worker(index, gate, end_at, base, cookies, actors, results, recorder):
     rng = random.Random(20261024 + index)
     session = requests.Session()
     gate.wait(timeout=180)
@@ -311,6 +412,7 @@ def worker(index, gate, end_at, base, cookies, actors, results):
         number, kind = next_task()
         result = run_one(session, base, cookies, actors, number, kind, rng)
         results.append(result)
+        recorder.request(result)
     session.close()
 
 
@@ -363,35 +465,33 @@ def main():
         MIX[:] = [args.only_group]
     bases = [base.rstrip('/') for base in (args.tunnel_base or [args.base])]
     cookies = authentication(bases[0], private)
+    prefix = args.output_prefix
+    recorder = JsonlRunRecorder(prefix)
     total = args.warmup_seconds + args.formal_seconds
     started_at_utc = datetime.now(timezone.utc)
     start = time.perf_counter()
+    recorder.set_clock(start, started_at_utc)
     end = start + total
     gate = threading.Barrier(args.concurrency + 1)
     results = []
-    watcher = threading.Thread(target=monitor, args=(start, started_at_utc), daemon=True)
+    watcher = threading.Thread(target=monitor, args=(start, started_at_utc, recorder), daemon=True)
     watcher.start()
     resource_watcher = threading.Thread(target=monitor_resources,
-                                        args=(start, started_at_utc, args.server_pid, args.mysql_pid), daemon=True)
+                                        args=(start, started_at_utc, args.server_pid, args.mysql_pid, recorder),
+                                        daemon=True)
     resource_watcher.start()
-    with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
-        futures = [pool.submit(worker, n, gate, end, bases[n % len(bases)], cookies, actors, results)
-                   for n in range(args.concurrency)]
-        gate.wait(timeout=180)
-        for future in futures:
-            future.result()
-    STOP_SAMPLER.set()
-    watcher.join(timeout=5)
-    resource_watcher.join(timeout=5)
-    prefix = args.output_prefix
-    prefix.parent.mkdir(parents=True, exist_ok=True)
-    with prefix.with_suffix('.requests.jsonl').open('x', encoding='utf-8') as stream:
-        for row in results:
-            item = {**row, 'started': row['started'] - start,
-                    'first': row['first'] - start if row['first'] else None,
-                    'ended': row['ended'] - start,
-                    **request_timestamps(row, start, started_at_utc)}
-            stream.write(json.dumps(item, ensure_ascii=False) + '\n')
+    try:
+        with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            futures = [pool.submit(worker, n, gate, end, bases[n % len(bases)], cookies, actors, results, recorder)
+                       for n in range(args.concurrency)]
+            gate.wait(timeout=180)
+            for future in futures:
+                future.result()
+    finally:
+        STOP_SAMPLER.set()
+        watcher.join(timeout=5)
+        resource_watcher.join(timeout=5)
+        recorder.close()
     summary = summarize(results, SAMPLES, start, end, args.warmup_seconds)
     actual_duration = time.perf_counter() - start
     if args.concurrency != 360:
@@ -418,8 +518,6 @@ def main():
                                        for key in ('host_cpu_percent', 'host_memory_percent',
                                                    'web_rss_bytes', 'mysql_rss_bytes', 'load_rss_bytes')}})
     prefix.with_suffix('.summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding='utf-8')
-    prefix.with_suffix('.inflight.jsonl').write_text(''.join(json.dumps(row) + '\n' for row in SAMPLES), encoding='utf-8')
-    prefix.with_suffix('.resources.jsonl').write_text(''.join(json.dumps(row) + '\n' for row in RESOURCES), encoding='utf-8')
     print(json.dumps(summary, ensure_ascii=False))
 
 
