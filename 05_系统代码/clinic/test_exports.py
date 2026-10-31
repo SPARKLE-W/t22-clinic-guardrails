@@ -55,7 +55,7 @@ class ClinicalExportTests(ClinicFixture):
     def test_clinical_export_serializes_rows_lazily(self):
         def consume(columns, rows):
             self.assertIs(iter(rows), rows)
-            self.assertEqual(['record_ref'], [row['record_ref'] for row in rows])
+            self.assertEqual([str(self.record.pk)], [row['record_ref'] for row in rows])
             return b'csv bytes'
 
         with patch('clinic.exports._csv', side_effect=consume):
