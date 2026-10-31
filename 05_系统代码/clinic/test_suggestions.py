@@ -66,6 +66,14 @@ class SuggestionTests(ClinicFixture):
         self.assertEqual(1,len(clinical['adoptions']))
         self.assertEqual(saved['suggestion_ref'],clinical['adoptions'][0]['suggestion_ref'])
 
+    def test_active_template_is_validated_once_for_suggestion_adoption(self):
+        item = self.seed()[0]
+        from clinic import suggestions
+        with patch('clinic.suggestions._validated', wraps=suggestions._validated) as validate:
+            response = self.post(item)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, validate.call_count)
+
     def test_adoption_on_extended_template_preserves_optional_fields(self):
         template = self.template_fixture('template-extra-adoption', extra_fields=[
             {'id':'x_followup_note','type':'text','required':False,'visible_role':'doctor'}])

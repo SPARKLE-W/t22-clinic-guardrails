@@ -3,6 +3,8 @@ import hashlib
 import json
 import math
 import re
+import threading
+from collections import OrderedDict
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, FormatChecker
@@ -11,6 +13,9 @@ DATA = Path(__file__).with_name('data')
 MAX_BYTES = 1048576
 MAX_NODES = 30000
 MAX_DEPTH = 64
+_VERIFIED_CANDIDATES = OrderedDict()
+_VERIFIED_CANDIDATES_LOCK = threading.Lock()
+_VERIFIED_CANDIDATES_MAX = 128
 
 
 def _load(name):
@@ -120,8 +125,10 @@ def _tree_check(value):
             raise DefinitionError('non-json value')
 
     visit(value, 0)
-    if len(_canonical(value)) > MAX_BYTES:
+    canonical = _canonical(value)
+    if len(canonical) > MAX_BYTES:
         raise DefinitionError('byte limit')
+    return canonical
 
 
 def _first_difference(expected, actual, parts):
@@ -322,3 +329,24 @@ def verify_candidate(candidate):
     if _normalize(candidate) != _normalize(result['candidate']):
         return _failed([_issue('CANDIDATE_MISMATCH', message='Candidate differs from recompiled draft; metadata and hashes cannot grant approval.')])
     return result
+
+
+def is_verified_candidate(candidate):
+    """Reuse a successful pure verification only for the exact canonical envelope."""
+    try:
+        canonical = _tree_check(candidate)
+        fingerprint = FLOOR_DIGEST + ':' + hashlib.sha256(canonical).hexdigest()
+    except (TypeError, ValueError, RecursionError, UnicodeError, OverflowError):
+        return False
+    with _VERIFIED_CANDIDATES_LOCK:
+        if fingerprint in _VERIFIED_CANDIDATES:
+            _VERIFIED_CANDIDATES.move_to_end(fingerprint)
+            return True
+    if not verify_candidate(candidate)['ok']:
+        return False
+    with _VERIFIED_CANDIDATES_LOCK:
+        _VERIFIED_CANDIDATES[fingerprint] = None
+        _VERIFIED_CANDIDATES.move_to_end(fingerprint)
+        if len(_VERIFIED_CANDIDATES) > _VERIFIED_CANDIDATES_MAX:
+            _VERIFIED_CANDIDATES.popitem(last=False)
+    return True

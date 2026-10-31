@@ -24,6 +24,13 @@ class MedicationTests(ClinicFixture):
     def values(self):
         return {'drug': '合成演示药品', 'amount': '1', 'unit': '演示单位'}
 
+    def test_active_template_is_validated_once_for_medication_write(self):
+        from clinic import medications
+        with patch('clinic.medications._validated', wraps=medications._validated) as validate:
+            response = self.post(self.values())
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, validate.call_count)
+
     def chain(self):
         return read(self.doctor.pk, clinical=True, ref=self.ref)['clinical']['medication_chain']
 
