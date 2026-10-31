@@ -100,7 +100,7 @@ def diagnosis(actor_id, mode, key, payload, ref):
                 check.save(update_fields=['record', 'result_version'])
                 _audit(actor, WRITE, row, 'success', 'COMPLETED', record)
                 # Load through the same explicit, doctor-only serializer as reads.
-                row = type(row).objects.get(pk=row.pk)
+                row.clinicalrecord = record
                 result = _clinical(row, {template_candidate.pk: template})
             Operation.objects.create(actor=actor, permission=WRITE, key=operation_key, digest=digest, result=result)
             return result

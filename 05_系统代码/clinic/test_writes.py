@@ -40,6 +40,17 @@ class ClinicalWriteTests(ClinicFixture):
         target_inserts = [query['sql'] for query in captured if 'clinic_audittarget' in query['sql'].lower() and query['sql'].lstrip().lower().startswith('insert')]
         self.assertEqual(1, len(target_inserts))
 
+    def test_diagnosis_response_does_not_reload_the_encounter(self):
+        ref = self.create()['encounter_ref']
+        with CaptureQueriesContext(connection) as captured:
+            response = self.post(ref, {'diagnosis': '合成诊断'})
+
+        self.assertEqual(200, response.status_code)
+        encounter_reads = [query['sql'] for query in captured
+                           if query['sql'].lstrip().lower().startswith('select')
+                           and 'clinic_encounter' in query['sql'].lower()]
+        self.assertEqual(1, len(encounter_reads), encounter_reads)
+
     def test_optional_template_fields_preserve_types_versions_and_export(self):
         import csv
         import io
