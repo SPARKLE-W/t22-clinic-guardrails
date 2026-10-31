@@ -14,6 +14,7 @@ import time
 import uuid
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
@@ -34,6 +35,20 @@ VERSION_LOCK = threading.Lock()
 GUARD_TARGETS = 6670
 DIAGNOSIS_TARGETS = 6665
 ADOPTION_TARGETS = 6665
+
+
+def utc_at(origin, elapsed):
+    return (origin + timedelta(seconds=elapsed)).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+
+
+def request_timestamps(row, start, origin):
+    def timestamp(key):
+        value = row.get(key)
+        return utc_at(origin, value - start) if value is not None else None
+
+    return {'started_at_utc': timestamp('started'),
+            'first_byte_at_utc': timestamp('first'),
+            'ended_at_utc': timestamp('ended')}
 
 
 def ref(kind, shop, number):
@@ -73,14 +88,16 @@ def update_current_version(key, item):
     return False
 
 
-def monitor(start):
+def monitor(start, started_at_utc):
     while not STOP_SAMPLER.is_set():
+        elapsed = time.perf_counter() - start
         with LOCK:
-            SAMPLES.append({'seconds': time.perf_counter() - start, 'in_flight': ACTIVE})
+            SAMPLES.append({'seconds': elapsed, 'timestamp_utc': utc_at(started_at_utc, elapsed),
+                            'in_flight': ACTIVE})
         STOP_SAMPLER.wait(0.1)
 
 
-def monitor_resources(start, server_pid, mysql_pid):
+def monitor_resources(start, started_at_utc, server_pid, mysql_pid):
     processes = {'load': psutil.Process(os.getpid())}
     if server_pid:
         processes['web'] = psutil.Process(server_pid)
@@ -88,7 +105,8 @@ def monitor_resources(start, server_pid, mysql_pid):
         processes['mysql'] = psutil.Process(mysql_pid)
     psutil.cpu_percent(interval=None)
     while not STOP_SAMPLER.is_set():
-        sample = {'seconds': time.perf_counter() - start,
+        elapsed = time.perf_counter() - start
+        sample = {'seconds': elapsed, 'timestamp_utc': utc_at(started_at_utc, elapsed),
                   'host_cpu_percent': psutil.cpu_percent(interval=None),
                   'host_memory_percent': psutil.virtual_memory().percent}
         network = psutil.net_io_counters()
@@ -346,14 +364,15 @@ def main():
     bases = [base.rstrip('/') for base in (args.tunnel_base or [args.base])]
     cookies = authentication(bases[0], private)
     total = args.warmup_seconds + args.formal_seconds
+    started_at_utc = datetime.now(timezone.utc)
     start = time.perf_counter()
     end = start + total
     gate = threading.Barrier(args.concurrency + 1)
     results = []
-    watcher = threading.Thread(target=monitor, args=(start,), daemon=True)
+    watcher = threading.Thread(target=monitor, args=(start, started_at_utc), daemon=True)
     watcher.start()
     resource_watcher = threading.Thread(target=monitor_resources,
-                                        args=(start, args.server_pid, args.mysql_pid), daemon=True)
+                                        args=(start, started_at_utc, args.server_pid, args.mysql_pid), daemon=True)
     resource_watcher.start()
     with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
         futures = [pool.submit(worker, n, gate, end, bases[n % len(bases)], cookies, actors, results)
@@ -370,16 +389,23 @@ def main():
         for row in results:
             item = {**row, 'started': row['started'] - start,
                     'first': row['first'] - start if row['first'] else None,
-                    'ended': row['ended'] - start}
+                    'ended': row['ended'] - start,
+                    **request_timestamps(row, start, started_at_utc)}
             stream.write(json.dumps(item, ensure_ascii=False) + '\n')
     summary = summarize(results, SAMPLES, start, end, args.warmup_seconds)
+    actual_duration = time.perf_counter() - start
     if args.concurrency != 360:
         summary['kind'] = 'preflight_not_AC06'
     if args.only_group:
         summary['kind'] = 'preflight_not_AC06'
         summary['only_group'] = args.only_group
     summary.update({'concurrency': args.concurrency, 'sample_count': len(SAMPLES),
-                    'actual_duration_seconds': time.perf_counter() - start,
+                    'actual_duration_seconds': actual_duration,
+                    'run_started_at_utc': utc_at(started_at_utc, 0),
+                    'formal_started_at_utc': utc_at(started_at_utc, args.warmup_seconds),
+                    'formal_ended_at_utc': utc_at(started_at_utc, args.warmup_seconds + args.formal_seconds),
+                    'run_finished_at_utc': utc_at(started_at_utc, actual_duration),
+                    'timestamps_utc_note': 'Mapped from the run-start UTC wall clock plus monotonic elapsed time; latency uses perf_counter.',
                     'tunnel_count': len(bases),
                     'target_pool_sizes': {'guard': GUARD_TARGETS,
                                           'diagnosis_correction': DIAGNOSIS_TARGETS,
