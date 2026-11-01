@@ -92,6 +92,8 @@ jobs:
               'user': 't22_app', 'password': 'ephemeral-ci-mq-only', 'queue': 't22.app.ci'
           }), encoding='utf-8')
           PY
+      - name: Migrate isolated CI application database
+        run: python manage.py migrate --noinput
       - name: Framework and migration checks
         run: |
           python manage.py check
