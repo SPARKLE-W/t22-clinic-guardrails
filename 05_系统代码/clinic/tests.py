@@ -94,6 +94,7 @@ class ClinicTests(ClinicFixture):
                             if SuggestionDecision._meta.db_table.lower() in query['sql'].lower()]
         self.assertEqual(1, len(decision_queries), decision_queries)
         self.assertIn('outcome', decision_queries[0].lower())
+        self.assertIn('adopted', decision_queries[0].lower())
         self.assertEqual(1, len(result['clinical']['adoptions']))
         self.assertEqual(str(accepted.pk), result['clinical']['adoptions'][0]['suggestion_ref'])
         self.assertNotIn('不应读取的建议', str(result))
