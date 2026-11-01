@@ -35,6 +35,45 @@ class AbsoluteTimestampTests(unittest.TestCase):
         self.assertIsNone(strict_load.request_timestamps(row, 0.0, origin)['first_byte_at_utc'])
 
 
+class ServerProfileHeaderTests(unittest.TestCase):
+    def test_parses_all_stage_and_identity_headers(self):
+        headers = {
+            'Server-Timing': 'app;dur=18.2500, sql;dur=6.5000, commit;dur=1.2500, queue;dur=0.7500',
+            'X-T22-SQL-Count': '9',
+            'X-T22-Server-PID': '4120',
+            'X-T22-Process-CPU': '18.75',
+            'X-T22-App-Start': '123.0',
+            'X-T22-App-End': '123.01825',
+            'X-T22-Profile-Scope': 'through-start-response; iterable-excluded',
+        }
+
+        self.assertEqual({
+            'app_ms': 18.25, 'sql_ms': 6.5, 'commit_ms': 1.25, 'queue_ms': 0.75,
+            'sql_count': 9, 'server_pid': 4120, 'process_cpu_seconds': 18.75,
+            'app_start_monotonic': 123.0, 'app_end_monotonic': 123.01825,
+            'scope': 'through-start-response; iterable-excluded',
+        }, strict_load.parse_server_profile(headers))
+
+    def test_absent_or_invalid_profile_headers_are_ignored(self):
+        self.assertEqual({}, strict_load.parse_server_profile({}))
+        self.assertEqual({'app_ms': 2.0}, strict_load.parse_server_profile({
+            'Server-Timing': 'app;dur=2, sql;dur=invalid',
+            'X-T22-SQL-Count': 'not-a-count',
+        }))
+
+    def test_summary_reports_profiled_samples_separately(self):
+        row = {'kind': 'query', 'started': 1.0, 'ended': 1.2, 'ok': True,
+               'server_profile': {'queue_ms': 10.0, 'app_ms': 20.0,
+                                  'scope': 'through-start-response; iterable-excluded'}}
+        summary = strict_load.summarize([row], [], 0.0, 10.0, 0)
+
+        self.assertEqual(1, summary['groups']['query']['profiled_count'])
+        self.assertEqual([row['server_profile']['scope']],
+                         summary['groups']['query']['profile_scopes'])
+        self.assertEqual(20.0,
+                         summary['groups']['query']['server_profile']['app_ms']['p95_ms'])
+
+
 class StreamingArtifactTests(unittest.TestCase):
     def test_request_result_is_flushed_while_run_is_active(self):
         with tempfile.TemporaryDirectory() as directory:

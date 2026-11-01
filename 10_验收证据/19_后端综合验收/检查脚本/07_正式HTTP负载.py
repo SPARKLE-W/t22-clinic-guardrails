@@ -10,6 +10,7 @@ import os
 import platform
 import queue
 import random
+import re
 import threading
 import time
 import uuid
@@ -361,6 +362,7 @@ def run_one(session, base, cookies, actors, number, kind, rng):
                     first = time.perf_counter()
                 pieces.append(piece)
         body = b''.join(pieces)
+        profile = parse_server_profile(response.headers)
         ended = time.perf_counter()
         code = None
         rows = None
@@ -387,12 +389,15 @@ def run_one(session, base, cookies, actors, number, kind, rng):
                 code = json.loads(body).get('error', {}).get('code')
             except (ValueError, UnicodeError):
                 code = 'NON_JSON_ERROR'
-        return {'request_id': number, 'kind': kind, 'tier': tier, 'status': response.status_code,
+        result = {'request_id': number, 'kind': kind, 'tier': tier, 'status': response.status_code,
                 'code': code, 'ok': bool(valid), 'started': started, 'first': first, 'ended': ended,
                 'bytes': len(body), 'rows': rows, 'sha256_match': digest_match,
                 'expected_count': expected_count if 'export' in kind else None,
                 'server_ref': response.headers.get('X-Export-Ref'),
                 'error_detail': error_detail if response.status_code != 200 else None}
+        if profile:
+            result['server_profile'] = profile
+        return result
     except Exception as error:
         return {'request_id': number, 'kind': kind, 'tier': tier, 'status': None,
                 'code': type(error).__name__, 'error_detail': str(error)[:500],
@@ -422,9 +427,20 @@ def summarize(rows, samples, start, end, warmup):
     for kind in sorted(set(MIX)):
         selected = [r for r in formal if r['kind'] == kind]
         times = [(r['ended'] - r['started']) * 1000 for r in selected]
+        profiled = [r.get('server_profile', {}) for r in selected if r.get('server_profile')]
+        profile_metrics = {}
+        profile_scopes = sorted({row['scope'] for row in profiled if row.get('scope')})
+        for metric in ('queue_ms', 'app_ms', 'sql_ms', 'commit_ms'):
+            values = [row[metric] for row in profiled if metric in row]
+            if values:
+                profile_metrics[metric] = {'count': len(values), 'p50_ms': quantile(values, .5),
+                                           'p95_ms': quantile(values, .95),
+                                           'p99_ms': quantile(values, .99), 'max_ms': max(values)}
         groups[kind] = {'count': len(selected), 'failures': sum(not r['ok'] for r in selected),
                         'p50_ms': quantile(times, .5), 'p95_ms': quantile(times, .95),
-                        'p99_ms': quantile(times, .99), 'max_ms': max(times, default=None)}
+                        'p99_ms': quantile(times, .99), 'max_ms': max(times, default=None),
+                        'profiled_count': len(profiled), 'profile_scopes': profile_scopes,
+                        'server_profile': profile_metrics}
     minutes = []
     for minute in range(10):
         left, right = start + warmup + minute * 60, start + warmup + (minute + 1) * 60
@@ -439,6 +455,30 @@ def summarize(rows, samples, start, end, warmup):
             'in_flight_p50': quantile(during, .5), 'in_flight_p95': quantile(during, .95),
             'in_flight_max': max(during, default=None),
             'actual_mix': {kind: groups[kind]['count'] / len(formal) if formal else 0 for kind in groups}}
+
+
+def parse_server_profile(headers):
+    """Parse optional timing headers emitted by 05_正式负载服务.py --profile."""
+    timing = headers.get('Server-Timing', '')
+    result = {}
+    names = {'queue': 'queue_ms', 'app': 'app_ms', 'sql': 'sql_ms', 'commit': 'commit_ms'}
+    for name, value in re.findall(r'(?:^|,)\s*([\w-]+);dur=([0-9]+(?:\.[0-9]+)?)', timing):
+        if name in names:
+            result[names[name]] = float(value)
+    for header, key, converter in (
+            ('X-T22-SQL-Count', 'sql_count', int),
+            ('X-T22-Server-PID', 'server_pid', int),
+            ('X-T22-Process-CPU', 'process_cpu_seconds', float),
+            ('X-T22-App-Start', 'app_start_monotonic', float),
+            ('X-T22-App-End', 'app_end_monotonic', float)):
+        try:
+            result[key] = converter(headers[header])
+        except (KeyError, TypeError, ValueError):
+            pass
+    scope = headers.get('X-T22-Profile-Scope')
+    if scope:
+        result['scope'] = scope
+    return result
 
 
 def main():
