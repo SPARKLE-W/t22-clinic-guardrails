@@ -14,7 +14,7 @@ from governance.models import Candidate
 from governance.services import DomainError, _uuid, require, write_audit
 from governance.views import _body, protected
 from .models import AuditTarget, ClinicalRecord, Encounter, ExportRequest, GuardHit
-from .services import _clinical, _object, _text
+from .services import _adopted_suggestion_prefetch, _clinical, _object, _text
 
 CLINICAL = 'export.clinical'
 CLINICAL_COLUMNS = ['record_ref', 'encounter_ref', 'template_version_ref', 'field_meanings',
@@ -102,7 +102,7 @@ def clinical(actor_id, payload):
             error.export_targets = ('record', refs)
             raise error
         prefetch_related_objects(rows, 'clinicalrevision_set', 'medicationentry_set',
-                                 'suggestion_decisions__suggestion')
+                                 _adopted_suggestion_prefetch())
         template_rows = Candidate.objects.in_bulk({row.template_id for row in rows})
         templates, field_meanings, encoded_field_meanings = {}, {}, {}
         target_refs = []

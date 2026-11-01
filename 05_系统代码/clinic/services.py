@@ -1,15 +1,25 @@
 """Reception writes and scoped reads; no clinical write operation in this slice."""
 import uuid
 from django.db import IntegrityError, connection, transaction
-from django.db.models import prefetch_related_objects
+from django.db.models import Prefetch, prefetch_related_objects
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from governance.models import Account, Activation, Candidate, Operation, PolicyHead
 from governance.services import DomainError, _uuid, require, write_audit
 from vetcontrols.compiler import _digest, _normalize, _tree_check
-from .models import AuditTarget, ClinicalRecord, ClinicalRevision, Encounter, PetIdentity, ReceptionRevision
+from .models import (AuditTarget, ClinicalRecord, ClinicalRevision, Encounter, PetIdentity,
+                     ReceptionRevision, SuggestionDecision)
 
 PERMISSIONS = {'create': 'encounter.create', 'correct': 'encounter.correct', 'mark': 'encounter.mark_error'}
+
+
+def _adopted_suggestion_prefetch(lookup='suggestion_decisions'):
+    queryset = (SuggestionDecision.objects.filter(outcome='adopted')
+                .select_related('suggestion')
+                .only('id', 'record_id', 'suggestion_id', 'outcome', 'adopted_content',
+                      'actor_id', 'created_at', 'reason', 'version_id', 'medication_id',
+                      'suggestion__id', 'suggestion__source'))
+    return Prefetch(lookup, queryset=queryset)
 
 
 def _object(value, allowed, required=()):
@@ -301,7 +311,7 @@ def read(actor_id, clinical=False, ref=None, query=None):
             relations = ['template', 'receptionrevision_set']
             if clinical:
                 relations += ['clinicalrecord__template', 'clinicalrecord__clinicalrevision_set', 'clinicalrecord__medicationentry_set',
-                              'clinicalrecord__suggestion_decisions__suggestion']
+                              _adopted_suggestion_prefetch('clinicalrecord__suggestion_decisions')]
             prefetch_related_objects(rows, *relations)
             items, targets, templates, field_meanings = [], [], {}, {}
             for row in rows:
