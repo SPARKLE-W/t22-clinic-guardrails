@@ -4,7 +4,7 @@ from django.db import IntegrityError, connection, transaction
 from django.db.models import prefetch_related_objects
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
-from governance.models import Account, Activation, Candidate, Operation, PolicyHead, Review
+from governance.models import Account, Activation, Candidate, Operation, PolicyHead
 from governance.services import DomainError, _uuid, require, write_audit
 from vetcontrols.compiler import _digest, _normalize, _tree_check
 from .models import AuditTarget, ClinicalRecord, ClinicalRevision, Encounter, PetIdentity, ReceptionRevision
@@ -51,8 +51,10 @@ def _template(candidate, store_id):
         payload = candidate.envelope['payload']
         template = payload['demand']['templates']
         valid = candidate.store_id == store_id and _digest(payload) == candidate.digest
-        valid = valid and Review.objects.filter(candidate=candidate, digest=candidate.digest, decision='approve').exists()
-        valid = valid and Activation.objects.filter(candidate=candidate, digest=candidate.digest, store_id=store_id).exists()
+        valid = valid and Activation.objects.filter(
+            candidate=candidate, digest=candidate.digest, store_id=store_id,
+            candidate__review__digest=candidate.digest, candidate__review__decision='approve',
+        ).exists()
         if not valid or not template['clinical']['first_record_still_requires_diagnosis']:
             raise ValueError()
         return template
