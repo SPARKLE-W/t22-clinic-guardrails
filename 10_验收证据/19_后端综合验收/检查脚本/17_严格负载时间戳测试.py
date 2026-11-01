@@ -44,6 +44,8 @@ class ServerProfileHeaderTests(unittest.TestCase):
             'X-T22-Process-CPU': '18.75',
             'X-T22-App-Start': '123.0',
             'X-T22-App-End': '123.01825',
+            'X-T22-App-Start-UTC': '2026-11-01T04:30:00.100000Z',
+            'X-T22-App-End-UTC': '2026-11-01T04:30:00.118250Z',
             'X-T22-Profile-Scope': 'through-start-response; iterable-excluded',
         }
 
@@ -51,6 +53,8 @@ class ServerProfileHeaderTests(unittest.TestCase):
             'app_ms': 18.25, 'sql_ms': 6.5, 'commit_ms': 1.25, 'queue_ms': 0.75,
             'sql_count': 9, 'server_pid': 4120, 'process_cpu_seconds': 18.75,
             'app_start_monotonic': 123.0, 'app_end_monotonic': 123.01825,
+            'app_start_utc': '2026-11-01T04:30:00.100000Z',
+            'app_end_utc': '2026-11-01T04:30:00.118250Z',
             'scope': 'through-start-response; iterable-excluded',
         }, strict_load.parse_server_profile(headers))
 

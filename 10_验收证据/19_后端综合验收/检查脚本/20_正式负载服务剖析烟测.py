@@ -7,6 +7,7 @@ import subprocess
 import sys
 import time
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 import requests
@@ -45,9 +46,14 @@ def assert_profile(response, expected):
             raise AssertionError(f'Missing {stage} timing header')
     if response.headers.get('X-T22-Profile-Scope') != 'through-start-response; iterable-excluded':
         raise AssertionError('Unexpected profile scope')
-    for header in ('X-T22-SQL-Count', 'X-T22-Process-CPU', 'X-T22-App-Start', 'X-T22-App-End'):
+    for header in ('X-T22-SQL-Count', 'X-T22-Process-CPU', 'X-T22-App-Start', 'X-T22-App-End',
+                   'X-T22-App-Start-UTC', 'X-T22-App-End-UTC'):
         if header not in response.headers:
             raise AssertionError(f'Missing {header}')
+    app_start = datetime.fromisoformat(response.headers['X-T22-App-Start-UTC'].replace('Z', '+00:00'))
+    app_end = datetime.fromisoformat(response.headers['X-T22-App-End-UTC'].replace('Z', '+00:00'))
+    if app_start.tzinfo is None or app_end.tzinfo is None or app_end < app_start:
+        raise AssertionError('Invalid UTC profile timestamps')
     return timing
 
 

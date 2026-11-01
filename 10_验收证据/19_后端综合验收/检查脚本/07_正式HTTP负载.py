@@ -470,7 +470,9 @@ def parse_server_profile(headers):
             ('X-T22-Server-PID', 'server_pid', int),
             ('X-T22-Process-CPU', 'process_cpu_seconds', float),
             ('X-T22-App-Start', 'app_start_monotonic', float),
-            ('X-T22-App-End', 'app_end_monotonic', float)):
+            ('X-T22-App-End', 'app_end_monotonic', float),
+            ('X-T22-App-Start-UTC', 'app_start_utc', str),
+            ('X-T22-App-End-UTC', 'app_end_utc', str)):
         try:
             result[key] = converter(headers[header])
         except (KeyError, TypeError, ValueError):
