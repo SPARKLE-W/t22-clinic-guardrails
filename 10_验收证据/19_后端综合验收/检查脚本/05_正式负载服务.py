@@ -1,9 +1,10 @@
 """Fixed loopback WSGI serving profile for the isolated formal-load run."""
+import argparse
 import os
 import sys
-import argparse
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / '05_系统代码'))
@@ -43,6 +44,7 @@ def serve_profiled(port, threads):
             self.application = application
 
         def __call__(self, environ, start_response):
+            started_utc = datetime.now(timezone.utc).isoformat(timespec='microseconds').replace('+00:00', 'Z')
             started = time.perf_counter()
             counters = {'sql_ms': 0.0, 'sql_count': 0, 'commit_ms': 0.0}
             database = connections['default']
@@ -65,6 +67,7 @@ def serve_profiled(port, threads):
 
             def measured_response(status, headers, exc_info=None):
                 app_end = time.perf_counter()
+                app_end_utc = datetime.now(timezone.utc).isoformat(timespec='microseconds').replace('+00:00', 'Z')
                 timing = (f"app;dur={(app_end - started) * 1000:.4f}, "
                           f"sql;dur={counters['sql_ms']:.4f}, "
                           f"commit;dur={counters['commit_ms']:.4f}, "
@@ -77,6 +80,8 @@ def serve_profiled(port, threads):
                     ('X-T22-Process-CPU', str(time.process_time())),
                     ('X-T22-App-Start', str(started)),
                     ('X-T22-App-End', str(app_end)),
+                    ('X-T22-App-Start-UTC', started_utc),
+                    ('X-T22-App-End-UTC', app_end_utc),
                 ]
                 return start_response(status, headers + extra, exc_info)
 
