@@ -19,7 +19,13 @@ def _adopted_suggestion_prefetch(lookup='suggestion_decisions'):
                 .only('id', 'record_id', 'suggestion_id', 'outcome', 'adopted_content',
                       'actor_id', 'created_at', 'reason', 'version_id', 'medication_id',
                       'suggestion__id', 'suggestion__source'))
-    return Prefetch(lookup, queryset=queryset)
+    return Prefetch(lookup, queryset=queryset, to_attr='prefetched_adopted_suggestions')
+
+
+def _related_rows(record, relation, attribute):
+    if hasattr(record, attribute):
+        return getattr(record, attribute)
+    return getattr(record, relation).all()
 
 
 def _object(value, allowed, required=()):
@@ -237,7 +243,7 @@ def _clinical(row, templates, field_meanings_cache=None):
     if record.template_id not in templates:
         templates[record.template_id] = _template(record.template, row.store_id)
     template = templates[record.template_id]
-    revisions = sorted(record.clinicalrevision_set.all(), key=lambda r: r.version)
+    revisions = sorted(_related_rows(record, 'clinicalrevision_set', 'prefetched_clinical_revisions'), key=lambda r: r.version)
     current = next((r for r in revisions if r.version == record.current_version), None)
     if not current or not current.diagnosis.strip():
         raise DomainError('RECORD_UNAVAILABLE', 503)
@@ -253,14 +259,14 @@ def _clinical(row, templates, field_meanings_cache=None):
             'medication_chain': [{'entry_ref':str(item.pk),'original_entry_ref':str(item.original_id) if item.original_id else None,
                                  'drug':item.drug,'amount':item.amount,'unit':item.unit,'actor_ref':item.actor_id,
                                  'created_at':item.created_at.isoformat(),'reason':item.reason}
-                                for item in sorted(record.medicationentry_set.all(),key=lambda item:(item.created_at,str(item.pk)))],
+                                for item in sorted(_related_rows(record, 'medicationentry_set', 'prefetched_medication_entries'),key=lambda item:(item.created_at,str(item.pk)))],
             'clinical_versions': [{'version_ref': str(r.pk), 'version': r.version, 'diagnosis': r.diagnosis, 'examination': r.examination,
                                    'extra_fields': r.extra_fields,
                                    'actor_ref': r.actor_id, 'created_at': r.created_at.isoformat(), 'reason': r.reason} for r in revisions],
             'adoptions': [{'decision_ref':str(item.pk),'suggestion_ref':str(item.suggestion_id),'source':item.suggestion.source,
                            'adopted_content':item.adopted_content,'actor_ref':item.actor_id,'created_at':item.created_at.isoformat(),
                            'reason':item.reason,'version_ref':str(item.version_id),'medication_ref':str(item.medication_id) if item.medication_id else None}
-                          for item in sorted(record.suggestion_decisions.all(),key=lambda item:(item.created_at,str(item.pk))) if item.outcome == 'adopted']}
+                          for item in sorted(_related_rows(record, 'suggestion_decisions', 'prefetched_adopted_suggestions'),key=lambda item:(item.created_at,str(item.pk))) if item.outcome == 'adopted']}
 
 
 def read(actor_id, clinical=False, ref=None, query=None):
@@ -310,7 +316,9 @@ def read(actor_id, clinical=False, ref=None, query=None):
                 rows = list(values[(page-1)*50:page*50])
             relations = ['template', 'receptionrevision_set']
             if clinical:
-                relations += ['clinicalrecord__template', 'clinicalrecord__clinicalrevision_set', 'clinicalrecord__medicationentry_set',
+                relations += ['clinicalrecord__template',
+                              Prefetch('clinicalrecord__clinicalrevision_set', to_attr='prefetched_clinical_revisions'),
+                              Prefetch('clinicalrecord__medicationentry_set', to_attr='prefetched_medication_entries'),
                               _adopted_suggestion_prefetch('clinicalrecord__suggestion_decisions')]
             prefetch_related_objects(rows, *relations)
             items, targets, templates, field_meanings = [], [], {}, {}
