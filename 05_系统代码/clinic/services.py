@@ -219,7 +219,7 @@ def mutate(actor_id, mode, key, payload, encounter_ref=None):
         raise
 
 
-def _clinical(row, templates):
+def _clinical(row, templates, field_meanings_cache=None):
     try:
         record = row.clinicalrecord
     except ClinicalRecord.DoesNotExist:
@@ -231,8 +231,12 @@ def _clinical(row, templates):
     current = next((r for r in revisions if r.version == record.current_version), None)
     if not current or not current.diagnosis.strip():
         raise DomainError('RECORD_UNAVAILABLE', 503)
-    meanings = {**template['clinical']['field_types'],
-                **{item['id']: item['type'] for item in template['clinical']['extra_fields']}}
+    meanings = field_meanings_cache.get(record.template_id) if field_meanings_cache is not None else None
+    if meanings is None:
+        meanings = {**template['clinical']['field_types'],
+                    **{item['id']: item['type'] for item in template['clinical']['extra_fields']}}
+        if field_meanings_cache is not None:
+            field_meanings_cache[record.template_id] = meanings
     return {'record_ref': str(record.pk), 'encounter_ref': str(row.pk), 'template_version_ref': template['version'],
             'field_meanings': meanings, 'diagnosis': current.diagnosis, 'examination': current.examination,
             'extra_fields': current.extra_fields,
@@ -299,12 +303,12 @@ def read(actor_id, clinical=False, ref=None, query=None):
                 relations += ['clinicalrecord__template', 'clinicalrecord__clinicalrevision_set', 'clinicalrecord__medicationentry_set',
                               'clinicalrecord__suggestion_decisions__suggestion']
             prefetch_related_objects(rows, *relations)
-            items, targets, templates = [], [], {}
+            items, targets, templates, field_meanings = [], [], {}, {}
             for row in rows:
                 if row.template_id not in templates:
                     templates[row.template_id] = _template(row.template, row.store_id)
                 reception = _reception(row)
-                record = _clinical(row, templates) if clinical else None
+                record = _clinical(row, templates, field_meanings) if clinical else None
                 items.append({'reception': reception, 'clinical': record} if clinical else reception)
                 targets.append((row.pk, 'encounter'))
                 if record:
