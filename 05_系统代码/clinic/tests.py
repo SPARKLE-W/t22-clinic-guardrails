@@ -71,6 +71,33 @@ class ClinicTests(ClinicFixture):
                          and query['sql'].lstrip().lower().startswith('select')]
         self.assertEqual(2, len(account_reads), account_reads)
 
+    def test_clinical_read_prefetches_only_adopted_suggestions(self):
+        from django.test.utils import CaptureQueriesContext
+        from .models import Suggestion, SuggestionDecision
+
+        ref = self.create()['encounter_ref']
+        record = self.record_fixture(ref)
+        accepted = Suggestion.objects.create(
+            encounter_id=ref, source_version='demo', sample_key='accepted',
+            source={'type': 'demo', 'version': 'demo'}, content={'diagnosis': '建议'})
+        declined = Suggestion.objects.create(
+            encounter_id=ref, source_version='demo', sample_key='declined',
+            source={'type': 'demo', 'version': 'demo'}, content={'diagnosis': '不应读取的建议'})
+        SuggestionDecision.objects.create(suggestion=accepted, outcome='adopted', actor=self.doctor,
+                                          adopted_content={'diagnosis': '医生采纳'}, record=record)
+        SuggestionDecision.objects.create(suggestion=declined, outcome='declined', actor=self.doctor)
+
+        with CaptureQueriesContext(connection) as captured:
+            result = read(self.doctor.pk, clinical=True, ref=ref)
+
+        decision_queries = [query['sql'] for query in captured
+                            if SuggestionDecision._meta.db_table.lower() in query['sql'].lower()]
+        self.assertEqual(1, len(decision_queries), decision_queries)
+        self.assertIn('outcome', decision_queries[0].lower())
+        self.assertEqual(1, len(result['clinical']['adoptions']))
+        self.assertEqual(str(accepted.pk), result['clinical']['adoptions'][0]['suggestion_ref'])
+        self.assertNotIn('不应读取的建议', str(result))
+
     def test_clinical_role_preflight_denies_wrong_role_before_query_validation(self):
         client = Client()
         client.force_login(self.front)
