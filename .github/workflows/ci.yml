@@ -96,5 +96,7 @@ jobs:
         run: |
           python manage.py check
           python manage.py makemigrations --check --dry-run
+      - name: Formal-load Waitress profile smoke
+        run: python ../10_验收证据/19_后端综合验收/检查脚本/20_正式负载服务剖析烟测.py
       - name: Full regression on MySQL and RabbitMQ
         run: python manage.py test tests governance clinic --noinput -v 2
