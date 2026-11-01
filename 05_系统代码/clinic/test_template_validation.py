@@ -25,6 +25,14 @@ class TemplateValidationTests(ClinicFixture):
 
         self.assertEqual('TEMPLATE_UNAVAILABLE', caught.exception.code)
 
+    def test_rejects_a_candidate_with_a_stale_approval_digest(self):
+        Review.objects.filter(candidate=self.template).update(digest='f' * 64)
+
+        with self.assertRaises(DomainError) as caught:
+            _template(self.template, self.a.pk)
+
+        self.assertEqual('TEMPLATE_UNAVAILABLE', caught.exception.code)
+
     def test_rejects_a_candidate_without_a_matching_store_activation(self):
         Activation.objects.filter(candidate=self.template).update(store=self.b)
 
