@@ -104,7 +104,7 @@ def clinical(actor_id, payload):
         prefetch_related_objects(rows, 'clinicalrevision_set', 'medicationentry_set',
                                  'suggestion_decisions__suggestion')
         template_rows = Candidate.objects.in_bulk({row.template_id for row in rows})
-        templates = {}
+        templates, field_meanings, encoded_field_meanings = {}, {}, {}
         target_refs = []
 
         def export_rows():
@@ -113,17 +113,21 @@ def clinical(actor_id, payload):
                 encounter.clinicalrecord = record
                 record.template = template_rows[record.template_id]
                 try:
-                    clinical = _clinical(encounter, templates)
+                    clinical = _clinical(encounter, templates, field_meanings)
                 except (KeyError, AttributeError, TypeError, UnicodeError):
                     logger.exception('Clinical export generation failed')
                     raise DomainError('EXPORT_GENERATION_UNAVAILABLE', 503) from None
                 if clinical is None:
                     raise DomainError('RECORD_UNAVAILABLE', 503)
                 encode = lambda value: json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+                encoded_meanings = encoded_field_meanings.get(record.template_id)
+                if encoded_meanings is None:
+                    encoded_meanings = encode(clinical['field_meanings'])
+                    encoded_field_meanings[record.template_id] = encoded_meanings
                 target_refs.append(str(record.pk))
                 yield {'record_ref': str(record.pk), 'encounter_ref': str(encounter.pk),
                        'template_version_ref': clinical['template_version_ref'],
-                       'field_meanings': encode(clinical['field_meanings']), 'diagnosis': clinical['diagnosis'],
+                       'field_meanings': encoded_meanings, 'diagnosis': clinical['diagnosis'],
                        'examination': clinical['examination'], 'extra_fields': encode(clinical['extra_fields']),
                        'adopted_content': encode(clinical['adoptions']),
                        'responsibility_metadata': encode({'doctor_ref': encounter.doctor_id,

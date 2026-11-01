@@ -67,6 +67,27 @@ class ClinicalExportTests(ClinicFixture):
         self.assertTrue(AuditTarget.objects.filter(target=self.record.pk, kind='record',
                                                    event__action='export.clinical').exists())
 
+    def test_field_meanings_are_cached_per_template_within_export(self):
+        second_ref = self.create()['encounter_ref']
+        second_record = self.record_fixture(second_ref)
+        payload = {'scope': {'record_refs': [str(self.record.pk), str(second_record.pk)]},
+                   'purpose': '模板字段含义缓存核对'}
+        original_dumps = json.dumps
+        field_meanings_encodes = 0
+
+        def count_field_meanings(value, *args, **kwargs):
+            nonlocal field_meanings_encodes
+            if value == {'diagnosis': 'text', 'examination': 'text'}:
+                field_meanings_encodes += 1
+            return original_dumps(value, *args, **kwargs)
+
+        with patch('clinic.exports.json.dumps', side_effect=count_field_meanings):
+            rows = self.rows(self.download(payload))
+
+        self.assertEqual(2, len(rows))
+        self.assertEqual(1, field_meanings_encodes)
+        self.assertEqual(rows[0]['field_meanings'], rows[1]['field_meanings'])
+
     def test_deactivated_doctor_cannot_read_or_export(self):
         Account.objects.filter(pk=self.doctor.pk).update(is_active=False)
         with self.assertRaises(DomainError) as read_error:
