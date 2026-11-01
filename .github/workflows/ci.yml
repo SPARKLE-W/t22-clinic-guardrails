@@ -72,6 +72,7 @@ jobs:
         run: |
           python -m pip install -r ../10_验收证据/19_后端综合验收/检查脚本/18_负载工具依赖.lock
           python ../10_验收证据/19_后端综合验收/检查脚本/17_严格负载时间戳测试.py
+          python ../10_验收证据/19_后端综合验收/检查脚本/23_服务器资源与请求对齐测试.py
       - name: Configure isolated CI databases
         run: |
           python - <<'PY'
