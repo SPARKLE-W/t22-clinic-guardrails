@@ -5,7 +5,7 @@ import io
 import json
 import logging
 from django.db import transaction
-from django.db.models import Count, Q, prefetch_related_objects
+from django.db.models import Count, Prefetch, Q, prefetch_related_objects
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -101,7 +101,9 @@ def clinical(actor_id, payload):
             error = DomainError('TARGET_UNAVAILABLE', 403)
             error.export_targets = ('record', refs)
             raise error
-        prefetch_related_objects(rows, 'clinicalrevision_set', 'medicationentry_set',
+        prefetch_related_objects(rows,
+                                 Prefetch('clinicalrevision_set', to_attr='prefetched_clinical_revisions'),
+                                 Prefetch('medicationentry_set', to_attr='prefetched_medication_entries'),
                                  _adopted_suggestion_prefetch())
         template_rows = Candidate.objects.in_bulk({row.template_id for row in rows})
         templates, field_meanings, encoded_field_meanings = {}, {}, {}
