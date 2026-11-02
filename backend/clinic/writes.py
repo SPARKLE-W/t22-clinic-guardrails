@@ -5,8 +5,9 @@ from governance.models import Operation
 from governance.services import DomainError, _uuid, require, write_audit
 from vetcontrols.compiler import _digest, _normalize, is_verified_candidate
 from .guards import evaluate
-from .models import Alert, AlertOutbox, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, GuardHit
-from .services import _clinical, _extra_values, _object, _own, _policy_head_for_share, _refusal, _template, _text, read
+from .models import Alert, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision
+from .services import (_clinical, _extra_values, _object, _own, _persist_guard_alerts, _policy_head_for_share,
+                       _refusal, _template, _text, read)
 
 WRITE = 'clinical.diagnosis.write'
 ALERT = 'clinical.alert.handle'
@@ -81,10 +82,7 @@ def diagnosis(actor_id, mode, key, payload, ref):
                          template=template_candidate, policy=policy_candidate, policy_digest=policy_candidate.digest,
                          status='blocked' if hits else 'passed', checks=checks)
             if hits:
-                for item in hits:
-                    hit = GuardHit.objects.create(evaluation=check, **item)
-                    alert = Alert.objects.create(hit=hit)
-                    AlertOutbox.objects.create(alert=alert)
+                _persist_guard_alerts(check, hits)
                 _audit(actor, WRITE, row, 'refused', 'GUARD_BLOCKED', record)
                 result = {'ok': False, 'error': {'code': 'GUARD_BLOCKED'}, 'event_ref': str(check.pk)}
             else:
