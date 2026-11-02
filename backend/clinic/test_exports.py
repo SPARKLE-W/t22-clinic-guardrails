@@ -55,10 +55,10 @@ class ClinicalExportTests(ClinicFixture):
     def test_clinical_export_serializes_rows_lazily(self):
         def consume(columns, rows):
             self.assertIs(iter(rows), rows)
-            self.assertEqual([str(self.record.pk)], [row['record_ref'] for row in rows])
+            self.assertEqual([str(self.record.pk)], [row[0] for row in rows])
             return b'csv bytes'
 
-        with patch('clinic.exports._csv', side_effect=consume):
+        with patch('clinic.exports._csv_values', side_effect=consume):
             body, export_ref, count = clinical(self.doctor.pk, {
                 'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '惰性序列化检查'})
 
