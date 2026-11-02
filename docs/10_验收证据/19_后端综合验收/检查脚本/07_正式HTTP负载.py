@@ -338,7 +338,7 @@ def select_request(kind, sequence, rng):
                                        'medication': {'drug': '合成建议药品', 'amount': '1', 'unit': '片'}},
                    '_load_target_key': (shop, number), '_load_target_lock': target_lock_ref}
         return choose_actor(None, 'doctor', shop, doctor), 'POST', \
-            f'/api/clinical/suggestions/{ref("suggestion", shop, number)}/adoption', payload, 'json', None
+            f'/api/clinical/suggestions/{suggestion_ref}/adoption', payload, 'json', None
     if kind in ('clinical_export', 'detail_export'):
         distribution = rng.randrange(10)
         if distribution < 6:
