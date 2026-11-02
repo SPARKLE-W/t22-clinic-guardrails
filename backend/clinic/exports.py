@@ -265,19 +265,19 @@ def guard(actor_id, permission, payload):
                 raise DomainError('INPUT_INVALID', 422)
             hits = hits.filter(alert__handled_at__isnull=payload['handling_state'] == 'unhandled')
         if permission == DETAIL:
-            selected = hits.select_related('evaluation', 'alert').order_by('evaluation__created_at', 'pk')
+            selected = hits.order_by('evaluation__created_at', 'pk').values(
+                'id', 'evaluation__record_id', 'rule_ref', 'field',
+                'alert__handler_id', 'alert__handled_at', 'alert__handling_result')
             rows = []
             for hit in selected:
-                try:
-                    alert = hit.alert
-                except type(hit).alert.RelatedObjectDoesNotExist:
-                    alert = None
-                rows.append({'event_ref': str(hit.pk), 'record_ref': str(hit.evaluation.record_id) if hit.evaluation.record_id else '',
-                             'rule_ref': hit.rule_ref, 'hit_field': hit.field,
-                             'handling_state': 'handled' if alert and alert.handled_at else 'unhandled',
-                             'handler_ref': alert.handler_id if alert and alert.handler_id else '',
-                             'handled_at': alert.handled_at.isoformat() if alert and alert.handled_at else '',
-                             'handling_result': alert.handling_result if alert and alert.handled_at else ''})
+                handled_at = hit['alert__handled_at']
+                record_id = hit['evaluation__record_id']
+                rows.append({'event_ref': str(hit['id']), 'record_ref': str(record_id) if record_id else '',
+                             'rule_ref': hit['rule_ref'], 'hit_field': hit['field'],
+                             'handling_state': 'handled' if handled_at else 'unhandled',
+                             'handler_ref': hit['alert__handler_id'] or '',
+                             'handled_at': handled_at.isoformat() if handled_at else '',
+                             'handling_result': hit['alert__handling_result'] if handled_at else ''})
             columns = DETAIL_COLUMNS
         else:
             group_by = payload.get('group_by', 'rule')
