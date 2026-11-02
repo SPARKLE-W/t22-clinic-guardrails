@@ -4,7 +4,7 @@ import json
 import subprocess
 from pathlib import Path
 
-root = Path(__file__).resolve().parents[3]
+root = Path(__file__).resolve().parents[4]
 frozen = {
     '03_需求规格说明书.md': 'FE95C5BF2495B763EA2C7075C46CBE5D367F7F82401E2E1818EF81BF9243DAE8',
     '03_需求规格说明书.docx': '844778341B7EB43907FF43CB08AD6B76DB6A9ACE2C77D9B02A028C895958B011',

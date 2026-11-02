@@ -8,7 +8,7 @@ from pathlib import Path
 
 stage = Path(__file__).resolve().parent.parent
 project = stage.parent.parent
-code = project / '05_系统代码'
+code = project / 'backend'
 output = stage / '03_证据与基线检查.json'
 if output.exists():
     raise RuntimeError('Refuse to overwrite an evidence checkpoint')

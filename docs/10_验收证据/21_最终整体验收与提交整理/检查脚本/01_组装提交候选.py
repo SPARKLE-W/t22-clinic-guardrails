@@ -13,9 +13,9 @@ from urllib.parse import unquote
 from lxml import etree
 
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 PRIVATE = Path(os.environ.get('T22_FINAL_RAW_DIR', Path.home() / '.cache/t22-runtime/private'))
-OUTPUT = ROOT / '11_最终提交候选' / '包体'
+OUTPUT = ROOT / 'docs' / '11_最终提交候选' / '包体'
 EXTRAS = [
     'README.md', '00_作业导航.md', '.github/workflows/ci.yml',
     '03_需求规格说明书.md', '03_需求规格说明书.docx',
@@ -195,14 +195,20 @@ def main():
         raise SystemExit('Build only from the merged main branch.')
     tracked = set(git('ls-files', '-z').decode().rstrip('\0').split('\0'))
     files = set(EXTRAS)
-    files.update(name for name in tracked if name.startswith('05_系统代码/'))
-    files.update(name for name in tracked if any(name.startswith(prefix) for prefix in EXTRA_PREFIXES)
+    files.update(name for name in tracked if name.startswith('backend/'))
+    files.update(name for name in tracked if name.startswith('frontend/'))
+    files.update(name[5:] for name in tracked if any(name.startswith('docs/' + prefix)
+                                                     for prefix in EXTRA_PREFIXES)
                  and '历史_修正前/' not in name)
-    if not files <= tracked:
-        raise SystemExit(f'Untracked or missing selected files: {sorted(files - tracked)}')
+    sources = {name: (name if name in {'README.md', '.github/workflows/ci.yml'}
+                      else 'docs/' + name) for name in files}
+    missing = {source for source in sources.values()
+               if source not in tracked and not (ROOT / source).is_file()}
+    if missing:
+        raise SystemExit(f'Untracked or missing selected files: {sorted(missing)}')
     entries = {}
     for name in sorted(files):
-        path = ROOT / name
+        path = ROOT / sources[name]
         if not path.is_file():
             raise SystemExit(f'Missing file: {name}')
         entries[name] = path.read_bytes()

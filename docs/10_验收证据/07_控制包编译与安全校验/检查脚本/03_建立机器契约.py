@@ -2,8 +2,8 @@
 import json
 from pathlib import Path
 
-PROJECT = Path(__file__).resolve().parents[3]
-DATA = PROJECT / '05_系统代码/vetcontrols/data'
+PROJECT = Path(__file__).resolve().parents[4]
+DATA = PROJECT / 'backend/vetcontrols/data'
 STAGE = Path(__file__).resolve().parent.parent
 
 

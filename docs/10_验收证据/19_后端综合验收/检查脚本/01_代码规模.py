@@ -2,8 +2,8 @@
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
-CODE = ROOT / '05_系统代码'
+ROOT = Path(__file__).resolve().parents[4]
+CODE = ROOT / 'backend'
 
 
 def useful_lines(path):

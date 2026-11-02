@@ -5,7 +5,7 @@ import re
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[2]
+ROOT = HERE.parents[3]
 doc = (ROOT / '03_需求规格说明书.md').read_text(encoding='utf-8')
 blocks = re.findall(r'```plantuml\n(.*?)\n```', doc, re.S)
 assert len(blocks) == 2

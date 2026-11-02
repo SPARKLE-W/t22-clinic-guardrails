@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 stage=Path(__file__).resolve().parents[1]
-code=stage.parents[1]/'05_系统代码'
+code=stage.parents[2]/'backend'
 label=sys.argv[1]
 if not label.replace('_','').isalnum():
     raise ValueError('Invalid evidence label')

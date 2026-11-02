@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 stage=Path(__file__).resolve().parents[1]
-project=stage.parents[1]
+project=stage.parents[2]
 def git(*args):
     return subprocess.check_output(['git',*args],cwd=project)
 

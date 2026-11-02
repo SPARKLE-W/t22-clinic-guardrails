@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 stage = Path(__file__).resolve().parent.parent
-code = stage.parent.parent / '05_系统代码'
+code = stage.parent.parent / 'backend'
 label = sys.argv[1]
 output = stage / '原始结果'
 output.mkdir(exist_ok=True)

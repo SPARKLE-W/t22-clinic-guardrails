@@ -6,8 +6,8 @@ import subprocess
 from pathlib import Path
 
 stage = Path(__file__).resolve().parents[1]
-project = stage.parents[1]
-code = project / '05_系统代码'
+project = stage.parents[2]
+code = project / 'backend'
 output = stage / '04_证据与基线检查.json'
 if output.exists():
     raise RuntimeError('Refuse to overwrite evidence')

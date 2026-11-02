@@ -7,7 +7,8 @@
 | 路径 | 内容 |
 | --- | --- |
 | `docs/` | 全部课程文档，按原课程编号组织：来源、需求、设计、AI 留痕、验收证据和提交清单 |
-| `05_系统代码/` | 前后端应用、迁移、依赖、测试和运行说明；代码与报告物理分开 |
+| `backend/` | Django/DRF 应用、迁移、Python 依赖和后端测试 |
+| `frontend/` | Web 工作台 HTML、CSS、JavaScript 和前端测试 |
 | `.github/` | PR 模板和 GitHub Actions CI |
 
 仓库保存代码、Markdown 正文和可复核证据。Word 只在最终提交包中生成/保存，不与 Markdown 源稿并列提交到 GitHub；本地生成的 `.docx` 与提交包已由 `.gitignore` 排除。临时日志、虚拟环境、数据库、凭据和原始运行产物也不纳入版本库。
@@ -17,7 +18,7 @@
 - [作业导航](docs/00_作业导航.md)
 - [需求规格说明书](docs/03_需求规格说明书.md)
 - [架构说明](docs/04_设计与控制文件/architecture.md)
-- [后端运行说明](05_系统代码/README.md)
+- [后端运行说明](backend/README.md)
 - [测试与实测报告](docs/06_测试与实测报告.md)
 - [问题、尝试与测试阶段总结](docs/10_验收证据/19_后端综合验收/32_当前问题与测试总结.md)
 - [最终提交文件清单](docs/11_最终提交候选/00_成果与文件清单.md)
@@ -26,16 +27,16 @@
 
 ## 仓库使用约定
 
-这是一个前后端协同的课程单仓库：应用代码集中在 `05_系统代码/`，所有课程文档集中在 `docs/`，并在 `docs/` 内按课程编号分类。Markdown 是唯一维护版本，Word 只在最终提交包中生成。
+这是一个前后端协同的课程单仓库：应用源码按职责放在 `backend/` 与 `frontend/`，课程材料集中在 `docs/` 并保留课程编号。Markdown 是唯一维护版本，Word 只在最终提交包中生成。
 
 日常开发从 `main` 拉出一个短期功能/修复/文档分支，经 PR 与 CI 检查后合并；合并后删除分支。项目规则、文件位置和命名口径见 [AGENTS.md](AGENTS.md)。
 
 ## 开发与验证
 
-需要 Python 3.12、MySQL 8.4；真实队列集成还需要 RabbitMQ 4.2。按 `05_系统代码/requirements.lock` 安装 Python 依赖。凭据和数据库配置须保存在仓库外。详细安装、配置与命令见[后端运行说明](05_系统代码/README.md)。
+需要 Python 3.12、MySQL 8.4；真实队列集成还需要 RabbitMQ 4.2。按 `backend/requirements.lock` 安装 Python 依赖。凭据和数据库配置须保存在仓库外。详细安装、配置与命令见[后端运行说明](backend/README.md)。
 
 ```powershell
-cd 05_系统代码
+cd backend
 python manage.py check
 python manage.py makemigrations --check --dry-run
 python manage.py test vetcontrols governance clinic tests --noinput -v 2

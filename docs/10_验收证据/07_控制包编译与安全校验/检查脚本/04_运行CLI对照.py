@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 STAGE = Path(__file__).resolve().parent.parent
-CODE = STAGE.parent.parent / '05_系统代码'
+CODE = STAGE.parent.parent / 'backend'
 RUN = STAGE / '原始结果' / (sys.argv[1] if len(sys.argv) > 1 else 'cli_cases_01')
 RUN.mkdir(exist_ok=False)
 complete = json.loads((CODE / 'examples/01_完整定义需求_v0.2.json').read_text(encoding='utf-8'))

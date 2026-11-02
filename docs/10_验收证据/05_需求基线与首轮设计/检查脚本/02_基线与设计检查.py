@@ -7,7 +7,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 import fitz
 
-project = Path(__file__).resolve().parents[3]
+project = Path(__file__).resolve().parents[4]
 stage = Path(__file__).resolve().parents[1]
 design = project / '04_设计与控制文件'
 checks = []
@@ -83,7 +83,7 @@ required = [f'{prefix}-{i:02}' for prefix,n in [('FR',8),('NFR',9),('AC',8)] for
 check('追踪表含全部FR/NFR/AC行',all(re.search(r'^\| '+r+ r' \|',trace,re.M) for r in required),f'{len(required)} rows')
 check('rule_id加入同轮去重',all('attempt_id, rule_id, rule_version, field' in texts[n] or 'attempt_id,rule_id,rule_version,field' in texts[n] for n in ['03_数据与接口设计.md','04_关键流程与时序设计.md']))
 check('并发与FloorSpec修正已写入',all(s in apis for s in ['共享读锁','排他锁','再次比较','固定模式']) and all(s in texts['01_控制文件格式与生成校验设计.md'] for s in ['FloorSpec','无条件调度','非底线扩展字段','O(RF＋G＋I)']))
-check('未生成产品实现目录',not (project/'05_系统代码').exists())
+check('未生成产品实现目录',not (project/'backend').exists())
 
 navs = [project/'00_作业导航.md',project/'01_T22要求核对与验收清单.md',project/'02_T22完成流程与人机任务分工.md',project/'07_AI使用留痕'/'04_设计阶段协作与决策记录.md',project.parent/'README.md',stage/'07_首轮设计综合处置.md',stage/'09_本机预研条件盘点.md']
 broken = []

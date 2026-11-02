@@ -11,7 +11,7 @@ from pathlib import Path
 
 STAGE = Path(__file__).resolve().parent.parent
 PROJECT = STAGE.parent.parent
-CODE = PROJECT / '05_系统代码'
+CODE = PROJECT / 'backend'
 OUTPUT = STAGE / '08_交付证据与基线检查'
 if OUTPUT.with_suffix('.json').exists() or OUTPUT.with_suffix('.md').exists():
     raise RuntimeError('Refuse to overwrite an evidence checkpoint.')

@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const source = fs.readFileSync(path.resolve(__dirname, '../../../05_系统代码/frontend/assets/app.js'), 'utf8');
+const source = fs.readFileSync(path.resolve(__dirname, '../../../frontend/assets/app.js'), 'utf8');
 const results = [];
 
 function context(storage = new Map()) {

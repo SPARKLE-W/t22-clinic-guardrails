@@ -12,7 +12,7 @@ from jsonschema import Draft202012Validator, FormatChecker
 from referencing import Registry, Resource
 
 stage=Path(__file__).resolve().parents[1]
-project=stage.parents[1]
+project=stage.parents[2]
 output=stage/'原始结果/http_02.json'
 if output.exists():
     raise RuntimeError('Refuse to overwrite evidence')
@@ -68,7 +68,7 @@ status,encounter=call(front,'/api/encounters',{'pet_identity_choice':'new','pet_
 check('前台实际创建独立合成接诊',status==200)
 ref=encounter['encounter_ref'];base='/api/clinical/encounters/'+ref
 command=[sys.executable,'manage.py','seed_demo_suggestions','--encounter-ref',ref]
-result=subprocess.run(command,cwd=project/'05_系统代码',env={**os.environ,'T22_APP_CONFIG':str(private/'app.json'),
+result=subprocess.run(command,cwd=project/'backend',env={**os.environ,'T22_APP_CONFIG':str(private/'app.json'),
     'PYTHONIOENCODING':'utf-8','PYTHONDONTWRITEBYTECODE':'1'},capture_output=True,text=True,encoding='utf-8')
 check('受控命令初始化演示建议',result.returncode==0)
 status,listed=call(doctor,base+'/suggestions')

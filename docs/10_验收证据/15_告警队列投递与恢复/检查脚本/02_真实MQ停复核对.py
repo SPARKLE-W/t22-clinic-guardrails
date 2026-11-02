@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 
 stage=Path(__file__).resolve().parents[1]
-code=stage.parents[1]/'05_系统代码'
+code=stage.parents[2]/'backend'
 runtime=Path.home()/'.cache/t22-runtime'
 output=stage/'原始结果/lifecycle_02.json'
 if output.exists():

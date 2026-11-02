@@ -12,7 +12,7 @@ from vetcontrols.compiler import parse_text
 from .models import AuditEvent, Candidate, PolicyHead
 from .services import ACTIVATE, GENERATE, REVIEW, ROLES, DomainError, detail, mutate, require, write_audit
 
-FRONTEND_ROOT = Path(__file__).resolve().parent.parent / 'frontend'
+FRONTEND_ROOT = Path(__file__).resolve().parents[2] / 'frontend'
 
 
 def error(code, status):

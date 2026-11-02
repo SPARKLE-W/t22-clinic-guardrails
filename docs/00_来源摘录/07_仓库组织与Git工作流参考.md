@@ -4,7 +4,7 @@
 
 ## 本项目结论
 
-T22 使用一个私有单仓库，原因是前后端、接口契约、需求设计、回归测试和课程交付属于同一个系统，需要在同一 PR 中协同检查。仓库按课程已经形成的边界组织：根目录放编号主文档，`04_设计与控制文件/` 放设计与契约，`05_系统代码/` 放完整系统代码，`07_AI使用留痕/` 放协作过程，`10_验收证据/` 放核验材料，`11_最终提交候选/` 放交付清单。当前分类清楚且已有大量相对链接，不迁移成 Nx 的 `apps/`、`libs/` 或新增一套通用 `docs/` 层级。
+T22 保留一个私有单仓库，让前后端、接口契约、课程设计和回归测试能在同一 PR 中一起审查。对照 GitHub 全栈仓库讨论和 Nx 的目录原则，单仓库内部仍按本项目的实际职责分层：`backend/` 放 Django/DRF 服务，`frontend/` 放浏览器工作台，`docs/` 放课程文档、设计、AI留痕和验收证据。课程编号继续用于 `docs/` 内分类，不把编号放在产品源码目录名里。没有采用 Nx 的 `apps/`、`libs/`，因为当前只有一个服务和一个工作台，没有共享库拆分需求。
 
 Git 采用 GitHub Flow 式的单长期主分支：`main` 加短期主题分支，通过 PR 和 CI 合并。当前是小型课程项目，没有多个并行产品版本、固定发布列车或生产热修复线；常设 `develop`、`release`、`frontend/dev`、`backend/dev` 会增加同步和合并成本。独立前后端改动可各自开短期分支；需要一起改时在一个 PR 中提交，避免人为把接口联调拆成两个不一致的基线。
 
@@ -15,7 +15,7 @@ Git 采用 GitHub Flow 式的单长期主分支：`main` 加短期主题分支�
 | 来源 | 可借鉴内容 | 对本项目的取舍 |
 | --- | --- | --- |
 | [GitHub Community：全栈仓库结构讨论](https://github.com/orgs/community/discussions/190870) | 讨论单仓库与多仓库及前后端协作；回答者认为多数全栈应用可先用单仓库，让跨端改动在同一 PR 协调。 | 作为实践讨论而非规范。T22 的前后端共同交付、同套验收与接口联调支持单仓库；没有独立部署/权限需求证明要拆仓。 |
-| [Nx：Monorepo Folder Structure](https://nx.dev/docs/kb/folder-structure) | 目录结构是约定而非硬性要求；按业务范围组织，复用代码确实被多个项目消费后再抽共享层；避免过深嵌套。 | 本仓库未采用 Nx，且已有课程编号边界；采纳“按实际边界组织、不为工具模板预建目录”的原则，不照搬 `apps/`、`libs/`。 |
+| [Nx：Monorepo Folder Structure](https://nx.dev/docs/kb/folder-structure) | 目录结构是约定而非硬性要求；按职责组织，复用代码确实被多个项目消费后再抽共享层；避免过深嵌套。 | 采纳按职责分开放置后端、前端和文档；不照搬 Nx 的 `apps/`、`libs/`，因为当前没有多应用或共享库的实际需求。 |
 | [Atlassian：Gitflow Workflow](https://www.atlassian.com/en/git/tutorials/comparing-workflows/gitflow-workflow) | Gitflow 用 `develop`、`feature`、`release`、`hotfix` 支持阶段化发布与维护多个版本。 | 当前课程项目没有多版本发布和长期稳定分支需求，不采用完整 Gitflow；仅保留主分支和短期工作分支。 |
 | [中培伟业：浅论选择分支策略](https://www.zpedu.com/it/xxjl/4228.html) | 说明 Git 本身不强制指定一种分支策略，分支是团队约定；文章介绍了主干、开发和热修复分支的用途。 | 作为中文入门材料。分支策略按项目发布方式选取；T22 无需照搬多长期分支。截图里提及的 zpedu 对比文未能由标题唯一定位，后续如需逐篇评价应补原链接。 |
 | [GitHub Docs：GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow) | 官方轻量工作流：主题分支、PR、讨论与检查，符合单一主线的协作方式。 | 采用其简化流程：`main` → 短期分支 → PR/CI → `main` → 删除来源分支。 |

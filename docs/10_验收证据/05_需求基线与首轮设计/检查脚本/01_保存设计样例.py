@@ -4,7 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
-project = Path(__file__).resolve().parents[3]
+project = Path(__file__).resolve().parents[4]
 folder = project / '04_设计与控制文件' / '控制文件'
 folder.mkdir(exist_ok=True)
 baseline = hashlib.sha256((project / '03_需求规格说明书.md').read_bytes()).hexdigest().upper()

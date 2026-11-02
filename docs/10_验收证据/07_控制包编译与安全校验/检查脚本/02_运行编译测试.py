@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 STAGE = Path(__file__).resolve().parent.parent
-CODE = STAGE.parent.parent / '05_系统代码'
+CODE = STAGE.parent.parent / 'backend'
 label = sys.argv[1]
 targets = sys.argv[2:] or ['tests.test_controls']
 output = STAGE / '原始结果'

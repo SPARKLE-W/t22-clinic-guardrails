@@ -40,7 +40,7 @@ def login(name):
     return browser
 
 
-sys.path.insert(0, str(stage.parents[1] / '05_系统代码'))
+sys.path.insert(0, str(stage.parents[2] / 'backend'))
 os.environ.update(T22_APP_CONFIG=str(private / 'app.json'), DJANGO_SETTINGS_MODULE='vetapp.settings')
 import django
 django.setup()

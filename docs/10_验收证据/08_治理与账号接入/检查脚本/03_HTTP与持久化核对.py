@@ -73,7 +73,7 @@ for name in ['a_doctor', 'a_frontdesk']:
     restricted, jar = browser(name)
     code, value = call(restricted, jar, '/api/candidates')
     check(name + '直接治理接口拒绝', code == 403 and value['error']['code'] == 'PERMISSION_DENIED')
-sys.path.insert(0, str(stage.parent.parent / '05_系统代码'))
+sys.path.insert(0, str(stage.parent.parent / 'backend'))
 os.environ['T22_APP_CONFIG'] = str(private / 'app.json')
 os.environ['DJANGO_SETTINGS_MODULE'] = 'vetapp.settings'
 import django

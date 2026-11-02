@@ -10,7 +10,7 @@ if action not in ['start', 'stop']:
 output = stage / ('原始结果/' + label + '.json')
 if output.exists():
     raise RuntimeError('Refuse to overwrite lifecycle evidence')
-script = stage.parent.parent / '05_系统代码/运行脚本/01_本地应用.ps1'
+script = stage.parent.parent / 'backend/运行脚本/01_本地应用.ps1'
 command = ['powershell', '-NoProfile', '-File', str(script), action]
 stdout_path = output.with_suffix('.stdout.txt')
 stderr_path = output.with_suffix('.stderr.txt')

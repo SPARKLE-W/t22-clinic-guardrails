@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 
-CODE = Path(__file__).resolve().parents[3] / '05_系统代码'
+CODE = Path(__file__).resolve().parents[4] / 'backend'
 sys.path.insert(0, str(CODE))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vetapp.settings')
 import django

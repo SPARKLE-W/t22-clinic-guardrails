@@ -7,7 +7,7 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 stage=Path(__file__).resolve().parents[1]
-project=stage.parents[1]
+project=stage.parents[2]
 checks=[]
 def check(name,value):
     checks.append({'check':name,'passed':bool(value)})
@@ -22,14 +22,14 @@ log=(stage/'原始结果/full_01.txt').read_text(encoding='utf-8')
 check('完整107项回归退出0',full['exit_code']==0 and 'Ran 107 tests' in log and '\nOK\n' in log)
 http=json.loads((stage/'原始结果/http_02.json').read_text(encoding='utf-8'))
 check('实际HTTP21项全部通过',http['passed'] and http['count']==21 and all(row['passed'] for row in http['checks']))
-files=list((project/'05_系统代码').rglob('*.py'))
+files=list((project/'backend').rglob('*.py'))
 for path in files:
     ast.parse(path.read_text(encoding='utf-8'),filename=str(path))
 check('Python及迁移语法',True)
 spec=json.loads((project/'04_设计与控制文件/控制文件/03_建议接口_openapi_v0.1.json').read_text(encoding='utf-8'))
 for schema in spec['components']['schemas'].values():
     Draft202012Validator.check_schema(schema)
-routes=(project/'05_系统代码/vetapp/urls.py').read_text(encoding='utf-8')
+routes=(project/'backend/vetapp/urls.py').read_text(encoding='utf-8')
 registered={'/'+re.sub(r'<uuid:([^>]+)>',r'{\1}',route) for route in re.findall(r"path\('([^']*)'",routes)}
 check('OpenAPI三路由实际注册',len(spec['paths'])==3 and set(spec['paths'])<=registered)
 paths=subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=project).decode('utf-8')

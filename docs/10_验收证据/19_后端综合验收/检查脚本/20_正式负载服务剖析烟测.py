@@ -13,8 +13,8 @@ from pathlib import Path
 import requests
 
 
-ROOT = Path(__file__).resolve().parents[3]
-APP_ROOT = ROOT / '05_系统代码'
+ROOT = Path(__file__).resolve().parents[4]
+APP_ROOT = ROOT / 'backend'
 SERVICE = Path(__file__).with_name('05_正式负载服务.py')
 sys.path.insert(0, str(APP_ROOT))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vetapp.settings')

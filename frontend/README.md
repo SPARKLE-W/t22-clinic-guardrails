@@ -12,7 +12,7 @@
 
 ## 运行
 
-在 `05_系统代码` 目录按主 [README](../README.md) 启动 MySQL 与 Django 后，打开 `/app`。首次打开会设置 `csrftoken`；`GET /api/session` 只返回当前账号最小身份。退出后回到登录页。
+在 `backend` 目录按主 [README](../README.md) 启动 MySQL 与 Django 后，打开 `/app`。首次打开会设置 `csrftoken`；`GET /api/session` 只返回当前账号最小身份。退出后回到登录页。
 
 演示账号在仓库外的用户缓存目录 `app-demo-accounts.json`，不随代码提交。
 
@@ -33,4 +33,4 @@
 
 ## 设计
 
-方向、配色、字体、页面结构与未验证项见[15前端界面设计](../../docs/04_%E8%AE%BE%E8%AE%A1%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%96%87%E4%BB%B6/15_%E5%89%8D%E7%AB%AF%E7%95%8C%E9%9D%A2%E8%AE%BE%E8%AE%A1.md)。截图与录屏在[第十四阶段](../../docs/10_%E9%AA%8C%E6%94%B6%E8%AF%81%E6%8D%AE/14_%E5%89%8D%E7%AB%AF%E7%95%8C%E9%9D%A2%E4%B8%8E%E6%B5%8F%E8%A7%88%E5%99%A8%E9%AA%8C%E8%AF%81/02_%E6%9C%AC%E6%89%B9%E7%BB%93%E6%9E%9C.md)。
+方向、配色、字体、页面结构与未验证项见[15前端界面设计](../docs/04_%E8%AE%BE%E8%AE%A1%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%96%87%E4%BB%B6/15_%E5%89%8D%E7%AB%AF%E7%95%8C%E9%9D%A2%E8%AE%BE%E8%AE%A1.md)。截图与录屏在[第十四阶段](../docs/10_%E9%AA%8C%E6%94%B6%E8%AF%81%E6%8D%AE/14_%E5%89%8D%E7%AB%AF%E7%95%8C%E9%9D%A2%E4%B8%8E%E6%B5%8F%E8%A7%88%E5%99%A8%E9%AA%8C%E8%AF%81/02_%E6%9C%AC%E6%89%B9%E7%BB%93%E6%9E%9C.md)。

@@ -4,7 +4,7 @@ import re
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[2]
+ROOT = HERE.parents[3]
 SOURCE = ROOT / "03_需求规格说明书.md"
 doc = SOURCE.read_text(encoding="utf-8")
 version = re.search(r"版本：([^；]+)", doc).group(1)

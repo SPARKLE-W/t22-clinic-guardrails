@@ -4,7 +4,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 DOCUMENTS = [
     'README.md', '00_作业导航.md',
     '03_需求规格说明书.md', '06_测试与实测报告.md',

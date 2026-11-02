@@ -49,7 +49,7 @@ jobs:
           --health-retries=12
     defaults:
       run:
-        working-directory: 05_系统代码
+        working-directory: backend
     env:
       T22_APP_CONFIG: /tmp/t22-ci-${{ github.run_id }}-${{ github.run_attempt }}.json
       T22_MQ_CONFIG: /tmp/t22-ci-mq-${{ github.run_id }}-${{ github.run_attempt }}.json
@@ -61,8 +61,8 @@ jobs:
           python-version: '3.12'
       - name: Frontend syntax and guardrail regression
         run: |
-          node --check frontend/assets/app.js
-          node frontend/tests/guardrails.test.cjs
+          node --check ../frontend/assets/app.js
+          node ../frontend/tests/guardrails.test.cjs
       - name: Install dependencies
         run: |
           sudo apt-get update -qq

@@ -6,7 +6,7 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 stage=Path(__file__).resolve().parents[1]
-root=stage.parents[1]
+root=stage.parents[2]
 checks=[]
 def check(name,value):
     checks.append({'check':name,'passed':bool(value)})
@@ -18,7 +18,7 @@ life=json.loads((stage/'原始结果/lifecycle_02.json').read_text(encoding='utf
 check('最终两项真实节点停复',life['passed'] and life['tests']==2 and all(v['exit_code']==0 for v in life['actions']))
 red=(stage/'原始结果/review_red_01.txt').read_text(encoding='utf-8')
 check('确认持续缺失先有真实失败','blocked beyond the publication deadline' in red and 'FAILED' in red)
-for path in (root/'05_系统代码').rglob('*.py'):
+for path in (root/'backend').rglob('*.py'):
     ast.parse(path.read_text(encoding='utf-8'),filename=str(path))
 check('Python及迁移语法',True)
 schema=json.loads((root/'04_设计与控制文件/控制文件/04_告警传输契约_v1.json').read_text(encoding='utf-8'))

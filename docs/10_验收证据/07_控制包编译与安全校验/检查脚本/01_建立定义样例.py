@@ -3,8 +3,8 @@ import copy
 import json
 from pathlib import Path
 
-PROJECT = Path(__file__).resolve().parents[3]
-CODE = PROJECT / '05_系统代码'
+PROJECT = Path(__file__).resolve().parents[4]
+CODE = PROJECT / 'backend'
 old = json.loads((PROJECT / '04_设计与控制文件/控制文件/01_演示需求输入_v0.1.json').read_text(encoding='utf-8-sig'))
 candidate = json.loads((PROJECT / '04_设计与控制文件/控制文件/02_控制包候选_v0.1.json').read_text(encoding='utf-8-sig'))
 rules = copy.deepcopy(old['safety_redlines'])
