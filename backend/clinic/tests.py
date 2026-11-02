@@ -71,6 +71,41 @@ class ClinicTests(ClinicFixture):
                          and query['sql'].lstrip().lower().startswith('select')]
         self.assertEqual(2, len(account_reads), account_reads)
 
+    def test_explicit_clinical_read_does_not_fetch_template_separately(self):
+        from django.test.utils import CaptureQueriesContext
+
+        ref = self.create()['encounter_ref']
+        self.record_fixture(ref)
+        with CaptureQueriesContext(connection) as queries:
+            result = read(self.doctor.pk, clinical=True, ref=ref)
+
+        self.assertEqual('仅医生可见的合成诊断', result['clinical']['diagnosis'])
+        template_fetches = [query['sql'] for query in queries
+                            if 'governance_candidate' in query['sql'].lower()
+                            and query['sql'].lstrip().lower().startswith('select')
+                            and ('from "governance_candidate"' in query['sql'].lower()
+                                 or 'from `governance_candidate`' in query['sql'].lower())]
+        self.assertEqual([], template_fetches, template_fetches)
+        encounter_reads = [query['sql'].lower() for query in queries
+                           if 'from `clinic_encounter`' in query['sql'].lower()]
+        self.assertEqual(1, len(encounter_reads), encounter_reads)
+        self.assertEqual(1, encounter_reads[0].count('join `governance_candidate`'), encounter_reads[0])
+
+    def test_explicit_clinical_read_uses_record_template_when_it_differs(self):
+        ref = self.create()['encounter_ref']
+        template = self.template_fixture('clinical-only-template', extra_fields=[
+            {'id': 'x_clinical_note', 'type': 'text', 'required': False, 'visible_role': 'doctor'}])
+        record = ClinicalRecord.objects.create(encounter_id=ref, template=template)
+        ClinicalRevision.objects.create(record=record, version=1, diagnosis='合成诊断',
+                                        extra_fields={'x_clinical_note': '仅用于模板隔离验证'}, actor=self.doctor)
+
+        result = read(self.doctor.pk, clinical=True, ref=ref)
+
+        self.assertEqual('clinical-only-template', result['clinical']['template_version_ref'])
+        self.assertEqual({'diagnosis': 'text', 'examination': 'text', 'x_clinical_note': 'text'},
+                         result['clinical']['field_meanings'])
+        self.assertEqual({'x_clinical_note': '仅用于模板隔离验证'}, result['clinical']['extra_fields'])
+
     def test_clinical_read_prefetches_only_adopted_suggestions(self):
         from django.test.utils import CaptureQueriesContext
         from .models import Suggestion, SuggestionDecision

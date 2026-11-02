@@ -89,8 +89,12 @@ def _policy_head_for_share(store):
     return PolicyHead.objects.select_for_update().filter(store=store).first()
 
 
-def _own(actor, ref, clinical=False, lock=False):
-    rows = Encounter.objects.select_for_update() if lock else Encounter.objects
+def _own(actor, ref, clinical=False, lock=False, join_read_templates=False):
+    rows = Encounter.objects
+    if join_read_templates:
+        related = ('template', 'clinicalrecord') if clinical else ('template',)
+        rows = rows.select_related(*related)
+    rows = rows.select_for_update() if lock else rows
     row = rows.filter(pk=_uuid(ref)).first()
     owner = row.doctor_id if clinical and row else row.receptionist_id if row else None
     if not row or row.store_id != actor.store_id or owner != actor.pk:
@@ -241,7 +245,8 @@ def _clinical(row, templates, field_meanings_cache=None):
     except ClinicalRecord.DoesNotExist:
         return None
     if record.template_id not in templates:
-        templates[record.template_id] = _template(record.template, row.store_id)
+        candidate = row.template if record.template_id == row.template_id else record.template
+        templates[record.template_id] = _template(candidate, row.store_id)
     template = templates[record.template_id]
     revisions = sorted(_related_rows(record, 'clinicalrevision_set', 'prefetched_clinical_revisions'), key=lambda r: r.version)
     current = next((r for r in revisions if r.version == record.current_version), None)
@@ -294,7 +299,7 @@ def read(actor_id, clinical=False, ref=None, query=None):
             if explicit_ref:
                 if 'time_range' in query or 'page' in query:
                     raise DomainError('INPUT_FIELDS_INVALID', 422)
-                rows = [_own(actor, explicit_ref, clinical)]
+                rows = [_own(actor, explicit_ref, clinical, join_read_templates=True)]
                 total, page = 1, 1
             else:
                 filters = {'store': actor.store, 'doctor' if clinical else 'receptionist': actor}
@@ -316,8 +321,9 @@ def read(actor_id, clinical=False, ref=None, query=None):
                 rows = list(values[(page-1)*50:page*50])
             relations = ['template', 'receptionrevision_set']
             if clinical:
-                relations += ['clinicalrecord__template',
-                              Prefetch('clinicalrecord__clinicalrevision_set', to_attr='prefetched_clinical_revisions'),
+                if not explicit_ref:
+                    relations.append('clinicalrecord__template')
+                relations += [Prefetch('clinicalrecord__clinicalrevision_set', to_attr='prefetched_clinical_revisions'),
                               Prefetch('clinicalrecord__medicationentry_set', to_attr='prefetched_medication_entries'),
                               _adopted_suggestion_prefetch('clinicalrecord__suggestion_decisions')]
             prefetch_related_objects(rows, *relations)
