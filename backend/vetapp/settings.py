@@ -8,7 +8,8 @@ CONFIG_PATH = Path(os.environ['T22_APP_CONFIG'])
 config = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
 SECRET_KEY = config['secret_key']
 DEBUG = False
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver'] + [
+    host.strip() for host in os.environ.get('T22_ALLOWED_HOSTS', '').split(',') if host.strip()]
 ROOT_URLCONF = 'vetapp.urls'
 INSTALLED_APPS = ['django.contrib.auth', 'django.contrib.contenttypes', 'django.contrib.sessions', 'rest_framework', 'governance', 'clinic']
 AUTH_USER_MODEL = 'governance.Account'
