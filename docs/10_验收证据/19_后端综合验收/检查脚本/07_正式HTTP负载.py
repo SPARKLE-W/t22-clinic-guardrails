@@ -34,9 +34,13 @@ RESOURCES = []
 STOP_SAMPLER = threading.Event()
 VERSION_BY_TARGET = {}
 VERSION_LOCK = threading.Lock()
-GUARD_TARGETS = 6670
-DIAGNOSIS_TARGETS = 6665
-ADOPTION_TARGETS = 6665
+TARGET_LOCKS = {}
+TOTAL_RECORDS = 5 * 4000
+RECORDS_PER_POOL = TOTAL_RECORDS // 2
+GUARD_TARGETS = RECORDS_PER_POOL
+DIAGNOSIS_TARGETS = RECORDS_PER_POOL
+ADOPTIONS_PER_RECORD = 3
+ADOPTION_TARGETS = TOTAL_RECORDS * ADOPTIONS_PER_RECORD
 
 
 class JsonlRunRecorder:
@@ -176,13 +180,55 @@ def current_version_ref(shop, number):
 
 
 def update_current_version(key, item):
+    version_ref = item.get('version_ref')
     versions = item.get('clinical_versions') or []
-    version_ref = versions[-1].get('version_ref') if versions else None
+    version_ref = version_ref or (versions[-1].get('version_ref') if versions else None)
     if key and version_ref:
         with VERSION_LOCK:
             VERSION_BY_TARGET[key] = version_ref
         return True
     return False
+
+
+def record_target(target, parity):
+    index = (target % RECORDS_PER_POOL) * 2 + parity
+    shop, number = divmod(index, 4000)
+    doctor = 0 if shop == 0 else number % 2
+    return shop, number, doctor
+
+
+def adoption_target(target):
+    slot, index = divmod(target, TOTAL_RECORDS)
+    shop, number = divmod(index, 4000)
+    doctor = 0 if shop == 0 else number % 2
+    return shop, number, ref(f'suggestion{slot}', shop, number), doctor
+
+
+def target_lock(key):
+    with VERSION_LOCK:
+        return TARGET_LOCKS.setdefault(key, threading.Lock())
+
+
+def reserve_record_target(counter, pool_size, parity):
+    for _ in range(pool_size):
+        target = next_target(counter) % pool_size
+        shop, number, doctor = record_target(target, parity)
+        lock = target_lock((shop, number))
+        if lock.acquire(blocking=False):
+            return shop, number, doctor, lock
+    raise RuntimeError(f'No unlocked target remains in {counter} pool')
+
+
+def reserve_adoption_target():
+    for _ in range(ADOPTION_TARGETS):
+        target = next_target('write_adoption')
+        if target >= ADOPTION_TARGETS:
+            raise RuntimeError('Suggestion target pool exhausted')
+        shop, number, suggestion_ref, doctor = adoption_target(target)
+        lock = target_lock((shop, number))
+        if lock.acquire(blocking=False):
+            return shop, number, suggestion_ref, doctor, lock
+    raise RuntimeError('No unlocked target remains in suggestion pool')
 
 
 def monitor(start, started_at_utc, recorder=None):
@@ -261,44 +307,36 @@ def select_request(kind, sequence, rng):
                    'doctor_ref': None, 'pet_name': '合成负载新宠物'}
         return actor, 'POST', '/api/encounters', payload, 'json', shop
     if kind == 'guard':
-        target = next_target('guard') % GUARD_TARGETS
-        shop = target % 5
-        number = 3 * (target // 5)
-        doctor = 0 if shop == 0 else number % 2
+        shop, number, doctor, target_lock_ref = reserve_record_target(
+            'guard', GUARD_TARGETS, parity=0)
         payload = {'original_content_ref': ref('record', shop, number),
                    'original_version_ref': current_version_ref(shop, number),
                    'diagnosis': f'合成护栏校验通过 {sequence}', 'reason': '合成负载校验',
-                   '_load_target_key': (shop, number)}
+                   '_load_target_key': (shop, number), '_load_target_lock': target_lock_ref}
         return choose_actor(None, 'doctor', shop, doctor), 'POST', \
             f'/api/clinical/encounters/{ref("encounter", shop, number)}/diagnosis/corrections', payload, 'json', None
     if kind == 'write':
         subtype = sequence % 5
         if subtype in (0, 1):
-            target = next_target('write_diagnosis') % DIAGNOSIS_TARGETS
-            shop = target % 5
-            number = 3 * (target // 5) + 1
-            doctor = 0 if shop == 0 else number % 2
+            shop, number, doctor, target_lock_ref = reserve_record_target(
+                'write_diagnosis', DIAGNOSIS_TARGETS, parity=1)
             payload = {'original_content_ref': ref('record', shop, number),
                        'original_version_ref': current_version_ref(shop, number),
                        'diagnosis': f'合成病历更正 {sequence}', 'reason': '合成负载写入',
-                       '_load_target_key': (shop, number)}
+                       '_load_target_key': (shop, number), '_load_target_lock': target_lock_ref}
             return choose_actor(None, 'doctor', shop, doctor), 'POST', \
                 f'/api/clinical/encounters/{ref("encounter", shop, number)}/diagnosis/corrections', payload, 'json', None
         if subtype in (2, 3):
             payload = {'drug': '合成负载药品', 'amount': '1', 'unit': '片'}
             return choose_actor(None, 'doctor', shop, doctor), 'POST', \
                 f'/api/clinical/encounters/{ref("encounter", shop, number)}/medications', payload, 'json', None
-        target = next_target('write_adoption')
-        if target >= ADOPTION_TARGETS:
-            raise RuntimeError('Suggestion target pool exhausted')
-        shop = target % 5
-        number = 3 * (target // 5) + 2
-        doctor = 0 if shop == 0 else number % 2
+        shop, number, suggestion_ref, doctor, target_lock_ref = reserve_adoption_target()
         payload = {'encounter_ref': ref('encounter', shop, number),
-                   'suggestion_ref': ref('suggestion', shop, number),
+                   'suggestion_ref': suggestion_ref,
                    'record_ref': ref('record', shop, number), 'reason': '合成负载人工采纳',
                    'adopted_content': {'original_version_ref': current_version_ref(shop, number),
-                                       'medication': {'drug': '合成建议药品', 'amount': '1', 'unit': '片'}}}
+                                       'medication': {'drug': '合成建议药品', 'amount': '1', 'unit': '片'}},
+                   '_load_target_key': (shop, number), '_load_target_lock': target_lock_ref}
         return choose_actor(None, 'doctor', shop, doctor), 'POST', \
             f'/api/clinical/suggestions/{ref("suggestion", shop, number)}/adoption', payload, 'json', None
     if kind in ('clinical_export', 'detail_export'):
@@ -339,6 +377,7 @@ def select_request(kind, sequence, rng):
 def run_one(session, base, cookies, actors, number, kind, rng):
     actor, method, path, payload, tier, expected_count = select_request(kind, number, rng)
     target_key = payload.pop('_load_target_key', None) if payload else None
+    target_lock_ref = payload.pop('_load_target_lock', None) if payload else None
     if kind == 'reception':
         payload['doctor_ref'] = actors[f'load_{expected_count + 1}_doctor_1']['account_ref']
     request_cookies = cookies[actor]
@@ -405,6 +444,8 @@ def run_one(session, base, cookies, actors, number, kind, rng):
                 'ended': time.perf_counter(), 'bytes': 0, 'rows': None, 'sha256_match': None,
                 'expected_count': expected_count if 'export' in kind else None, 'server_ref': None}
     finally:
+        if target_lock_ref:
+            target_lock_ref.release()
         with LOCK:
             ACTIVE -= 1
 

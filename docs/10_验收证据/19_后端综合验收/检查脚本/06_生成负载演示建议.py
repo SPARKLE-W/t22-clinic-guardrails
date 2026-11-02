@@ -32,16 +32,18 @@ if any(row.source_version != source_version or row.source.get('type') != 'demo' 
     raise SystemExit('Unexpected non-synthetic suggestion exists; no changes made')
 existing_ids = {str(row.pk) for row in existing}
 rows = []
-for shop in range(5):
-    for number in range(2, 4000, 3):
-        suggestion_id = ref('suggestion', shop, number)
-        if str(suggestion_id) not in existing_ids:
-            rows.append(Suggestion(id=suggestion_id,
-                                   encounter_id=ref('encounter', shop, number),
-                                   source_version=source_version, sample_key=f'synthetic-{number}',
-                                   source={'type': 'demo', 'version': source_version,
-                                           'label': '合成压测演示建议，不是真实模型建议'},
-                                   content={'medication': {'drug': '合成建议药品', 'amount': '1', 'unit': '片'}}))
+for slot in range(3):
+    for shop in range(5):
+        for number in range(4000):
+            suggestion_id = ref(f'suggestion{slot}', shop, number)
+            if str(suggestion_id) not in existing_ids:
+                rows.append(Suggestion(id=suggestion_id,
+                                       encounter_id=ref('encounter', shop, number),
+                                       source_version=source_version,
+                                       sample_key=f'synthetic-{slot}-{number}',
+                                       source={'type': 'demo', 'version': source_version,
+                                               'label': '合成压测演示建议，不是真实模型建议'},
+                                       content={'medication': {'drug': '合成建议药品', 'amount': '1', 'unit': '片'}}))
 for start in range(0, len(rows), 500):
     Suggestion.objects.bulk_create(rows[start:start + 500], batch_size=500)
-print(f'synthetic_suggestion_targets=6665 added={len(rows)} total={Suggestion.objects.count()}')
+print(f'synthetic_suggestion_targets={5 * 4000 * 3} added={len(rows)} total={Suggestion.objects.count()}')
