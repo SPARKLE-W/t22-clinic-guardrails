@@ -57,9 +57,11 @@ def assert_profile(response, expected):
     return timing
 
 
-def run_mode(profile, username, password):
+def run_mode(profile, username, password, host=None):
     port = free_port()
     command = [sys.executable, str(SERVICE), '--port', str(port), '--threads', '2']
+    if host:
+        command.extend(['--host', host])
     if profile:
         command.append('--profile')
     environment = os.environ.copy()
@@ -114,6 +116,16 @@ def run_mode(profile, username, password):
             process.communicate(timeout=5)
 
 
+def assert_public_bind_rejected():
+    environment = os.environ.copy()
+    environment['T22_FORMAL_LOAD'] = '1'
+    result = subprocess.run([sys.executable, str(SERVICE), '--host', '8.8.8.8'],
+                            cwd=ROOT, env=environment, capture_output=True,
+                            text=True, encoding='utf-8', errors='replace', timeout=15)
+    if result.returncode == 0 or '--host must be loopback or a private IPv4 address' not in result.stderr:
+        raise AssertionError('The load service did not reject a public bind address')
+
+
 if os.environ.get('T22_APP_CONFIG') is None:
     raise SystemExit('CI app configuration must be set before this smoke test')
 store = Store.objects.create(name=f'CI profile smoke {uuid.uuid4().hex[:12]}')
@@ -121,5 +133,6 @@ username = f'profile_smoke_{uuid.uuid4().hex[:12]}'
 password = secrets.token_urlsafe(24)
 Account.objects.create_user(username=username, password=password, store=store, role='doctor')
 run_mode(False, username, password)
-run_mode(True, username, password)
-print('Default and profiled formal-load service modes passed loopback smoke.')
+run_mode(True, username, password, host='127.0.0.1')
+assert_public_bind_rejected()
+print('Default and profiled formal-load service modes passed loopback smoke; public bind was rejected.')

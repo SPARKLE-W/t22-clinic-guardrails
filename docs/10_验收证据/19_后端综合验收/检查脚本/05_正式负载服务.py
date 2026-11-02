@@ -1,5 +1,6 @@
-"""Fixed loopback WSGI serving profile for the isolated formal-load run."""
+"""Fixed WSGI serving profile for the isolated formal-load run."""
 import argparse
+import ipaddress
 import os
 import sys
 import threading
@@ -20,7 +21,7 @@ from waitress import serve
 local = threading.local()
 
 
-def serve_profiled(port, threads):
+def serve_profiled(port, threads, host):
     from waitress.channel import HTTPChannel
     from waitress.server import create_server
     from waitress.task import ThreadedTaskDispatcher
@@ -94,7 +95,7 @@ def serve_profiled(port, threads):
 
     dispatcher = TimedDispatcher()
     dispatcher.set_thread_count(threads)
-    server = create_server(TimedApplication(get_wsgi_application()), host='127.0.0.1',
+    server = create_server(TimedApplication(get_wsgi_application()), host=host,
                            port=port, threads=threads, connection_limit=512,
                            backlog=1024, channel_timeout=60, _dispatcher=dispatcher)
     server.channel_class = TimedChannel
@@ -105,12 +106,24 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=18830)
     parser.add_argument('--threads', type=int, default=120)
+    parser.add_argument('--host', default='127.0.0.1',
+                        help='loopback or a private IPv4 address for an isolated VPC load sender')
     parser.add_argument('--profile', action='store_true',
                         help='emit per-request queue, WSGI app, SQL and commit timing headers')
     args = parser.parse_args()
+    try:
+        bind_address = ipaddress.ip_address(args.host)
+    except ValueError:
+        parser.error('--host must be loopback or a private IPv4 address')
+    vpc_networks = (ipaddress.ip_network('10.0.0.0/8'), ipaddress.ip_network('172.16.0.0/12'),
+                    ipaddress.ip_network('192.168.0.0/16'))
+    if bind_address.version != 4 or not (
+            bind_address.is_loopback or any(bind_address in network for network in vpc_networks)):
+        parser.error('--host must be loopback or a private IPv4 address')
+    host = str(bind_address)
     if args.profile:
-        serve_profiled(args.port, args.threads)
+        serve_profiled(args.port, args.threads, host)
     else:
-        serve(get_wsgi_application(), host='127.0.0.1', port=args.port,
+        serve(get_wsgi_application(), host=host, port=args.port,
               threads=args.threads, connection_limit=512, backlog=1024,
               channel_timeout=60)
