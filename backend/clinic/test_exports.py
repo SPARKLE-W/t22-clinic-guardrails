@@ -156,7 +156,7 @@ class ClinicalExportTests(ClinicFixture):
             response = self.download(payload)
         self.assertEqual(503, response.status_code)
         self.assertFalse(response['Content-Type'].startswith('text/csv'))
-        with patch('clinic.exports._clinical', side_effect=KeyError('synthetic corrupt template')):
+        with patch('clinic.exports._template', side_effect=KeyError('synthetic corrupt template')):
             response = self.download(payload)
         self.assertEqual(503, response.status_code)
         self.assertEqual('EXPORT_GENERATION_UNAVAILABLE', response.json()['error']['code'])
