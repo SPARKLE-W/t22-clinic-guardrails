@@ -210,7 +210,7 @@ class SuggestionTests(ClinicFixture):
         item=self.seed()[0]
         with patch('clinic.suggestions._audit',side_effect=DatabaseError('injected')):
             self.assertEqual(503,self.post(item).status_code)
-        with patch.object(AlertOutbox.objects,'create',side_effect=DatabaseError('injected')):
+        with patch.object(AlertOutbox.objects,'bulk_create',side_effect=DatabaseError('injected')):
             values=self.adoption_payload(item);values.pop('reason')
             self.assertEqual(503,self.post(item,values).status_code)
         self.assertFalse(ClinicalRecord.objects.exists())

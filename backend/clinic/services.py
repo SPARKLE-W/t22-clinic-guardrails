@@ -7,8 +7,8 @@ from django.utils.dateparse import parse_datetime
 from governance.models import Account, Activation, Candidate, Operation, PolicyHead
 from governance.services import DomainError, _uuid, require, write_audit
 from vetcontrols.compiler import _digest, _normalize, _tree_check
-from .models import (AuditTarget, ClinicalRecord, ClinicalRevision, Encounter, PetIdentity,
-                     ReceptionRevision, SuggestionDecision)
+from .models import (Alert, AlertOutbox, AuditTarget, ClinicalRecord, ClinicalRevision, Encounter, GuardHit,
+                     PetIdentity, ReceptionRevision, SuggestionDecision)
 
 PERMISSIONS = {'create': 'encounter.create', 'correct': 'encounter.correct', 'mark': 'encounter.mark_error'}
 
@@ -41,6 +41,14 @@ def _text(value, maximum, required=True):
     if type(value) is not str or len(value) > maximum or (required and not value.strip()):
         raise DomainError('INPUT_INVALID', 422)
     return value
+
+
+def _persist_guard_alerts(evaluation, hits):
+    guard_hits = [GuardHit(evaluation=evaluation, **item) for item in hits]
+    GuardHit.objects.bulk_create(guard_hits)
+    alerts = [Alert(hit=hit) for hit in guard_hits]
+    Alert.objects.bulk_create(alerts)
+    AlertOutbox.objects.bulk_create([AlertOutbox(alert=alert) for alert in alerts])
 
 
 def _extra_values(template, supplied, existing=None):

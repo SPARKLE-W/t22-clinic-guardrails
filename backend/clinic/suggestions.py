@@ -4,8 +4,9 @@ from governance.models import Operation
 from governance.services import DomainError, _uuid, require
 from vetcontrols.compiler import _digest, _normalize
 from .guards import evaluate
-from .models import Alert, AlertOutbox, ClinicalCheck, ClinicalRecord, ClinicalRevision, GuardHit, MedicationEntry, Suggestion, SuggestionDecision
-from .services import _extra_values, _object, _own, _policy_head_for_share, _refusal, _template, _text
+from .models import ClinicalCheck, ClinicalRecord, ClinicalRevision, MedicationEntry, Suggestion, SuggestionDecision
+from .services import (_extra_values, _object, _own, _persist_guard_alerts, _policy_head_for_share, _refusal,
+                       _template, _text)
 from .writes import _audit, _validated
 
 ADOPT = 'clinical.suggestion.adopt'
@@ -122,10 +123,7 @@ def mutate(actor_id, mode, key, payload, ref):
                 check = ClinicalCheck.objects.create(encounter=row,record=record,original_version=current,actor=actor,mode='suggestion.adopt',
                     template=template_candidate,policy=head.candidate,policy_digest=head.candidate.digest,status='blocked' if hits else 'passed',checks=checks)
                 if hits:
-                    for item in hits:
-                        hit = GuardHit.objects.create(evaluation=check,**item)
-                        alert = Alert.objects.create(hit=hit)
-                        AlertOutbox.objects.create(alert=alert)
+                    _persist_guard_alerts(check, hits)
                     _audit(actor,permission,row,'refused','GUARD_BLOCKED',record)
                     result = {'ok':False,'error':{'code':'GUARD_BLOCKED'},'event_ref':str(check.pk)}
                     Operation.objects.create(actor=actor,permission=permission,key=operation_key,digest=digest,result=result)

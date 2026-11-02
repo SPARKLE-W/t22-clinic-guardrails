@@ -217,7 +217,7 @@ class ClinicalWriteTests(ClinicFixture):
     def test_guard_outbox_failure_does_not_claim_durable_alert(self):
         ref = self.create()['encounter_ref']
         from .models import Alert, AlertOutbox, ClinicalCheck
-        with patch.object(AlertOutbox.objects, 'create', side_effect=DatabaseError('injected')):
+        with patch.object(AlertOutbox.objects, 'bulk_create', side_effect=DatabaseError('injected')):
             response = self.post(ref, {})
         self.assertEqual(503, response.status_code)
         self.assertEqual('PERSISTENCE_UNCONFIRMED', response.json()['error']['code'])

@@ -4,7 +4,7 @@ from django.db import DatabaseError
 from django.test import Client
 from governance.models import AuditEvent, Operation
 from .tests import ClinicFixture
-from .models import ClinicalRecord, ClinicalRevision, Encounter, Alert, AlertOutbox, MedicationEntry
+from .models import ClinicalRecord, ClinicalRevision, Encounter, Alert, AlertOutbox, GuardHit, MedicationEntry
 from .services import read
 
 
@@ -82,9 +82,13 @@ class MedicationTests(ClinicFixture):
 
     def test_required_medication_group_is_a_durable_guard_hit(self):
         key = str(uuid.uuid4())
-        first = self.post({'drug':'合成药'},key=key)
+        with patch.object(GuardHit.objects, 'bulk_create', wraps=GuardHit.objects.bulk_create) as hit_batch, \
+             patch.object(Alert.objects, 'bulk_create', wraps=Alert.objects.bulk_create) as alert_batch, \
+             patch.object(AlertOutbox.objects, 'bulk_create', wraps=AlertOutbox.objects.bulk_create) as outbox_batch:
+            first = self.post({'drug':'合成药'},key=key)
         self.assertEqual(422,first.status_code)
         self.assertEqual('GUARD_BLOCKED',first.json()['error']['code'])
+        self.assertEqual((1,1,1),(hit_batch.call_count,alert_batch.call_count,outbox_batch.call_count))
         self.assertEqual(2,Alert.objects.count())
         self.assertEqual(2,AlertOutbox.objects.filter(state='pending').count())
         self.assertEqual(first.json(),self.post({'drug':'合成药'},key=key).json())
@@ -163,7 +167,7 @@ class MedicationTests(ClinicFixture):
         for method in ['put','patch','delete']:
             response=getattr(client,method)('/api/clinical/encounters/'+self.ref+'/medications',self.values(),content_type='application/json')
             self.assertEqual(405,response.status_code)
-        with patch.object(AlertOutbox.objects,'create',side_effect=DatabaseError('injected')):
+        with patch.object(AlertOutbox.objects,'bulk_create',side_effect=DatabaseError('injected')):
             self.assertEqual(503,self.post({}).status_code)
         self.assertEqual(1,len(self.chain()))
         self.assertFalse(Alert.objects.exists())
