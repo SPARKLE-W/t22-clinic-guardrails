@@ -12,3 +12,4 @@ pika==1.4.4
 sqlparse==0.6.0
 tzdata==2026.5
 waitress==3.0.2
+orjson==3.11.9
