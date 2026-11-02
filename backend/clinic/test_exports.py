@@ -55,10 +55,10 @@ class ClinicalExportTests(ClinicFixture):
     def test_clinical_export_serializes_rows_lazily(self):
         def consume(columns, rows):
             self.assertIs(iter(rows), rows)
-            self.assertEqual([str(self.record.pk)], [row['record_ref'] for row in rows])
+            self.assertEqual([str(self.record.pk)], [row[0] for row in rows])
             return b'csv bytes'
 
-        with patch('clinic.exports._csv', side_effect=consume):
+        with patch('clinic.exports._csv_values', side_effect=consume):
             body, export_ref, count = clinical(self.doctor.pk, {
                 'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '惰性序列化检查'})
 
@@ -156,7 +156,7 @@ class ClinicalExportTests(ClinicFixture):
             response = self.download(payload)
         self.assertEqual(503, response.status_code)
         self.assertFalse(response['Content-Type'].startswith('text/csv'))
-        with patch('clinic.exports._clinical', side_effect=KeyError('synthetic corrupt template')):
+        with patch('clinic.exports._template', side_effect=KeyError('synthetic corrupt template')):
             response = self.download(payload)
         self.assertEqual(503, response.status_code)
         self.assertEqual('EXPORT_GENERATION_UNAVAILABLE', response.json()['error']['code'])
