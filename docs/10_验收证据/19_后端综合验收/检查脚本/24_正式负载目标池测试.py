@@ -33,6 +33,20 @@ class SustainableTargetPoolTests(unittest.TestCase):
         self.assertTrue(all(doctor == (0 if shop == 0 else number % 2)
                             for shop, number, _, doctor in targets))
 
+    def test_adoption_request_path_uses_the_seeded_suggestion_id(self):
+        class FixedRng:
+            @staticmethod
+            def randrange(_limit):
+                return 0
+
+        _, method, path, payload, _, _ = strict_load.select_request('write', 14, FixedRng())
+        try:
+            self.assertEqual('POST', method)
+            self.assertEqual(
+                f"/api/clinical/suggestions/{payload['suggestion_ref']}/adoption", path)
+        finally:
+            payload['_load_target_lock'].release()
+
     def test_target_reservation_skips_a_busy_encounter_without_blocking(self):
         shop, number, doctor, lock = strict_load.reserve_record_target('reservation_test', 1, 0)
         try:
