@@ -1,4 +1,5 @@
 """Loopback smoke test for default and profiled formal-load service modes."""
+import importlib.util
 import os
 import re
 import secrets
@@ -126,6 +127,29 @@ def assert_public_bind_rejected():
         raise AssertionError('The load service did not reject a public bind address')
 
 
+def assert_bind_host_policy():
+    previous = os.environ.get('T22_FORMAL_LOAD')
+    os.environ['T22_FORMAL_LOAD'] = '1'
+    try:
+        spec = importlib.util.spec_from_file_location('t22_formal_load_service', SERVICE)
+        service = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(service)
+    finally:
+        if previous is None:
+            os.environ.pop('T22_FORMAL_LOAD', None)
+        else:
+            os.environ['T22_FORMAL_LOAD'] = previous
+    for address in ('127.0.0.1', '10.4.0.2', '172.22.138.132', '192.168.1.4'):
+        if service.normalize_bind_host(address) != address:
+            raise AssertionError(f'Allowed bind address was changed: {address}')
+    for address in ('8.8.8.8', '100.64.0.1', '::1', 'load.example'):
+        try:
+            service.normalize_bind_host(address)
+        except ValueError:
+            continue
+        raise AssertionError(f'Unsafe or unsupported bind address was accepted: {address}')
+
+
 if os.environ.get('T22_APP_CONFIG') is None:
     raise SystemExit('CI app configuration must be set before this smoke test')
 store = Store.objects.create(name=f'CI profile smoke {uuid.uuid4().hex[:12]}')
@@ -134,5 +158,6 @@ password = secrets.token_urlsafe(24)
 Account.objects.create_user(username=username, password=password, store=store, role='doctor')
 run_mode(False, username, password)
 run_mode(True, username, password, host='127.0.0.1')
+assert_bind_host_policy()
 assert_public_bind_rejected()
-print('Default and profiled formal-load service modes passed loopback smoke; public bind was rejected.')
+print('Formal-load service loopback smoke passed; private IPv4 bind policy and public-bind rejection passed.')

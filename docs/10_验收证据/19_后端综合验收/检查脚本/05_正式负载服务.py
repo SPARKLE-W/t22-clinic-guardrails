@@ -21,6 +21,19 @@ from waitress import serve
 local = threading.local()
 
 
+def normalize_bind_host(value):
+    try:
+        address = ipaddress.ip_address(value)
+    except ValueError as error:
+        raise ValueError('--host must be loopback or a private IPv4 address') from error
+    vpc_networks = (ipaddress.ip_network('10.0.0.0/8'), ipaddress.ip_network('172.16.0.0/12'),
+                    ipaddress.ip_network('192.168.0.0/16'))
+    if address.version != 4 or not (
+            address.is_loopback or any(address in network for network in vpc_networks)):
+        raise ValueError('--host must be loopback or a private IPv4 address')
+    return str(address)
+
+
 def serve_profiled(port, threads, host):
     from waitress.channel import HTTPChannel
     from waitress.server import create_server
@@ -112,15 +125,9 @@ if __name__ == '__main__':
                         help='emit per-request queue, WSGI app, SQL and commit timing headers')
     args = parser.parse_args()
     try:
-        bind_address = ipaddress.ip_address(args.host)
-    except ValueError:
-        parser.error('--host must be loopback or a private IPv4 address')
-    vpc_networks = (ipaddress.ip_network('10.0.0.0/8'), ipaddress.ip_network('172.16.0.0/12'),
-                    ipaddress.ip_network('192.168.0.0/16'))
-    if bind_address.version != 4 or not (
-            bind_address.is_loopback or any(bind_address in network for network in vpc_networks)):
-        parser.error('--host must be loopback or a private IPv4 address')
-    host = str(bind_address)
+        host = normalize_bind_host(args.host)
+    except ValueError as error:
+        parser.error(str(error))
     if args.profile:
         serve_profiled(args.port, args.threads, host)
     else:
