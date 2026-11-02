@@ -5,6 +5,8 @@ import io
 import json
 import logging
 from collections import defaultdict
+
+import orjson
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
@@ -64,6 +66,13 @@ def _csv_values(columns, rows):
     except (csv.Error, UnicodeError, TypeError, ValueError):
         logger.exception('CSV export generation failed')
         raise DomainError('EXPORT_GENERATION_UNAVAILABLE', 503) from None
+
+
+def _json_text(value):
+    try:
+        return orjson.dumps(value, option=orjson.OPT_SORT_KEYS).decode('utf-8')
+    except orjson.JSONEncodeError:
+        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
 
 def _refusal(actor, permission, error):
@@ -139,7 +148,7 @@ def clinical(actor_id, payload):
             adoptions[item.pop('record_id')].append(item)
         templates, field_meanings, encoded_field_meanings = {}, {}, {}
         target_refs = []
-        encode = lambda value: json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+        encode = _json_text
 
         def export_rows():
             for row in rows:

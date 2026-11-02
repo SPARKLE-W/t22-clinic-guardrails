@@ -10,7 +10,7 @@ from governance.services import DomainError
 from .models import (Alert, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, Encounter,
                      ExportRequest, MedicationEntry, Suggestion, SuggestionDecision)
 from .tests import ClinicFixture
-from .exports import clinical
+from .exports import _json_text, clinical
 from .services import read
 from .writes import diagnosis
 
@@ -72,21 +72,31 @@ class ClinicalExportTests(ClinicFixture):
         second_record = self.record_fixture(second_ref)
         payload = {'scope': {'record_refs': [str(self.record.pk), str(second_record.pk)]},
                    'purpose': '模板字段含义缓存核对'}
-        original_dumps = json.dumps
+        original_encode = _json_text
         field_meanings_encodes = 0
 
-        def count_field_meanings(value, *args, **kwargs):
+        def count_field_meanings(value):
             nonlocal field_meanings_encodes
             if value == {'diagnosis': 'text', 'examination': 'text'}:
                 field_meanings_encodes += 1
-            return original_dumps(value, *args, **kwargs)
+            return original_encode(value)
 
-        with patch('clinic.exports.json.dumps', side_effect=count_field_meanings):
+        with patch('clinic.exports._json_text', side_effect=count_field_meanings):
             rows = self.rows(self.download(payload))
 
         self.assertEqual(2, len(rows))
         self.assertEqual(1, field_meanings_encodes)
         self.assertEqual(rows[0]['field_meanings'], rows[1]['field_meanings'])
+
+    def test_clinical_json_encoding_preserves_compact_sorted_unicode_values(self):
+        value = {'中文': {'z': [None, True, False, 1, 1.0, 1e-7],
+                          'a': '逗号,引号"及换行\n'},
+                 'keys': {'b': 2, 'a': 1}, 'wide_integer': 1 << 100}
+        encoded = _json_text(value)
+        expected = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+        self.assertEqual(json.loads(expected), json.loads(encoded))
+        self.assertTrue(encoded.startswith('{"keys":'))
+        self.assertNotIn(': ', encoded)
 
     def test_deactivated_doctor_cannot_read_or_export(self):
         Account.objects.filter(pk=self.doctor.pk).update(is_active=False)
