@@ -4,13 +4,13 @@ import io
 import json
 import uuid
 from unittest.mock import patch
-from django.db import DatabaseError
+from django.db import DatabaseError, connection
 from governance.models import Account, AuditEvent
 from governance.services import DomainError
 from .models import (Alert, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, Encounter,
                      ExportRequest, MedicationEntry, Suggestion, SuggestionDecision)
 from .tests import ClinicFixture
-from .exports import _json_text, clinical
+from .exports import _csv, _csv_values, _json_text, clinical, guard, SUMMARY
 from .services import read
 from .writes import diagnosis
 
@@ -66,6 +66,36 @@ class ClinicalExportTests(ClinicFixture):
         self.assertTrue(ExportRequest.objects.filter(pk=export_ref, record_count=1, row_count=1).exists())
         self.assertTrue(AuditTarget.objects.filter(target=self.record.pk, kind='record',
                                                    event__action='export.clinical').exists())
+
+    def test_clinical_csv_is_built_outside_transaction_and_revocation_blocks_delivery(self):
+        def revoke(columns, rows):
+            self.assertFalse(connection.in_atomic_block)
+            body = _csv_values(columns, rows)
+            Account.objects.filter(pk=self.doctor.pk).update(is_active=False)
+            return body
+
+        with patch('clinic.exports._csv_values', side_effect=revoke):
+            with self.assertRaises(DomainError) as error:
+                clinical(self.doctor.pk, {'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '权限撤销'})
+        self.assertEqual('AUTH_REQUIRED', error.exception.code)
+        self.assertFalse(ExportRequest.objects.exists())
+        self.assertFalse(AuditEvent.objects.filter(action='export.clinical', outcome='success').exists())
+
+    def test_clinical_csv_uses_complete_read_snapshot_when_version_is_appended(self):
+        def append_version(columns, rows):
+            self.assertFalse(connection.in_atomic_block)
+            body = _csv_values(columns, rows)
+            ClinicalRevision.objects.create(record=self.record, version=2, diagnosis='后续更正', actor=self.doctor)
+            ClinicalRecord.objects.filter(pk=self.record.pk).update(current_version=2)
+            return body
+
+        with patch('clinic.exports._csv_values', side_effect=append_version):
+            body, _, count = clinical(self.doctor.pk, {
+                'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '快照核对'})
+        self.assertEqual(1, count)
+        self.assertIn('仅医生可见的合成诊断', body.decode())
+        self.assertNotIn('后续更正', body.decode())
+        self.assertEqual(2, ClinicalRecord.objects.get(pk=self.record.pk).current_version)
 
     def test_field_meanings_are_cached_per_template_within_export(self):
         second_ref = self.create()['encounter_ref']
@@ -375,6 +405,19 @@ class GuardExportTests(ClinicFixture):
             response = self.download(self.summary_url, {})
         self.assertEqual(503, response.status_code)
         self.assertFalse(response['Content-Type'].startswith('text/csv'))
+
+    def test_guard_csv_is_built_outside_transaction_and_revocation_blocks_delivery(self):
+        def revoke(columns, rows):
+            self.assertFalse(connection.in_atomic_block)
+            body = _csv(columns, rows)
+            Account.objects.filter(pk=self.manager.pk).update(is_active=False)
+            return body
+
+        with patch('clinic.exports._csv', side_effect=revoke):
+            with self.assertRaises(DomainError) as error:
+                guard(self.manager.pk, SUMMARY, {})
+        self.assertEqual('AUTH_REQUIRED', error.exception.code)
+        self.assertFalse(ExportRequest.objects.exists())
 
     def test_filters_and_repeated_downloads_are_individually_audited(self):
         from datetime import timedelta
