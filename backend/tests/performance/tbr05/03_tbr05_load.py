@@ -187,12 +187,14 @@ def update_current_version(key, item):
     return False
 
 
-def monitor(start, started_at_utc, recorder=None):
+def monitor(start, started_at_utc, recorder=None, pending=None):
     while not STOP_SAMPLER.is_set():
         elapsed = time.perf_counter() - start
         with LOCK:
             sample = {'seconds': elapsed, 'timestamp_utc': utc_at(started_at_utc, elapsed),
                       'in_flight': ACTIVE}
+            if pending is not None:
+                sample['validation_pending'] = pending.qsize()
             SAMPLES.append(sample)
         if recorder:
             recorder.sample('inflight', sample)
@@ -367,67 +369,23 @@ def run_one(session, base, cookies, actors, number, kind, rng):
                     first = time.perf_counter()
                 pieces.append(piece)
         body = b''.join(pieces)
-        profile = parse_server_profile(response.headers)
         ended = time.perf_counter()
-        code = None
-        rows = None
-        digest_match = None
-        record_count = None
-        declared_bytes = None
-        header_bytes = None
-        declared_sha256 = None
-        if response.status_code == 200:
-            if 'export' in kind:
-                declared_bytes = int(response.headers['Content-Length'])
-                header_bytes = int(response.headers['X-Byte-Count'])
-                declared_sha256 = response.headers['X-Content-SHA256']
-                digest_match = (declared_bytes == len(body) == header_bytes and
-                                hashlib.sha256(body).hexdigest() == declared_sha256)
-                parsed_rows = list(csv.DictReader(io.StringIO(body.decode('utf-8'))))
-                rows = len(parsed_rows)
-                record_count = int(response.headers['X-Record-Count'])
-                if kind in ('clinical_export', 'detail_export'):
-                    valid = digest_match and record_count == expected_count and rows == expected_count
-                else:
-                    valid = (digest_match and rows == 1 and record_count == expected_count and
-                             parsed_rows[0]['rule_ref'] == 'SR-02' and
-                             int(parsed_rows[0]['hit_count']) == expected_count and
-                             int(parsed_rows[0]['alert_count']) == expected_count and
-                             int(parsed_rows[0]['unhandled_count']) == expected_count)
-            else:
-                obj = json.loads(body)
-                valid = obj.get('ok') is not False
-                if target_key:
-                    valid = update_current_version(target_key, obj) and valid
-                if kind == 'reception':
-                    valid = valid and bool(obj.get('encounter_ref'))
-        else:
-            valid = False
-            error_detail = 'HTTP response body omitted from evidence'
-            try:
-                code = json.loads(body).get('error', {}).get('code')
-            except (ValueError, UnicodeError):
-                code = 'NON_JSON_ERROR'
         result = {'request_id': number, 'kind': kind, 'tier': tier, 'status': response.status_code,
-                'code': code, 'ok': bool(valid), 'started': started, 'first': first, 'ended': ended,
-                'bytes': len(body), 'rows': rows, 'sha256_match': digest_match,
-                'content_length': declared_bytes, 'header_byte_count': header_bytes,
-                'declared_sha256': declared_sha256,
-                'record_count': record_count,
-                'expected_count': expected_count if 'export' in kind else None,
-                'server_ref': response.headers.get('X-Export-Ref'),
-                'error_detail': error_detail if response.status_code != 200 else None}
+                  'started': started, 'first': first, 'ended': ended, 'bytes': len(body),
+                  'expected_count': expected_count if 'export' in kind else None,
+                  'server_ref': response.headers.get('X-Export-Ref')}
+        profile = parse_server_profile(response.headers)
         if profile:
             result['server_profile'] = profile
-        return result
+        return result, body, response.headers.copy(), target_key
     except Exception as error:
-        return {'request_id': number, 'kind': kind, 'tier': tier, 'status': None,
-                'code': type(error).__name__, 'error_detail': type(error).__name__,
-                'ok': False, 'started': started, 'first': first,
-                'ended': time.perf_counter(), 'bytes': 0, 'rows': None, 'sha256_match': None,
-                'content_length': None, 'header_byte_count': None, 'declared_sha256': None,
-                'record_count': None,
-                'expected_count': expected_count if 'export' in kind else None, 'server_ref': None}
+        result = {'request_id': number, 'kind': kind, 'tier': tier, 'status': None,
+                  'code': type(error).__name__, 'error_detail': type(error).__name__,
+                  'ok': False, 'started': started, 'first': first,
+                  'ended': time.perf_counter(), 'bytes': 0,
+                  'expected_count': expected_count if 'export' in kind else None,
+                  'server_ref': None}
+        return result, None, {}, target_key
     finally:
         if response is not None:
             response.close()
@@ -435,16 +393,87 @@ def run_one(session, base, cookies, actors, number, kind, rng):
             ACTIVE -= 1
 
 
-def worker(index, gate, end_at, base, cookies, actors, results, recorder):
+def validate_capture(capture):
+    result, body, headers, target_key = capture
+    result.update({'rows': None, 'sha256_match': None, 'content_length': None,
+                   'header_byte_count': None, 'declared_sha256': None, 'record_count': None})
+    if body is None:
+        return result
+    kind = result['kind']
+    if result['status'] != 200:
+        result.update({'ok': False, 'error_detail': 'HTTP response body omitted from evidence'})
+        try:
+            result['code'] = json.loads(body).get('error', {}).get('code')
+        except (ValueError, UnicodeError):
+            result['code'] = 'NON_JSON_ERROR'
+        return result
+    try:
+        if 'export' in kind:
+            declared_bytes = int(headers['Content-Length'])
+            header_bytes = int(headers['X-Byte-Count'])
+            declared_sha256 = headers['X-Content-SHA256']
+            digest_match = (declared_bytes == len(body) == header_bytes and
+                            hashlib.sha256(body).hexdigest() == declared_sha256)
+            reader = csv.DictReader(io.StringIO(body.decode('utf-8')))
+            first_row = next(reader, None)
+            rows = (1 + sum(1 for _ in reader)) if first_row else 0
+            record_count = int(headers['X-Record-Count'])
+            result.update({'rows': rows, 'sha256_match': digest_match,
+                           'content_length': declared_bytes, 'header_byte_count': header_bytes,
+                           'declared_sha256': declared_sha256, 'record_count': record_count})
+            expected = result['expected_count']
+            if kind in ('clinical_export', 'detail_export'):
+                valid = digest_match and record_count == expected and rows == expected
+            else:
+                valid = (digest_match and rows == 1 and record_count == expected and
+                         first_row['rule_ref'] == 'SR-02' and
+                         int(first_row['hit_count']) == expected and
+                         int(first_row['alert_count']) == expected and
+                         int(first_row['unhandled_count']) == expected)
+        else:
+            obj = json.loads(body)
+            valid = obj.get('ok') is not False
+            if target_key:
+                valid = update_current_version(target_key, obj) and valid
+            if kind == 'reception':
+                valid = valid and bool(obj.get('encounter_ref'))
+        result.update({'code': None, 'ok': bool(valid), 'error_detail': None})
+    except Exception as error:
+        result.update({'code': type(error).__name__, 'ok': False,
+                       'error_detail': type(error).__name__})
+    return result
+
+
+def validator(pending, results, recorder, stop, errors):
+    while True:
+        capture = pending.get()
+        try:
+            if capture is stop:
+                return
+            try:
+                result = validate_capture(capture)
+                results.append(result)
+                recorder.request(result)
+            except Exception as error:
+                if not errors:
+                    errors.append(error)
+        finally:
+            pending.task_done()
+
+
+def worker(index, gate, end_at, base, cookies, actors, pending):
     rng = random.Random(20261024 + index)
     session = requests.Session()
-    gate.wait(timeout=180)
-    while time.perf_counter() < end_at:
-        number, kind = next_task()
-        result = run_one(session, base, cookies, actors, number, kind, rng)
-        results.append(result)
-        recorder.request(result)
-    session.close()
+    try:
+        gate.wait(timeout=180)
+        while time.perf_counter() < end_at:
+            number, kind = next_task()
+            capture = run_one(session, base, cookies, actors, number, kind, rng)
+            if kind in ('guard', 'write'):
+                capture = (validate_capture(capture), None, {}, None)
+            pending.put(capture)
+    finally:
+        session.close()
 
 
 def summarize(rows, samples, start, end, warmup):
@@ -563,7 +592,15 @@ def main():
     end = start + total
     gate = threading.Barrier(args.concurrency + 1)
     results = []
-    watcher = threading.Thread(target=monitor, args=(start, started_at_utc, recorder), daemon=True)
+    pending = queue.Queue(maxsize=args.concurrency * 2)
+    validation_stop = object()
+    validation_errors = []
+    validators = [threading.Thread(target=validator,
+                                  args=(pending, results, recorder, validation_stop, validation_errors), daemon=True)
+                  for _ in range(8)]
+    for thread in validators:
+        thread.start()
+    watcher = threading.Thread(target=monitor, args=(start, started_at_utc, recorder, pending), daemon=True)
     watcher.start()
     resource_watcher = threading.Thread(target=monitor_resources,
                                         args=(start, started_at_utc, args.server_pid, args.mysql_pid, recorder),
@@ -571,16 +608,24 @@ def main():
     resource_watcher.start()
     try:
         with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
-            futures = [pool.submit(worker, n, gate, end, bases[n % len(bases)], cookies, actors, results, recorder)
+            futures = [pool.submit(worker, n, gate, end, bases[n % len(bases)], cookies, actors, pending)
                        for n in range(args.concurrency)]
             gate.wait(timeout=180)
             for future in futures:
                 future.result()
     finally:
+        pending.join()
+        for _ in validators:
+            pending.put(validation_stop)
+        pending.join()
+        for thread in validators:
+            thread.join(timeout=5)
         STOP_SAMPLER.set()
         watcher.join(timeout=5)
         resource_watcher.join(timeout=5)
         recorder.close()
+    if validation_errors:
+        raise RuntimeError('Run response validation or recording failed') from validation_errors[0]
     summary = summarize(results, SAMPLES, start, end, args.warmup_seconds)
     actual_duration = time.perf_counter() - start
     exact_protocol = (args.concurrency == 360 and args.warmup_seconds == 300 and
@@ -603,6 +648,7 @@ def main():
                                           'suggestion_adoption': ADOPTION_TARGETS},
                     'target_assignments': dict(TARGETS),
                     'resource_samples': len(RESOURCES), 'os': platform.platform(),
+                    'validation_queue_peak': max((sample.get('validation_pending', 0) for sample in SAMPLES), default=0),
                     'python': platform.python_version(), 'requests': requests.__version__,
                     'psutil': psutil.__version__,
                     'resource_peaks': {key: max((row.get(key, 0) for row in RESOURCES), default=None)
