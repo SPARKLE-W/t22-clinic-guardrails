@@ -298,6 +298,27 @@ class GuardExportTests(ClinicFixture):
         self.assertNotIn('record_ref', rows[0])
         self.assertEqual(1, ExportRequest.objects.filter(permission='export.guard_summary').count())
 
+    def test_detail_projection_skips_clinical_json_and_preserves_missing_alert(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        self.client.force_login(self.doctor)
+        # An absent alert remains an unhandled hit in the CSV.
+        alert = Alert.objects.get()
+        alert.alertoutbox.delete()
+        alert.delete()
+        with CaptureQueriesContext(connection) as captured:
+            response = self.download(self.detail_url, {'scope': {'encounter_refs': [self.ref]}})
+        rows = self.parsed(response)
+        self.assertEqual(('unhandled', '', '', ''), tuple(rows[0][field] for field in (
+            'handling_state', 'handler_ref', 'handled_at', 'handling_result')))
+        selected = [q['sql'] for q in captured.captured_queries
+                    if q['sql'].lstrip().upper().startswith('SELECT') and
+                    'clinic_guardhit' in q['sql']]
+        self.assertEqual(1, len(selected))
+        projection = selected[0].split(' FROM ')[0]
+        for unused in ('checks', 'policy_digest', 'value', 'original_version_id'):
+            self.assertNotIn(unused, projection)
+
     def test_handling_state_summary_combines_different_handling_times(self):
         from django.utils import timezone
         from datetime import timedelta
