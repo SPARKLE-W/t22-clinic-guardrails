@@ -146,68 +146,79 @@ def clinical(actor_id, payload):
                     'record_id', 'created_at', 'id'):
             item['source'] = item.pop('suggestion__source')
             adoptions[item.pop('record_id')].append(item)
-        templates, field_meanings, encoded_field_meanings = {}, {}, {}
-        target_refs = []
-        encode = _json_text
-
-        def export_rows():
-            for row in rows:
-                record_id = row['id']
-                template_id = row['template_id']
+        templates = {}
+        for row in rows:
+            template_id = row['template_id']
+            if template_id not in templates:
                 try:
-                    template = templates.get(template_id)
-                    if template is None:
-                        template = _template(template_rows[template_id], row['encounter__store_id'])
-                        templates[template_id] = template
-                    meanings = field_meanings.get(template_id)
-                    if meanings is None:
-                        clinical_template = template['clinical']
-                        meanings = {**clinical_template['field_types'],
-                                    **{item['id']: item['type'] for item in clinical_template['extra_fields']}}
-                        field_meanings[template_id] = meanings
-                    current = next((revision for revision in revisions[record_id]
-                                    if revision['version'] == row['current_version']), None)
-                    if not current or not current['diagnosis'].strip():
-                        raise DomainError('RECORD_UNAVAILABLE', 503)
-                    revision_rows = revisions[record_id]
-                    medication_rows = medications[record_id]
-                    adoption_rows = adoptions[record_id]
+                    templates[template_id] = _template(template_rows[template_id], actor.store_id)
                 except (KeyError, AttributeError, TypeError, UnicodeError):
                     logger.exception('Clinical export generation failed')
                     raise DomainError('EXPORT_GENERATION_UNAVAILABLE', 503) from None
-                encoded_meanings = encoded_field_meanings.get(template_id)
-                if encoded_meanings is None:
-                    encoded_meanings = encode(meanings)
-                    encoded_field_meanings[template_id] = encoded_meanings
-                clinical_versions = [{'version_ref': str(item['id']), 'version': item['version'],
-                                      'diagnosis': item['diagnosis'], 'examination': item['examination'],
-                                      'extra_fields': item['extra_fields'], 'actor_ref': item['actor_id'],
-                                      'created_at': item['created_at'].isoformat(), 'reason': item['reason']}
-                                     for item in revision_rows]
-                medication_chain = [{'entry_ref': str(item['id']),
-                                     'original_entry_ref': str(item['original_id']) if item['original_id'] else None,
-                                     'drug': item['drug'], 'amount': item['amount'], 'unit': item['unit'],
-                                     'actor_ref': item['actor_id'], 'created_at': item['created_at'].isoformat(),
-                                     'reason': item['reason']} for item in medication_rows]
-                adopted_content = [{'decision_ref': str(item['id']), 'suggestion_ref': str(item['suggestion_id']),
-                                    'source': item['source'], 'adopted_content': item['adopted_content'],
-                                    'actor_ref': item['actor_id'], 'created_at': item['created_at'].isoformat(),
-                                    'reason': item['reason'], 'version_ref': str(item['version_id']),
-                                    'medication_ref': str(item['medication_id']) if item['medication_id'] else None}
-                                   for item in adoption_rows if item['outcome'] == 'adopted']
-                encounter_id = row['encounter_id']
-                target_refs.append(str(record_id))
-                yield (str(record_id), str(encounter_id), template['version'], encoded_meanings,
-                       current['diagnosis'], current['examination'], encode(current['extra_fields']),
-                       encode(adopted_content),
-                       encode({'doctor_ref': row['encounter__doctor_id'],
-                               'receptionist_ref': row['encounter__receptionist_id'],
-                               'created_at': row['encounter__created_at'].isoformat()}),
-                       encode(medication_chain), encode(clinical_versions),
-                       'true' if row['encounter__error_mark'] else 'false',
-                       encode([str(row['encounter__rebuilt_id'])] if row['encounter__rebuilt_id'] else []))
+        store_id = actor.store_id
+    field_meanings, encoded_field_meanings = {}, {}
+    target_refs = []
+    encode = _json_text
 
-        body = _csv_values(CLINICAL_COLUMNS, export_rows())
+    def export_rows():
+        for row in rows:
+            record_id = row['id']
+            template_id = row['template_id']
+            try:
+                template = templates[template_id]
+                meanings = field_meanings.get(template_id)
+                if meanings is None:
+                    clinical_template = template['clinical']
+                    meanings = {**clinical_template['field_types'],
+                                **{item['id']: item['type'] for item in clinical_template['extra_fields']}}
+                    field_meanings[template_id] = meanings
+                current = next((revision for revision in revisions[record_id]
+                                if revision['version'] == row['current_version']), None)
+                if not current or not current['diagnosis'].strip():
+                    raise DomainError('RECORD_UNAVAILABLE', 503)
+                revision_rows = revisions[record_id]
+                medication_rows = medications[record_id]
+                adoption_rows = adoptions[record_id]
+            except (KeyError, AttributeError, TypeError, UnicodeError):
+                logger.exception('Clinical export generation failed')
+                raise DomainError('EXPORT_GENERATION_UNAVAILABLE', 503) from None
+            encoded_meanings = encoded_field_meanings.get(template_id)
+            if encoded_meanings is None:
+                encoded_meanings = encode(meanings)
+                encoded_field_meanings[template_id] = encoded_meanings
+            clinical_versions = [{'version_ref': str(item['id']), 'version': item['version'],
+                                  'diagnosis': item['diagnosis'], 'examination': item['examination'],
+                                  'extra_fields': item['extra_fields'], 'actor_ref': item['actor_id'],
+                                  'created_at': item['created_at'].isoformat(), 'reason': item['reason']}
+                                 for item in revision_rows]
+            medication_chain = [{'entry_ref': str(item['id']),
+                                 'original_entry_ref': str(item['original_id']) if item['original_id'] else None,
+                                 'drug': item['drug'], 'amount': item['amount'], 'unit': item['unit'],
+                                 'actor_ref': item['actor_id'], 'created_at': item['created_at'].isoformat(),
+                                 'reason': item['reason']} for item in medication_rows]
+            adopted_content = [{'decision_ref': str(item['id']), 'suggestion_ref': str(item['suggestion_id']),
+                                'source': item['source'], 'adopted_content': item['adopted_content'],
+                                'actor_ref': item['actor_id'], 'created_at': item['created_at'].isoformat(),
+                                'reason': item['reason'], 'version_ref': str(item['version_id']),
+                                'medication_ref': str(item['medication_id']) if item['medication_id'] else None}
+                               for item in adoption_rows if item['outcome'] == 'adopted']
+            encounter_id = row['encounter_id']
+            target_refs.append(str(record_id))
+            yield (str(record_id), str(encounter_id), template['version'], encoded_meanings,
+                   current['diagnosis'], current['examination'], encode(current['extra_fields']),
+                   encode(adopted_content),
+                   encode({'doctor_ref': row['encounter__doctor_id'],
+                           'receptionist_ref': row['encounter__receptionist_id'],
+                           'created_at': row['encounter__created_at'].isoformat()}),
+                   encode(medication_chain), encode(clinical_versions),
+                   'true' if row['encounter__error_mark'] else 'false',
+                   encode([str(row['encounter__rebuilt_id'])] if row['encounter__rebuilt_id'] else []))
+
+    body = _csv_values(CLINICAL_COLUMNS, export_rows())
+    with transaction.atomic():
+        actor = require(actor_id, CLINICAL, lock=True)
+        if actor.store_id != store_id:
+            raise DomainError('TARGET_UNAVAILABLE', 403)
         entry = ExportRequest.objects.create(store=actor.store, actor=actor, permission=CLINICAL,
                                               scope=scope, purpose=payload['purpose'], record_count=len(target_refs),
                                               row_count=len(target_refs), byte_count=len(body))
@@ -310,7 +321,12 @@ def guard(actor_id, permission, payload):
                                      'hit_count': hit_count, 'alert_count': alert_count,
                                      'unhandled_count': alert_count if state == 'unhandled' else 0})
             columns = SUMMARY_COLUMNS
-        body = _csv(columns, rows)
+        store_id = actor.store_id
+    body = _csv(columns, rows)
+    with transaction.atomic():
+        actor = require(actor_id, permission, lock=True)
+        if actor.store_id != store_id:
+            raise DomainError('TARGET_UNAVAILABLE', 403)
         entry = ExportRequest.objects.create(store=actor.store, actor=actor, permission=permission,
                                               scope=payload, record_count=sum(int(row.get('hit_count', 1)) for row in rows),
                                               row_count=len(rows), byte_count=len(body))
