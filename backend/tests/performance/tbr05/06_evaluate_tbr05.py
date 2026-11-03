@@ -181,6 +181,8 @@ def evaluate(summary, request_rows, inflight_rows):
     if not exact_inflight:
         failures.append('360_continuous_inflight_not_proven')
     interval_concurrency = _interval_concurrency(request_rows, WARMUP_SECONDS, formal_end)
+    if not interval_concurrency['exact_360_for_entire_window']:
+        failures.append('360_request_interval_concurrency_not_exact')
 
     mix_counts = {kind: len(rows) for kind, rows in by_kind.items()}
     mix_total = len(formal_requests)
