@@ -41,11 +41,13 @@ def evidence():
 
 
 class Tbr05EvaluatorTests(unittest.TestCase):
-    def test_accepts_complete_protocol_evidence_and_reports_export_tiers(self):
+    def test_reports_other_gates_but_rejects_incomplete_interval_evidence(self):
         report = evaluator.evaluate(*evidence())
-        self.assertTrue(report['passed'], report['failures'])
+        self.assertFalse(report['passed'])
+        self.assertEqual(['360_request_interval_concurrency_not_exact'], report['failures'])
         self.assertEqual(10, len(report['minutes']))
         self.assertTrue(report['inflight']['exact_360_proven'])
+        self.assertFalse(report['inflight']['request_interval_reconstruction']['exact_360_for_entire_window'])
         self.assertIn('1000-4000', report['exports_by_scope_and_size']['clinical_export'])
 
     def test_export_tier_p95_is_reported_but_frozen_gate_is_per_export_class(self):
@@ -57,7 +59,7 @@ class Tbr05EvaluatorTests(unittest.TestCase):
                 slow_tier += 1
         report = evaluator.evaluate(summary, requests, inflight)
         self.assertGreater(report['exports_by_scope_and_size']['clinical_export']['1-20']['p95_ms'], 280)
-        self.assertTrue(report['passed'], report['failures'])
+        self.assertIn('360_request_interval_concurrency_not_exact', report['failures'])
 
     def test_rejects_incomplete_export_header_evidence(self):
         summary, requests, inflight = evidence()
@@ -81,6 +83,12 @@ class Tbr05EvaluatorTests(unittest.TestCase):
         self.assertEqual(360, result['minimum'])
         self.assertEqual(361, result['maximum'])
         self.assertFalse(result['exact_360_for_entire_window'])
+
+    def test_proves_exact_continuous_360_from_full_length_intervals(self):
+        requests = [{'started': 299, 'ended': 901} for _ in range(360)]
+        result = evaluator._interval_concurrency(requests, 300, 900)
+        self.assertEqual({'minimum': 360, 'maximum': 360,
+                          'exact_360_for_entire_window': True}, result)
 
     def test_detects_gap_hidden_between_sampled_inflight_points(self):
         requests = [{'started': 299, 'ended': 300.4} for _ in range(360)]
