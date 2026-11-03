@@ -203,7 +203,7 @@ def clinical(actor_id, payload):
                                 'medication_ref': str(item['medication_id']) if item['medication_id'] else None}
                                for item in adoption_rows if item['outcome'] == 'adopted']
             encounter_id = row['encounter_id']
-            target_refs.append(str(record_id))
+            target_refs.append(record_id)
             yield (str(record_id), str(encounter_id), template['version'], encoded_meanings,
                    current['diagnosis'], current['examination'], encode(current['extra_fields']),
                    encode(adopted_content),
