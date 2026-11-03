@@ -74,6 +74,21 @@ class Tbr05EvaluatorTests(unittest.TestCase):
         self.assertFalse(report['inflight']['exact_360_proven'])
         self.assertIn('360_continuous_inflight_not_proven', report['failures'])
 
+    def test_reconstructs_concurrency_from_request_intervals(self):
+        requests = [{'started': 299, 'ended': 302} for _ in range(360)]
+        requests += [{'started': 301.1, 'ended': 302}]
+        result = evaluator._interval_concurrency(requests, 300, 302)
+        self.assertEqual(360, result['minimum'])
+        self.assertEqual(361, result['maximum'])
+        self.assertFalse(result['exact_360_for_entire_window'])
+
+    def test_detects_gap_hidden_between_sampled_inflight_points(self):
+        requests = [{'started': 299, 'ended': 300.4} for _ in range(360)]
+        requests += [{'started': 300.6, 'ended': 301} for _ in range(360)]
+        result = evaluator._interval_concurrency(requests, 300, 301)
+        self.assertEqual(0, result['minimum'])
+        self.assertEqual(360, result['maximum'])
+
     def test_rejects_per_class_p95_above_limit(self):
         summary, requests, inflight = evidence()
         slow_queries = [row for row in requests if row['kind'] == 'query'][:100]
