@@ -359,6 +359,7 @@ def run_one(session, base, cookies, actors, number, kind, rng):
     global ACTIVE
     with LOCK:
         ACTIVE += 1
+    active = True
     try:
         response = session.request(method, base + path, json=payload if method == 'POST' else None,
                                    cookies=request_cookies, headers=headers, timeout=120, stream=True)
@@ -370,6 +371,9 @@ def run_one(session, base, cookies, actors, number, kind, rng):
                 pieces.append(piece)
         body = b''.join(pieces)
         ended = time.perf_counter()
+        with LOCK:
+            ACTIVE -= 1
+        active = False
         result = {'request_id': number, 'kind': kind, 'tier': tier, 'status': response.status_code,
                   'started': started, 'first': first, 'ended': ended, 'bytes': len(body),
                   'expected_count': expected_count if 'export' in kind else None,
@@ -389,8 +393,9 @@ def run_one(session, base, cookies, actors, number, kind, rng):
     finally:
         if response is not None:
             response.close()
-        with LOCK:
-            ACTIVE -= 1
+        if active:
+            with LOCK:
+                ACTIVE -= 1
 
 
 def validate_capture(capture):
