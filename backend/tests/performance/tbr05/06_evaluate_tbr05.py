@@ -43,6 +43,39 @@ def _timing_report(rows):
             'p99_ms': percentile(elapsed, .99), 'max_ms': max(elapsed, default=None)}
 
 
+def _interval_concurrency(request_rows, start, end):
+    """Reconstruct in-flight request count from complete request intervals."""
+    events = []
+    for row in request_rows:
+        request_start, request_end = row['started'], row['ended']
+        if request_end <= start or request_start >= end or request_end <= request_start:
+            continue
+        events.append((max(start, request_start), 1))
+        events.append((min(end, request_end), -1))
+    events.sort()
+    active = 0
+    minimum = None
+    maximum = 0
+    cursor = start
+    index = 0
+    while index < len(events):
+        at = events[index][0]
+        if at > cursor:
+            minimum = active if minimum is None else min(minimum, active)
+            maximum = max(maximum, active)
+            cursor = at
+        delta = 0
+        while index < len(events) and events[index][0] == at:
+            delta += events[index][1]
+            index += 1
+        active += delta
+    if cursor < end:
+        minimum = active if minimum is None else min(minimum, active)
+        maximum = max(maximum, active)
+    return {'minimum': minimum or 0, 'maximum': maximum,
+            'exact_360_for_entire_window': minimum == CONCURRENCY == maximum}
+
+
 def evaluate(summary, request_rows, inflight_rows):
     failures = []
     invalid_rows = [row for row in request_rows if any(
@@ -147,6 +180,7 @@ def evaluate(summary, request_rows, inflight_rows):
     exact_inflight = covered and all(value == CONCURRENCY for value in observed)
     if not exact_inflight:
         failures.append('360_continuous_inflight_not_proven')
+    interval_concurrency = _interval_concurrency(request_rows, WARMUP_SECONDS, formal_end)
 
     mix_counts = {kind: len(rows) for kind, rows in by_kind.items()}
     mix_total = len(formal_requests)
@@ -158,8 +192,7 @@ def evaluate(summary, request_rows, inflight_rows):
             'manual_evidence_required': ['source_and_configuration_identity', 'fixture_counts',
                                          'fixed_workload_mix_and_size_distribution',
                                          'client_and_server_resources', 'server_error_logs',
-                                         'full_scope_export_and_peak_memory',
-                                         'request_interval_concurrency_reconstruction'],
+                                         'full_scope_export_and_peak_memory'],
             'protocol': {'expected_concurrency': CONCURRENCY,
                          'warmup_seconds': WARMUP_SECONDS,
                          'formal_seconds': FORMAL_SECONDS,
@@ -174,7 +207,8 @@ def evaluate(summary, request_rows, inflight_rows):
                          'median': percentile(observed, .5),
                          'maximum': max(observed, default=None),
                          'maximum_sample_gap_seconds': max(gaps, default=None),
-                         'exact_360_proven': exact_inflight},
+                         'exact_360_proven': exact_inflight,
+                         'request_interval_reconstruction': interval_concurrency},
             'formal_failure_count': len(formal_failures)}
 
 
