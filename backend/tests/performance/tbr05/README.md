@@ -15,6 +15,8 @@
 
 云端负载只在正式复测窗口执行；正式命令固定 `--concurrency 360 --warmup-seconds 300 --formal-seconds 600`，不设置 `--only-group`。`--base` 指向预检确认的应用内网地址。正式前完成独立库、迁移、夹具计数、进程/连接预算与资源采样预检。默认参数只是候选窗口标签，不能当成通过结论。
 
+在应用服务器的 `backend` 目录中，Waitress 候选进程由 `backend/运行脚本/02_正式负载应用池.ps1` 管理。启动前在管理员 PowerShell 设置 `T22_FORMAL_LOAD=1`、隔离库配置路径、Python 路径及包含当前内网地址的 `T22_ALLOWED_HOSTS`，再显式传入 `-BindAddress`；脚本会校验隔离库名、8×24 连接预算、候选配置和端口，并在 `C:\ProgramData\T22\formal-load` 保存进程状态与日志。启动命令为 `.\运行脚本\02_正式负载应用池.ps1 -Action start -BindAddress <当前应用机内网IPv4>`，停止命令为 `.\运行脚本\02_正式负载应用池.ps1 -Action stop`。不要照抄旧候选中的内网地址；状态和日志不进仓库。
+
 发送端对病历更正和采纳响应立即更新版本引用；导出与其他响应由八个核验线程复核完整字节、CSV行数与摘要。有界队列若积压，会阻塞发起线程并使实际HTTP在途下降，必须视为客户端容量问题，不能用登录账号数或核验排队数补足360在途。
 
 判定命令：`python 06_evaluate_tbr05.py --summary <prefix.summary.json> --requests <prefix.requests.jsonl> --inflight <prefix.inflight.jsonl> --output <仓库外新报告.json>`。报告并列给出0.5秒在途采样与完整请求区间重建的并发最值；两种证据都必须覆盖全窗且恰为360，否则自动判定失败。退出0只表示自动检查项满足；完整验收还需人工复核环境、数据、固定混合比例、资源/错误日志、完整范围导出与峰值内存。大小分层报告分位，不擅自追加协议未明确冻结的分层P95硬门槛。
