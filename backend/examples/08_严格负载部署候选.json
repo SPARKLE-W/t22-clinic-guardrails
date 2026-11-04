@@ -2,21 +2,20 @@
   "status": "candidate_requires_environment_preflight_and_formal_retest",
   "application": {
     "processes": 8,
-    "threads_per_process": 24,
+    "threads_per_process": 48,
     "first_port": 18930,
-    "bind_host": "172.22.138.131",
     "CONN_MAX_AGE": 0,
     "CONN_HEALTH_CHECKS": false
   },
   "mysql": {
-    "max_connections": 320,
+    "max_connections": 512,
     "innodb_buffer_pool_size_bytes": 8589934592,
     "innodb_flush_log_at_trx_commit": 1
   },
   "connection_budget": {
-    "web_maximum": 192,
+    "web_maximum": 384,
     "other_clients_maximum": 32,
     "required_free_reserve": 64,
-    "total_budget": 288
+    "total_budget": 480
   }
 }

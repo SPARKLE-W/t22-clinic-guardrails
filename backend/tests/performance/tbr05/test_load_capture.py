@@ -32,6 +32,28 @@ class Session:
 
 
 class LoadCaptureTests(unittest.TestCase):
+    def test_target_base_pool_round_robins_all_workers(self):
+        args = types.SimpleNamespace(target_base=[f'http://app:{18930 + port}/' for port in range(8)],
+                                     tunnel_base=[], base='http://unused')
+
+        bases = load.resolve_target_bases(args)
+
+        self.assertEqual([f'http://app:{18930 + port}' for port in range(8)], bases)
+        self.assertEqual([45] * 8, load.target_worker_assignments(360, len(bases)))
+
+    def test_legacy_tunnel_base_alias_is_preserved(self):
+        args = types.SimpleNamespace(target_base=[], tunnel_base=['http://app:18930', 'http://app:18931/'],
+                                     base='http://unused')
+
+        self.assertEqual(['http://app:18930', 'http://app:18931'], load.resolve_target_bases(args))
+
+    def test_target_and_tunnel_base_options_cannot_be_mixed(self):
+        args = types.SimpleNamespace(target_base=['http://app:18930'], tunnel_base=['http://app:18931'],
+                                     base='http://unused')
+
+        with self.assertRaisesRegex(ValueError, 'either --target-base or legacy --tunnel-base'):
+            load.resolve_target_bases(args)
+
     def test_http_inflight_ends_before_response_validation(self):
         with patch.object(load, 'select_request', return_value=('doctor', 'GET', '/api', None, 'json', None)):
             with patch.object(load.json, 'loads', side_effect=AssertionError('validated before HTTP completed')):
