@@ -83,6 +83,10 @@ $isPrivateV4 = $address.AddressFamily -eq [System.Net.Sockets.AddressFamily]::In
 if (-not $isPrivateV4) {
     throw 'BindAddress must be a private IPv4 address in the VPC.'
 }
+$localAddresses = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop | ForEach-Object { $_.IPAddress })
+if ($localAddresses -notcontains $BindAddress) {
+    throw 'BindAddress is not assigned to this server; check the current private IPv4 address.'
+}
 if ($env:T22_FORMAL_LOAD -ne '1') { throw 'Set T22_FORMAL_LOAD=1 explicitly for the isolated formal-load service.' }
 if (-not $env:T22_APP_CONFIG -or -not (Test-Path -LiteralPath $env:T22_APP_CONFIG)) {
     throw 'Set T22_APP_CONFIG to the private isolated-load JSON configuration.'
