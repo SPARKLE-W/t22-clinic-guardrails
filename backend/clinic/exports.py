@@ -46,11 +46,13 @@ def _range(interval):
 
 def _csv(columns, rows):
     try:
-        output = io.StringIO(newline='')
-        writer = csv.DictWriter(output, fieldnames=columns, lineterminator='\r\n')
+        output = io.BytesIO()
+        text = io.TextIOWrapper(output, encoding='utf-8', newline='', write_through=True)
+        writer = csv.DictWriter(text, fieldnames=columns, lineterminator='\r\n')
         writer.writeheader()
         writer.writerows(rows)
-        return output.getvalue().encode('utf-8')
+        text.flush()
+        return output.getvalue()
     except (csv.Error, UnicodeError, TypeError, ValueError):
         logger.exception('CSV export generation failed')
         raise DomainError('EXPORT_GENERATION_UNAVAILABLE', 503) from None
@@ -58,11 +60,13 @@ def _csv(columns, rows):
 
 def _csv_values(columns, rows):
     try:
-        output = io.StringIO(newline='')
-        writer = csv.writer(output, lineterminator='\r\n')
+        output = io.BytesIO()
+        text = io.TextIOWrapper(output, encoding='utf-8', newline='', write_through=True)
+        writer = csv.writer(text, lineterminator='\r\n')
         writer.writerow(columns)
         writer.writerows(rows)
-        return output.getvalue().encode('utf-8')
+        text.flush()
+        return output.getvalue()
     except (csv.Error, UnicodeError, TypeError, ValueError):
         logger.exception('CSV export generation failed')
         raise DomainError('EXPORT_GENERATION_UNAVAILABLE', 503) from None
