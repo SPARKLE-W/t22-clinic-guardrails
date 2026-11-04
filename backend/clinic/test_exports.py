@@ -34,6 +34,20 @@ class ClinicalExportTests(ClinicFixture):
         self.assertEqual(hashlib.sha256(response.content).hexdigest(), response['X-Content-SHA256'])
         return list(csv.DictReader(io.StringIO(response.content.decode('utf-8-sig'))))
 
+    def test_csv_helpers_preserve_utf8_quoting_and_line_endings(self):
+        columns = ['first', 'second', 'third']
+        values = [[1, '中文,逗号', '多行\n字段"'], [2, '', None]]
+        expected_values = io.StringIO(newline='')
+        csv.writer(expected_values, lineterminator='\r\n').writerows([columns, *values])
+        self.assertEqual(expected_values.getvalue().encode('utf-8'), _csv_values(columns, values))
+
+        dictionaries = [dict(zip(columns, row)) for row in values]
+        expected_dicts = io.StringIO(newline='')
+        writer = csv.DictWriter(expected_dicts, fieldnames=columns, lineterminator='\r\n')
+        writer.writeheader()
+        writer.writerows(dictionaries)
+        self.assertEqual(expected_dicts.getvalue().encode('utf-8'), _csv(columns, dictionaries))
+
     def test_explicit_authorized_record_is_complete_and_audited(self):
         response = self.download({'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '课程合成病例核对'})
         rows = self.rows(response)
