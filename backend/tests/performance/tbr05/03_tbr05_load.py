@@ -164,6 +164,20 @@ def next_task():
     return number, MIX[number % len(MIX)]
 
 
+def resolve_target_bases(args):
+    if args.target_base and args.tunnel_base:
+        raise ValueError('Use either --target-base or legacy --tunnel-base, not both')
+    configured = args.target_base or args.tunnel_base or [args.base]
+    return [base.rstrip('/') for base in configured]
+
+
+def target_worker_assignments(concurrency, target_count):
+    if target_count < 1:
+        raise ValueError('At least one target endpoint is required')
+    return [sum(1 for worker in range(concurrency) if worker % target_count == target)
+            for target in range(target_count)]
+
+
 def next_target(label):
     with LOCK:
         number = TARGETS[label]
@@ -555,7 +569,10 @@ def parse_server_profile(headers):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--base', default='http://127.0.0.1:18830')
-    parser.add_argument('--tunnel-base', action='append', default=[])
+    parser.add_argument('--target-base', action='append', default=[],
+                        help='service endpoint; repeat to distribute workers across app ports')
+    parser.add_argument('--tunnel-base', action='append', default=[],
+                        help='legacy alias for --target-base')
     parser.add_argument('--private-accounts', type=Path, required=True)
     parser.add_argument('--output-prefix', type=Path, required=True)
     parser.add_argument('--concurrency', type=int, default=360)
@@ -581,7 +598,10 @@ def main():
     SUMMARY_HITS_BY_STORE = {store['store_ref']: store['guard_hits'] for store in private['manifest']['stores']}
     if args.only_group:
         MIX[:] = [args.only_group]
-    bases = [base.rstrip('/') for base in (args.tunnel_base or [args.base])]
+    try:
+        bases = resolve_target_bases(args)
+    except ValueError as error:
+        parser.error(str(error))
     cookies = authentication(bases[0], private)
     prefix = args.output_prefix
     private_path = args.private_accounts.resolve()
@@ -648,6 +668,8 @@ def main():
                     'run_finished_at_utc': utc_at(started_at_utc, actual_duration),
                     'timestamps_utc_note': 'Mapped from the run-start UTC wall clock plus monotonic elapsed time; latency uses perf_counter.',
                     'tunnel_count': len(bases),
+                    'target_endpoint_count': len(bases),
+                    'target_worker_assignments': target_worker_assignments(args.concurrency, len(bases)),
                     'target_pool_sizes': {'guard': GUARD_TARGETS,
                                           'diagnosis_correction': DIAGNOSIS_TARGETS,
                                           'suggestion_adoption': ADOPTION_TARGETS},
