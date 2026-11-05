@@ -74,6 +74,7 @@ jobs:
           python ../docs/10_验收证据/19_后端综合验收/检查脚本/17_严格负载时间戳测试.py
           python ../docs/10_验收证据/19_后端综合验收/检查脚本/24_正式负载目标池测试.py
           python ../docs/10_验收证据/19_后端综合验收/检查脚本/23_服务器资源与请求对齐测试.py
+          python -m unittest discover -s tests/performance/tbr05 -p "test_*.py" -v
       - name: Configure isolated CI databases
         run: |
           python - <<'PY'
