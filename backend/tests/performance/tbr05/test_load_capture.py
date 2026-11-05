@@ -19,6 +19,32 @@ with patch.dict(sys.modules, {'requests': types.ModuleType('requests'),
     SPEC.loader.exec_module(load)
 
 
+class SwitchIntervalTests(unittest.TestCase):
+    def test_candidate_applies_only_inside_scope_and_restores_on_error(self):
+        original = sys.getswitchinterval()
+        with self.assertRaisesRegex(RuntimeError, 'synthetic'):
+            with load.gil_switch_interval(1.0) as active:
+                self.assertAlmostEqual(.001, active)
+                self.assertAlmostEqual(.001, sys.getswitchinterval())
+                raise RuntimeError('synthetic')
+        self.assertEqual(original, sys.getswitchinterval())
+
+    def test_default_preserves_existing_interval(self):
+        original = sys.getswitchinterval()
+        with patch.object(sys, 'setswitchinterval', side_effect=AssertionError('default changed')):
+            with load.gil_switch_interval(None) as active:
+                self.assertEqual(original, active)
+        self.assertEqual(original, sys.getswitchinterval())
+
+    def test_invalid_intervals_fail_before_changing_runtime(self):
+        original = sys.getswitchinterval()
+        for value in (0, -1, float('nan'), float('inf')):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                with load.gil_switch_interval(value):
+                    self.fail('invalid interval entered')
+        self.assertEqual(original, sys.getswitchinterval())
+
+
 class GCPauseCaptureTests(unittest.TestCase):
     def recorder(self, folder, enabled=True):
         return load.GCPauseRecorder(Path(folder) / 'run', 100.0,
