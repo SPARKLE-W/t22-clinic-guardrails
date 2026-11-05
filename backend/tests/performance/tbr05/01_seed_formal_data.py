@@ -20,12 +20,13 @@ from django.utils import timezone
 from governance.models import Account, Activation, Candidate, Demand, PolicyHead, Review, Store
 from clinic.models import (Alert, AlertOutbox, ClinicalCheck, ClinicalRecord,
                            ClinicalRevision, Encounter, GuardHit, MedicationEntry,
-                           PetIdentity, ReceptionRevision)
+                           PetIdentity, ReceptionRevision, Suggestion)
 from vetcontrols import compile_demand
 
 
 NAMESPACE = uuid.UUID('23863255-7eb6-4692-96e2-cb87d8dbf54c')
 SEED = 20261024
+SUGGESTIONS_PER_RECORD = 16
 
 
 def ref(kind, store, number):
@@ -51,7 +52,8 @@ def main():
 
     credential = secrets.token_urlsafe(24)
     accounts = []
-    manifest = {'seed': SEED, 'database': settings.DATABASES['default']['NAME'], 'stores': []}
+    manifest = {'seed': SEED, 'database': settings.DATABASES['default']['NAME'], 'stores': [],
+                'suggestion_targets': 5 * len(range(2, 4000, 3)) * SUGGESTIONS_PER_RECORD}
     with transaction.atomic():
         for shop in range(5):
             store = Store.objects.create(id=ref('store', shop, 0), name=f'合成验收门店{shop + 1}')
@@ -136,10 +138,22 @@ def main():
                                   (ClinicalCheck, checks), (MedicationEntry, meds), (GuardHit, hits),
                                   (Alert, alerts), (AlertOutbox, outbox)):
                 add_many(model, values)
+            # Disjoint adoption lane; each suggestion is consumed only once.
+            for slot in range(SUGGESTIONS_PER_RECORD):
+                kind = 'suggestion' if slot == 0 else f'suggestion-{slot}'
+                suggestions = [Suggestion(
+                    id=ref(kind, shop, number), encounter_id=ref('encounter', shop, number),
+                    source_version='demo-formal-load-v1', sample_key=f'synthetic-{number}-{slot}',
+                    source={'type': 'demo', 'version': 'demo-formal-load-v1',
+                            'label': '合成压测演示建议，不是真实模型建议'},
+                    content={'medication': {'drug': '合成建议药品', 'amount': '1', 'unit': '片'}})
+                    for number in range(2, 4000, 3)]
+                add_many(Suggestion, suggestions)
             manifest['stores'].append({'store_ref': str(store.pk), 'pets': len(pets),
                                        'encounters': len(encounters), 'records': len(records),
                                        'clinical_revisions': len(revisions), 'medications': len(meds),
                                        'guard_hits': len(hits), 'alerts': len(alerts), 'outbox_pending': len(outbox),
+                                       'suggestions': len(range(2, 4000, 3)) * SUGGESTIONS_PER_RECORD,
                                        'doctor_record_counts': [4000, 0] if shop == 0 else [2000, 2000]})
     private = {'synthetic_only': True, 'password': credential, 'accounts': accounts,
                'manifest': manifest}
