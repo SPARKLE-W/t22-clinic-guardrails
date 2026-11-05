@@ -5,6 +5,7 @@ import os
 import sys
 import threading
 import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -19,6 +20,35 @@ from waitress import serve
 
 
 local = threading.local()
+
+
+@contextmanager
+def measure_connections(database, counters):
+    """Observe real connection attempts without changing retry or timeout policy."""
+    original = database.get_new_connection
+    had_override = 'get_new_connection' in database.__dict__
+    counters.update(db_connect_ms=0.0, db_connect_count=0)
+
+    def connect(params):
+        before = time.perf_counter()
+        counters['db_connect_count'] += 1
+        try:
+            return original(params)
+        except Exception as exc:
+            if exc.args and type(exc.args[0]) is int:
+                counters['db_connect_error_code'] = exc.args[0]
+            raise
+        finally:
+            counters['db_connect_ms'] += (time.perf_counter() - before) * 1000
+
+    database.get_new_connection = connect
+    try:
+        yield
+    finally:
+        if had_override:
+            database.get_new_connection = original
+        else:
+            del database.get_new_connection
 
 
 def normalize_bind_host(value):
@@ -86,6 +116,7 @@ def serve_profiled(port, threads, host):
                 timing = (f"app;dur={(app_end - started) * 1000:.4f}, "
                           f"sql;dur={counters['sql_ms']:.4f}, "
                           f"commit;dur={counters['commit_ms']:.4f}, "
+                          f"db-connect;dur={counters['db_connect_ms']:.4f}, "
                           f"queue;dur={getattr(local, 'queue_ms', 0):.4f}")
                 for name, duration in export_timings.items():
                     timing += f", {name};dur={duration:.4f}"
@@ -93,6 +124,7 @@ def serve_profiled(port, threads, host):
                     ('Server-Timing', timing),
                     ('X-T22-Profile-Scope', 'through-start-response; iterable-excluded'),
                     ('X-T22-SQL-Count', str(counters['sql_count'])),
+                    ('X-T22-DB-Connect-Count', str(counters['db_connect_count'])),
                     ('X-T22-Server-PID', str(os.getpid())),
                     ('X-T22-Process-CPU', str(time.process_time())),
                     ('X-T22-App-Start', str(started)),
@@ -100,11 +132,13 @@ def serve_profiled(port, threads, host):
                     ('X-T22-App-Start-UTC', started_utc),
                     ('X-T22-App-End-UTC', app_end_utc),
                 ]
+                if 'db_connect_error_code' in counters:
+                    extra.append(('X-T22-DB-Connect-Error-Code', str(counters['db_connect_error_code'])))
                 return start_response(status, headers + extra, exc_info)
 
             database._commit = commit
             try:
-                with database.execute_wrapper(sql):
+                with measure_connections(database, counters), database.execute_wrapper(sql):
                     return self.application(environ, measured_response)
             finally:
                 database._commit = original_commit
