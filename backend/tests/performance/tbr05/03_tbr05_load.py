@@ -388,6 +388,7 @@ def run_one(session, base, cookies, actors, number, kind, rng):
                    'client_headers_ms': (started - selected) * 1000}
     first = None
     response = None
+    result = None
     global ACTIVE
     with LOCK:
         ACTIVE += 1
@@ -428,6 +429,8 @@ def run_one(session, base, cookies, actors, number, kind, rng):
         if active:
             with LOCK:
                 ACTIVE -= 1
+        if result is not None:
+            result['client_response_finalize_ms'] = (time.perf_counter() - result['ended']) * 1000
 
 
 def validate_capture(capture):
@@ -523,11 +526,17 @@ def worker(index, gate, end_at, base, cookies, actors, pending):
     try:
         gate.wait(timeout=180)
         while time.perf_counter() < end_at:
+            task_started = time.perf_counter()
             number, kind = next_task()
+            task_selected = time.perf_counter()
             capture = run_one(session, base, cookies, actors, number, kind, rng)
             capture[0]['worker_id'] = index
+            capture[0]['client_task_selection_ms'] = (task_selected - task_started) * 1000
+            capture[0]['client_inline_validation_ms'] = 0.0
             if kind in ('guard', 'write'):
+                validating = time.perf_counter()
                 capture = (validate_capture(capture), None, {}, None)
+                capture[0]['client_inline_validation_ms'] = (time.perf_counter() - validating) * 1000
             pending.submit(capture)
     finally:
         session.close()

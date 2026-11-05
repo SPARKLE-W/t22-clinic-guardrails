@@ -126,25 +126,43 @@ class LoadCaptureTests(unittest.TestCase):
 
     def test_preparation_timings_do_not_shift_http_interval(self):
         with patch.object(load, 'select_request', return_value=('doctor', 'GET', '/api', None, 'json', None)):
-            with patch.object(load.time, 'perf_counter', side_effect=[1, 1.1, 1.2, 1.3, 1.4]):
+            with patch.object(load.time, 'perf_counter', side_effect=[1, 1.1, 1.2, 1.3, 1.4, 1.7]):
                 row = load.run_one(Session(), 'http://test', {'doctor': {}}, {}, 1, 'query', None)[0]
         self.assertAlmostEqual(100, row['client_select_ms'])
         self.assertAlmostEqual(100, row['client_headers_ms'])
         self.assertEqual(1.2, row['started'])
         self.assertEqual(1.3, row['first'])
         self.assertEqual(1.4, row['ended'])
+        self.assertAlmostEqual(300, row['client_response_finalize_ms'])
         self.assertEqual(0, load.ACTIVE)
 
     def test_preparation_timings_survive_transport_failure(self):
         with patch.object(load, 'select_request', return_value=('doctor', 'GET', '/api', None, 'json', None)):
             with patch.object(Session, 'request', side_effect=OSError('synthetic')):
-                with patch.object(load.time, 'perf_counter', side_effect=[1, 1.1, 1.2, 1.4]):
+                with patch.object(load.time, 'perf_counter', side_effect=[1, 1.1, 1.2, 1.4, 1.7]):
                     row = load.run_one(Session(), 'http://test', {'doctor': {}}, {}, 1, 'query', None)[0]
         self.assertFalse(row['ok'])
         self.assertAlmostEqual(100, row['client_headers_ms'])
         self.assertEqual(1.2, row['started'])
         self.assertEqual(1.4, row['ended'])
         self.assertEqual(0, load.ACTIVE)
+
+    def test_worker_records_task_and_inline_validation_outside_http_interval(self):
+        row = {'kind': 'guard', 'started': .003, 'ended': .0035}
+        captures = []
+        session = types.SimpleNamespace(close=lambda: None)
+        gate = types.SimpleNamespace(wait=lambda **kwargs: None)
+        pending = types.SimpleNamespace(submit=captures.append)
+        with patch.object(load.requests, 'Session', return_value=session, create=True), \
+             patch.object(load, 'next_task', return_value=(1, 'guard')), \
+             patch.object(load, 'run_one', return_value=(row, b'{}', {}, None)), \
+             patch.object(load, 'validate_capture', side_effect=lambda capture: capture[0]), \
+             patch.object(load.time, 'perf_counter', side_effect=[0, .001, .003, .004, .009, 2]):
+            load.worker(0, gate, 1, 'http://test', {}, {}, pending)
+        self.assertEqual(1, len(captures))
+        self.assertAlmostEqual(2, row['client_task_selection_ms'])
+        self.assertAlmostEqual(5, row['client_inline_validation_ms'])
+        self.assertEqual(.0035, row['ended'])
 
     def test_export_phase_timings_survive_header_parsing(self):
         headers = {'Server-Timing': 'export-snapshot;dur=12.5, export-csv;dur=3, '
