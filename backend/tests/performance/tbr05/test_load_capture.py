@@ -177,5 +177,35 @@ class LoadCaptureTests(unittest.TestCase):
         self.assertEqual(1.1, result['ended'])
 
 
+class LoadSummaryWindowTests(unittest.TestCase):
+    @staticmethod
+    def row(started, ended, ok=True):
+        return {'kind': 'query', 'started': started, 'ended': ended, 'ok': ok}
+
+    def test_short_measurement_excludes_drain_and_extra_minutes(self):
+        rows = [self.row(161, 165), self.row(221, 225, False), self.row(279, 281)]
+        report = load.summarize(rows, [], 100, 280, 60)
+        self.assertEqual([
+            {'minute': 1, 'completed': 1, 'success': 1, 'failures': 0},
+            {'minute': 2, 'completed': 1, 'success': 0, 'failures': 1},
+        ], report['minutes'])
+        self.assertEqual(3, report['formal_requests_started'])
+
+    def test_partial_minute_has_explicit_duration_and_closed_end(self):
+        rows = [self.row(281, 284), self.row(282, 285)]
+        report = load.summarize(rows, [], 100, 285, 60)
+        self.assertEqual(3, len(report['minutes']))
+        self.assertEqual({'minute': 3, 'completed': 1, 'success': 1, 'failures': 0,
+                          'duration_seconds': 5}, report['minutes'][-1])
+
+    def test_frozen_full_window_preserves_ten_full_minute_shape(self):
+        rows = [self.row(1300, 1300.1), self.row(1899, 1900)]
+        report = load.summarize(rows, [], 1000, 1900, 300)
+        self.assertEqual(10, len(report['minutes']))
+        self.assertTrue(all(set(row) == {'minute', 'completed', 'success', 'failures'}
+                            for row in report['minutes']))
+        self.assertEqual(1, sum(row['success'] for row in report['minutes']))
+
+
 if __name__ == '__main__':
     unittest.main()
