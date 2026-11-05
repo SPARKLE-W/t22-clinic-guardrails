@@ -1,6 +1,7 @@
 ﻿param(
     [ValidateSet('start','stop')][string]$Action = 'start',
     [string]$BindAddress,
+    [string]$CandidatePath,
     [string]$PythonExe = $env:T22_APP_PYTHON,
     [string]$StateDirectory = 'C:\ProgramData\T22\formal-load'
 )
@@ -8,7 +9,8 @@
 $ErrorActionPreference = 'Stop'
 $backendRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $servicePath = [System.IO.Path]::GetFullPath((Join-Path $backendRoot 'tests\performance\tbr05\02_formal_service.py'))
-$candidatePath = Join-Path $backendRoot 'examples\08_严格负载部署候选.json'
+if (-not $CandidatePath) { $CandidatePath = Join-Path $backendRoot 'examples\08_严格负载部署候选.json' }
+$CandidatePath = [System.IO.Path]::GetFullPath($CandidatePath)
 $statePath = Join-Path $StateDirectory 'application-pool.json'
 
 function Write-State($Value) {
@@ -145,6 +147,7 @@ $state = [ordered]@{
     run_id = $runId; status = 'starting'; bind_address = $BindAddress
     database = $databaseName; python = $PythonExe; service = $servicePath
     log_directory = $logDirectory
+    candidate_path = $CandidatePath; candidate_sha256 = (Get-FileHash -LiteralPath $CandidatePath -Algorithm SHA256).Hash
     process_count = $processCount; threads_per_process = $threadCount
     started_at_utc = [DateTime]::UtcNow.ToString('o'); processes = @()
 }
