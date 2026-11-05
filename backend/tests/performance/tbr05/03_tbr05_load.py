@@ -155,6 +155,11 @@ def ref(kind, shop, number):
     return str(uuid.uuid5(NAMESPACE, f'20261024:{kind}:{shop}:{number}'))
 
 
+# Fixed fixture identifiers only; built before authentication and the timed window.
+EXPORT_REFS = {(kind, shop): tuple(ref(kind, shop, n) for n in range(4000))
+               for kind in ('record', 'encounter') for shop in range(5)}
+
+
 def quantile(values, fraction):
     return sorted(values)[math.ceil(fraction * len(values)) - 1] if values else None
 
@@ -348,10 +353,10 @@ def select_request(kind, sequence, rng):
         chosen = rng.sample(candidates, size)
         actor = choose_actor(None, 'doctor', shop, doctor)
         if kind == 'clinical_export':
-            payload = {'scope': {'record_refs': [ref('record', shop, n) for n in chosen]},
+            payload = {'scope': {'record_refs': [EXPORT_REFS['record', shop][n] for n in chosen]},
                        'purpose': '合成正式负载验证'}
             return actor, 'POST', '/api/exports/clinical-records', payload, tier, size
-        payload = {'scope': {'encounter_refs': [ref('encounter', shop, n) for n in chosen]}}
+        payload = {'scope': {'encounter_refs': [EXPORT_REFS['encounter', shop][n] for n in chosen]}}
         return actor, 'POST', '/api/exports/alert-hits', payload, tier, size
     actor = choose_actor(None, 'manager', shop)
     return actor, 'POST', '/api/exports/alert-summary', {'group_by': 'rule'}, 'summary', None
