@@ -363,7 +363,9 @@ def select_request(kind, sequence, rng):
 
 
 def run_one(session, base, cookies, actors, number, kind, rng):
+    preparing = time.perf_counter()
     actor, method, path, payload, tier, expected_count = select_request(kind, number, rng)
+    selected = time.perf_counter()
     target_key = payload.pop('_load_target_key', None) if payload else None
     if kind == 'reception':
         payload['doctor_ref'] = actors[f'load_{expected_count + 1}_doctor_1']['account_ref']
@@ -376,6 +378,8 @@ def run_one(session, base, cookies, actors, number, kind, rng):
         if kind in ('reception', 'guard', 'write'):
             headers['Idempotency-Key'] = str(uuid.uuid4())
     started = time.perf_counter()
+    preparation = {'client_select_ms': (selected - preparing) * 1000,
+                   'client_headers_ms': (started - selected) * 1000}
     first = None
     response = None
     global ACTIVE
@@ -399,7 +403,7 @@ def run_one(session, base, cookies, actors, number, kind, rng):
         result = {'request_id': number, 'kind': kind, 'tier': tier, 'status': response.status_code,
                   'started': started, 'first': first, 'ended': ended, 'bytes': len(body),
                   'expected_count': expected_count if 'export' in kind else None,
-                  'server_ref': response.headers.get('X-Export-Ref')}
+                  'server_ref': response.headers.get('X-Export-Ref'), **preparation}
         profile = parse_server_profile(response.headers)
         if profile:
             result['server_profile'] = profile
@@ -410,7 +414,7 @@ def run_one(session, base, cookies, actors, number, kind, rng):
                   'ok': False, 'started': started, 'first': first,
                   'ended': time.perf_counter(), 'bytes': 0,
                   'expected_count': expected_count if 'export' in kind else None,
-                  'server_ref': None}
+                  'server_ref': None, **preparation}
         return result, None, {}, target_key
     finally:
         if response is not None:
