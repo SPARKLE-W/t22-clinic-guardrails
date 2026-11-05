@@ -300,6 +300,7 @@ class ClinicalExportTests(ClinicFixture):
         self.assertEqual(0, ExportRequest.objects.count())
 
     def test_corrections_medication_and_adopted_only_remain_reconstructable(self):
+        from datetime import timedelta
         from .models import MedicationEntry
         original = ClinicalRevision.objects.get(record=self.record)
         newer = ClinicalRevision.objects.create(record=self.record, version=2, diagnosis='更正后诊断',
@@ -316,6 +317,7 @@ class ClinicalExportTests(ClinicFixture):
         correction = MedicationEntry.objects.create(record=self.record, original=original_med, evaluation=check2,
                                                      drug='合成药', amount='2', unit='片', actor=self.doctor,
                                                      reason='合成用药更正')
+        MedicationEntry.objects.filter(pk=correction.pk).update(created_at=original_med.created_at + timedelta(seconds=1))
         accepted = Suggestion.objects.create(encounter_id=self.ref, source_version='demo', sample_key='accept',
                                              source={'type': 'demo', 'version': 'demo', 'label': '演示'},
                                              content={'diagnosis': '原始演示建议'})
