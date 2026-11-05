@@ -480,6 +480,19 @@ def validator(pending, results, recorder, stop, errors):
             pending.task_done()
 
 
+class ValidationQueue(queue.Queue):
+    def submit(self, capture):
+        self.put((capture, time.perf_counter()))
+
+    def _put(self, item):
+        # Set timing under the queue lock, before the validator can see the row.
+        if isinstance(item, tuple):
+            capture, queued_at = item
+            capture[0]['validation_enqueue_wait_ms'] = (time.perf_counter() - queued_at) * 1000
+            item = capture
+        super()._put(item)
+
+
 def worker(index, gate, end_at, base, cookies, actors, pending):
     rng = random.Random(20261024 + index)
     session = requests.Session()
@@ -488,9 +501,10 @@ def worker(index, gate, end_at, base, cookies, actors, pending):
         while time.perf_counter() < end_at:
             number, kind = next_task()
             capture = run_one(session, base, cookies, actors, number, kind, rng)
+            capture[0]['worker_id'] = index
             if kind in ('guard', 'write'):
                 capture = (validate_capture(capture), None, {}, None)
-            pending.put(capture)
+            pending.submit(capture)
     finally:
         session.close()
 
@@ -504,7 +518,7 @@ def summarize(rows, samples, start, end, warmup):
         profiled = [r.get('server_profile', {}) for r in selected if r.get('server_profile')]
         profile_metrics = {}
         profile_scopes = sorted({row['scope'] for row in profiled if row.get('scope')})
-        for metric in ('queue_ms', 'app_ms', 'sql_ms', 'commit_ms'):
+        for metric in SERVER_TIMINGS.values():
             values = [row[metric] for row in profiled if metric in row]
             if values:
                 profile_metrics[metric] = {'count': len(values), 'p50_ms': quantile(values, .5),
@@ -540,14 +554,18 @@ def summarize(rows, samples, start, end, warmup):
             'actual_mix': {kind: groups[kind]['count'] / len(formal) if formal else 0 for kind in groups}}
 
 
+SERVER_TIMINGS = {'queue': 'queue_ms', 'app': 'app_ms', 'sql': 'sql_ms', 'commit': 'commit_ms',
+                  'export-snapshot': 'export_snapshot_ms', 'export-csv': 'export_csv_ms',
+                  'export-audit-targets': 'export_audit_targets_ms'}
+
+
 def parse_server_profile(headers):
     """Parse optional timing headers emitted by 05_正式负载服务.py --profile."""
     timing = headers.get('Server-Timing', '')
     result = {}
-    names = {'queue': 'queue_ms', 'app': 'app_ms', 'sql': 'sql_ms', 'commit': 'commit_ms'}
     for name, value in re.findall(r'(?:^|,)\s*([\w-]+);dur=([0-9]+(?:\.[0-9]+)?)', timing):
-        if name in names:
-            result[names[name]] = float(value)
+        if name in SERVER_TIMINGS:
+            result[SERVER_TIMINGS[name]] = float(value)
     for header, key, converter in (
             ('X-T22-SQL-Count', 'sql_count', int),
             ('X-T22-Server-PID', 'server_pid', int),
@@ -617,7 +635,7 @@ def main():
     end = start + total
     gate = threading.Barrier(args.concurrency + 1)
     results = []
-    pending = queue.Queue(maxsize=args.concurrency * 2)
+    pending = ValidationQueue(maxsize=args.concurrency * 2)
     validation_stop = object()
     validation_errors = []
     validators = [threading.Thread(target=validator,

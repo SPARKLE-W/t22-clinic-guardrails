@@ -48,6 +48,19 @@ class ClinicalExportTests(ClinicFixture):
         writer.writerows(dictionaries)
         self.assertEqual(expected_dicts.getvalue().encode('utf-8'), _csv(columns, dictionaries))
 
+    def test_profiled_export_preserves_csv_and_audits_target(self):
+        payload = {'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': 'profile'}
+        baseline = self.download(payload)
+        timings = {}
+        profiled = self.client.post(self.url, json.dumps(payload), content_type='application/json',
+                                    **{'t22.export_timings': timings})
+        self.assertEqual(self.rows(baseline), self.rows(profiled))
+        self.assertEqual(baseline.content, profiled.content)
+        self.assertEqual({'export-snapshot', 'export-csv', 'export-audit-targets'}, set(timings))
+        self.assertTrue(all(value >= 0 for value in timings.values()))
+        self.assertEqual(2, AuditTarget.objects.filter(target=self.record.pk,
+                                                       event__action='export.clinical').count())
+
     def test_explicit_authorized_record_is_complete_and_audited(self):
         response = self.download({'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '课程合成病例核对'})
         rows = self.rows(response)
@@ -210,6 +223,12 @@ class ClinicalExportTests(ClinicFixture):
             response = self.download(payload)
         self.assertEqual(503, response.status_code)
         self.assertFalse(response['Content-Type'].startswith('text/csv'))
+        with patch('clinic.exports.AuditTarget.objects.bulk_create', side_effect=DatabaseError('target outage')):
+            response = self.download(payload)
+        self.assertEqual(503, response.status_code)
+        self.assertFalse(response['Content-Type'].startswith('text/csv'))
+        self.assertFalse(ExportRequest.objects.exists())
+        self.assertFalse(AuditEvent.objects.filter(action='export.clinical', outcome='success').exists())
         with patch('clinic.exports._template', side_effect=KeyError('synthetic corrupt template')):
             response = self.download(payload)
         self.assertEqual(503, response.status_code)

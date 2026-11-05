@@ -63,6 +63,23 @@ class LoadCaptureTests(unittest.TestCase):
         self.assertLess(capture[0]['started'], capture[0]['ended'])
         self.assertTrue(load.validate_capture(capture)['ok'])
 
+    def test_enqueue_wait_is_available_before_validation(self):
+        pending = load.ValidationQueue(maxsize=1)
+        row = {}
+        with patch.object(load.time, 'perf_counter', side_effect=[1.0, 1.125]):
+            pending.submit((row, b'', {}, None))
+        self.assertEqual(125.0, pending.get_nowait()[0]['validation_enqueue_wait_ms'])
+        stop = object()
+        pending.put_nowait(stop)
+        self.assertIs(stop, pending.get_nowait())
+
+    def test_export_phase_timings_survive_header_parsing(self):
+        headers = {'Server-Timing': 'export-snapshot;dur=12.5, export-csv;dur=3, '
+                                    'export-audit-targets;dur=8, commit;dur=2'}
+        self.assertEqual({'export_snapshot_ms': 12.5, 'export_csv_ms': 3,
+                          'export_audit_targets_ms': 8, 'commit_ms': 2},
+                         load.parse_server_profile(headers))
+
     def test_export_validation_checks_complete_bytes_after_http_timing(self):
         body = b'event_ref,record_ref\r\na,b\r\n'
         digest = hashlib.sha256(body).hexdigest()

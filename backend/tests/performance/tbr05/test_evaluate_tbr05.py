@@ -88,7 +88,8 @@ class Tbr05EvaluatorTests(unittest.TestCase):
         requests = [{'started': 299, 'ended': 901} for _ in range(360)]
         result = evaluator._interval_concurrency(requests, 300, 900)
         self.assertEqual({'minimum': 360, 'maximum': 360,
-                          'exact_360_for_entire_window': True}, result)
+                          'exact_360_for_entire_window': True,
+                          'below_360_seconds': 0, 'longest_below_360_seconds': 0}, result)
 
     def test_detects_gap_hidden_between_sampled_inflight_points(self):
         requests = [{'started': 299, 'ended': 300.4} for _ in range(360)]
@@ -96,6 +97,28 @@ class Tbr05EvaluatorTests(unittest.TestCase):
         result = evaluator._interval_concurrency(requests, 300, 301)
         self.assertEqual(0, result['minimum'])
         self.assertEqual(360, result['maximum'])
+        self.assertAlmostEqual(.2, result['below_360_seconds'])
+        self.assertAlmostEqual(.2, result['longest_below_360_seconds'])
+
+    def test_one_worker_handoff_breaks_exact_360(self):
+        rows = [{'started': 299, 'ended': 302} for _ in range(359)]
+        rows += [{'started': 299, 'ended': 300.4}, {'started': 300.401, 'ended': 302}]
+        result = evaluator._interval_concurrency(rows, 300, 301)
+        self.assertEqual((359, 360), (result['minimum'], result['maximum']))
+        self.assertAlmostEqual(.001, result['below_360_seconds'])
+        self.assertFalse(result['exact_360_for_entire_window'])
+
+    def test_serial_worker_handoff_is_clipped_to_formal_window(self):
+        rows = [{'worker_id': 0, 'started': 299, 'ended': 299.9},
+                {'worker_id': 0, 'started': 300.1, 'ended': 300.4,
+                 'validation_enqueue_wait_ms': 70},
+                {'worker_id': 0, 'started': 300.5, 'ended': 301},
+                {'worker_id': 0, 'started': 301, 'ended': 302}]
+        report = evaluator._client_handoffs(rows[::-1], 300, 301)
+        self.assertEqual(2, report['handoff_gap_ms']['count'])
+        self.assertAlmostEqual(100, report['handoff_gap_ms']['max'])
+        self.assertEqual({'count': 1, 'p95': 70, 'max': 70},
+                         report['validation_enqueue_wait_ms'])
 
     def test_rejects_per_class_p95_above_limit(self):
         summary, requests, inflight = evidence()
