@@ -154,6 +154,28 @@ def _detail_values(queryset, fields, uuid_fields):
         yield row
 
 
+def _record_values(queryset):
+    # Keep the primary UUID for audit binding; metadata identifiers only need
+    # canonical text for signatures and CSV, not UUID object round trips.
+    textual = ('encounter_id', 'template_id', 'encounter__store_id',
+               'encounter__template_id', 'encounter__rebuilt_id')
+    aliases = {'export_record_' + field.replace('__', '_'): Cast(field, CharField(max_length=36))
+               for field in textual}
+    rows = list(queryset.annotate(**aliases).values(
+        *(field for field in _RECORD_FIELDS if field not in textual), *aliases,
+        'export_projection__source_signature', 'export_projection__prefix',
+        'export_projection__prefix_digest').order_by('encounter__created_at', 'pk'))
+    for row in rows:
+        for field in textual:
+            value = row.pop('export_record_' + field.replace('__', '_'))
+            if value is not None:
+                value = value.lower()
+                if len(value) == 32:
+                    value = f'{value[:8]}-{value[8:12]}-{value[12:16]}-{value[16:20]}-{value[20:]}'
+            row[field] = value
+    return rows
+
+
 def _load_histories(record_ids):
     revisions, medications, adoptions = defaultdict(list), defaultdict(list), defaultdict(list)
     for item in _detail_values(
@@ -262,15 +284,15 @@ def clinical(actor_id, payload, timings=None):
         else:
             start, end = _range(scope['time_range'])
             rows = rows.filter(encounter__created_at__gte=start, encounter__created_at__lt=end)
-        rows = list(rows.values(*_RECORD_FIELDS, 'export_projection__source_signature',
-                               'export_projection__prefix', 'export_projection__prefix_digest'
-                               ).order_by('encounter__created_at', 'pk'))
+        rows = _record_values(rows)
         if 'record_refs' in scope and len(rows) != len(refs):
             error = DomainError('TARGET_UNAVAILABLE', 403)
             error.export_targets = ('record', refs)
             raise error
-        template_rows = Candidate.objects.only('id', 'store_id', 'envelope', 'digest').in_bulk(
-            {row['template_id'] for row in rows})
+        for row in rows:
+            row['template_id'] = str(row['template_id'])
+        template_rows = {str(key): value for key, value in Candidate.objects.only(
+            'id', 'store_id', 'envelope', 'digest').in_bulk({row['template_id'] for row in rows}).items()}
         templates = {}
         for row in rows:
             template_id = row['template_id']

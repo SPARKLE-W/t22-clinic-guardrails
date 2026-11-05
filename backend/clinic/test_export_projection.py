@@ -61,6 +61,21 @@ class ExportProjectionTests(ClinicFixture):
         self.assertEqual(2, AuditTarget.objects.filter(target=self.record.pk,
                                                       event__action='export.clinical').count())
 
+    def test_text_metadata_identifiers_match_normal_uuid_read(self):
+        from . import exports
+        def reference(queryset):
+            return list(queryset.values(*exports._RECORD_FIELDS, 'export_projection__source_signature',
+                'export_projection__prefix', 'export_projection__prefix_digest').order_by('encounter__created_at', 'pk'))
+        other = self.create()['encounter_ref']
+        Encounter.objects.filter(pk=self.ref).update(error_mark=True, rebuilt_id=other)
+        with patch('clinic.exports._record_values', side_effect=reference):
+            expected = self.body()
+        self.assertEqual(expected, self.body())
+        row = exports._record_values(ClinicalRecord.objects.filter(pk=self.record.pk))[0]
+        self.assertIsInstance(row['id'], uuid.UUID)
+        self.assertEqual(str(self.record.template_id), row['template_id'])
+        self.assertEqual(other, row['encounter__rebuilt_id'])
+
     def test_correction_and_guard_refusal_keep_generation_and_full_history(self):
         key = str(uuid.uuid4())
         result = self.correct(key=key)
