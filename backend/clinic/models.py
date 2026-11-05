@@ -207,13 +207,15 @@ def _derive_hit_stores(rows, using):
 
 
 class GuardHitQuerySet(models.QuerySet):
-    def bulk_create(self, objs, *args, **kwargs):
+    def bulk_create(self, objs, batch_size=None, ignore_conflicts=False, update_conflicts=False,
+                    update_fields=None, unique_fields=None):
         rows = list(objs)
-        if set(kwargs.get('update_fields') or ()) & {'evaluation', 'evaluation_id', 'store', 'store_id'}:
+        if set(update_fields or ()) & {'evaluation', 'evaluation_id', 'store', 'store_id'}:
             raise ValidationError('Change guard hit lineage with source-aware save().')
         with transaction.atomic(using=self.db):
             _derive_hit_stores(rows, self.db)
-            return super().bulk_create(rows, *args, **kwargs)
+            return super().bulk_create(rows, batch_size=batch_size, ignore_conflicts=ignore_conflicts,
+                update_conflicts=update_conflicts, update_fields=update_fields, unique_fields=unique_fields)
 
     def update(self, **kwargs):
         if set(kwargs) & {'evaluation', 'evaluation_id', 'store', 'store_id'}:
