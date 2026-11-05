@@ -1,5 +1,6 @@
 """Create deterministic synthetic formal-load data in an empty isolated database."""
 import argparse
+import io
 import json
 import os
 import secrets
@@ -15,10 +16,12 @@ import django
 django.setup()
 
 from django.conf import settings
+from django.core.management import call_command
 from django.db import transaction
 from django.utils import timezone
 from governance.models import Account, Activation, Candidate, Demand, PolicyHead, Review, Store
 from clinic.models import (Alert, AlertOutbox, ClinicalCheck, ClinicalRecord,
+                           ClinicalExportProjection,
                            ClinicalRevision, Encounter, GuardHit, MedicationEntry,
                            PetIdentity, ReceptionRevision, Suggestion)
 from vetcontrols import compile_demand
@@ -155,6 +158,10 @@ def main():
                                        'guard_hits': len(hits), 'alerts': len(alerts), 'outbox_pending': len(outbox),
                                        'suggestions': len(range(2, 4000, 3)) * SUGGESTIONS_PER_RECORD,
                                        'doctor_record_counts': [4000, 0] if shop == 0 else [2000, 2000]})
+    call_command('rebuild_export_projections', batch_size=500, stdout=io.StringIO())
+    manifest['export_projections'] = ClinicalExportProjection.objects.count()
+    if manifest['export_projections'] != 20000:
+        raise RuntimeError('Derived projection count does not match the fixed clinical fixture')
     private = {'synthetic_only': True, 'password': credential, 'accounts': accounts,
                'manifest': manifest}
     with output.open('x', encoding='utf-8') as stream:

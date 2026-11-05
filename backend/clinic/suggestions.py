@@ -4,6 +4,7 @@ from governance.models import Operation
 from governance.services import DomainError, _uuid, require
 from vetcontrols.compiler import _digest, _normalize
 from .guards import evaluate
+from .export_projection import note_encounter_lock, refresh_projection
 from .models import ClinicalCheck, ClinicalRecord, ClinicalRevision, MedicationEntry, Suggestion, SuggestionDecision
 from .services import (_extra_values, _object, _own, _persist_guard_alerts, _policy_head_for_share, _refusal,
                        _template, _text)
@@ -42,6 +43,8 @@ def listing(actor_id, ref):
             actor = require(actor_id, 'clinical.read', lock=True)
             row = _own(actor, ref, clinical=True, lock=True)
             record = ClinicalRecord.objects.filter(encounter=row).first()
+            if record:
+                note_encounter_lock(record, row)
             _template(record.template if record else row.template, actor.store_id)
             items = [suggestion_item(item) for item in Suggestion.objects.filter(encounter=row).select_related('decision').order_by('created_at','id')]
             _audit(actor, 'clinical.read', row, 'success', 'COMPLETED', record)
@@ -130,6 +133,7 @@ def mutate(actor_id, mode, key, payload, ref):
                     return result
                 if not record:
                     record = ClinicalRecord.objects.create(encounter=row,template=template_candidate)
+                    note_encounter_lock(record, row)
                 if current is None or set(adopted) & {'diagnosis','examination'} or adopted.get('extra_fields'):
                     if current:
                         record.current_version += 1
@@ -144,6 +148,8 @@ def mutate(actor_id, mode, key, payload, ref):
                     medication = MedicationEntry.objects.create(record=record,evaluation=check,actor=actor,reason=reason,**med_values)
             decision = SuggestionDecision.objects.create(suggestion=saved,outcome='adopted' if mode == 'adopt' else 'declined',actor=actor,
                 reason=reason,adopted_content=adopted,record=record,version=version,medication=medication,evaluation=check)
+            if mode == 'adopt':
+                refresh_projection(record, row, template_candidate, template)
             _audit(actor,permission,row,'success','COMPLETED',record)
             result = {'saved_ref':str(decision.pk),'record_ref':str(record.pk) if record else None,
                 'version_ref':str(version.pk) if version else None,'operation_state':decision.outcome,

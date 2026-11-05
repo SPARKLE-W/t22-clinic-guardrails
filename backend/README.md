@@ -90,6 +90,10 @@ seed_demo只用于空应用库，生成两店/六个合成账号；重复执行�
 
 ## 受限CSV导出
 
+病历导出使用事务内维护的`ClinicalExportProjection`派生读模型，保存稳定临床列的UTF-8 CSV片段；误建标记、关联接诊、账号/门店授权、模板复核和逐病历审计仍按每次请求处理。升级先执行`python manage.py migrate`，已有数据可执行`python manage.py rebuild_export_projections --batch-size 500`构建投影。缺失、源签名不符或内容摘要不符时，导出回到完整源历史路径。
+
+诊断、更正、用药与采纳通过业务服务在同一事务中维护投影；相关源行的ORM保存、批量创建/更新及删除会在同一事务使旧投影失效。直接SQL或原始数据导入完成后应在开放服务前重建派生投影。标准性能造数也调用同一重建入口，没有按测试账号或编号设置专用响应。
+
 `POST /api/exports/clinical-records`（医生负责的本店病历，范围及用途必填）、`POST /api/exports/alert-hits`（同范围医生命中明细）及`POST /api/exports/alert-summary`（管理本店脱敏汇总）均已接入。按当前账号重新授权，完整生成UTF-8 CSV并写必需审计后才提供字节；明示文件长度、SHA-256和导出引用。服务端成功只表示已就绪，接收端须取得完整文件并校验。示例、字段、拒绝状态与机器契约见[20接口](../docs/04_%E8%AE%BE%E8%AE%A1%E4%B8%8E%E6%8E%A7%E5%88%B6%E6%96%87%E4%BB%B6/20_%E5%8F%97%E9%99%90%E5%AE%8C%E6%95%B4CSV%E5%AF%BC%E5%87%BA%E6%8E%A5%E5%8F%A3.md)及[阶段18证据](../docs/10_%E9%AA%8C%E6%94%B6%E8%AF%81%E6%8D%AE/18_%E5%8F%97%E9%99%90%E5%AE%8C%E6%95%B4CSV%E5%AF%BC%E5%87%BA/02_%E6%9C%AC%E6%89%B9%E7%BB%93%E6%9E%9C.md)；共享服务迁移与前端完整接收证据分别见第19和第14阶段。
 
 ## 离线编译

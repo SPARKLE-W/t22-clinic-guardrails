@@ -1,6 +1,99 @@
 import uuid
-from django.db import models
+from django.db import models, transaction
 from governance.models import Account, AuditEvent, Candidate, Store
+
+
+def _lock_projection_records(record_ids, using):
+    if record_ids:
+        encounters = ClinicalRecord.objects.using(using).filter(pk__in=record_ids).values_list('encounter_id', flat=True)
+        list(Encounter.objects.using(using).select_for_update().filter(
+            pk__in=list(encounters)).order_by('pk').values_list('pk', flat=True))
+
+
+class ProjectionSourceQuerySet(models.QuerySet):
+    def _projection_records(self):
+        return set(self.filter(**getattr(self.model, 'projection_filter', {})).values_list(
+            self.model.projection_record_path, flat=True)) - {None}
+
+    def _invalidate_projection(self):
+        source = self.filter(**getattr(self.model, 'projection_filter', {}))
+        ClinicalExportProjection.objects.using(self.db).filter(record_id__in=source.values_list(
+            self.model.projection_record_path, flat=True)).delete()
+
+    def update(self, **kwargs):
+        with transaction.atomic(using=self.db):
+            ids = list(self.values_list('pk', flat=True))
+            selected = self.model.objects.using(self.db).filter(pk__in=ids)
+            records = selected._projection_records()
+            incoming = kwargs.get('record_id', kwargs.get('record'))
+            if incoming is not None and isinstance(getattr(incoming, 'pk', incoming), (str, uuid.UUID)):
+                records.add(getattr(incoming, 'pk', incoming))
+            _lock_projection_records(records, self.db)
+            selected._invalidate_projection()
+            count = super().update(**kwargs)
+            selected._invalidate_projection()
+            return count
+
+    def bulk_create(self, objs, *args, **kwargs):
+        with transaction.atomic(using=self.db):
+            objs = list(objs)
+            records = self.model.objects.using(self.db).filter(pk__in=[row.pk for row in objs])._projection_records()
+            records.update(row.record_id for row in objs if getattr(row, 'record_id', None) is not None)
+            _lock_projection_records(records, self.db)
+            result = super().bulk_create(objs, *args, **kwargs)
+            self.model.objects.using(self.db).filter(pk__in=[row.pk for row in result])._invalidate_projection()
+            return result
+
+    def delete(self):
+        with transaction.atomic(using=self.db):
+            _lock_projection_records(self._projection_records(), self.db)
+            self._invalidate_projection()
+            return super().delete()
+
+    def bulk_update(self, objs, fields, *args, **kwargs):
+        with transaction.atomic(using=self.db):
+            objs = list(objs)
+            records = self.model.objects.using(self.db).filter(pk__in=[row.pk for row in objs])._projection_records()
+            records.update(row.record_id for row in objs if getattr(row, 'record_id', None) is not None)
+            _lock_projection_records(records, self.db)
+            return super().bulk_update(objs, fields, *args, **kwargs)
+
+
+class ProjectionSource(models.Model):
+    """Source maintenance invalidates derived exports in the same transaction."""
+    objects = ProjectionSourceQuerySet.as_manager()
+    projection_record_path = 'record_id'
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        using = kwargs.get('using') or self._state.db or 'default'
+        selected = type(self).objects.using(using).filter(pk=self.pk)
+        with transaction.atomic(using=using, savepoint=False):
+            related = self._state.fields_cache.get('record')
+            token = getattr(related, '_export_lock_token', None)
+            blocks = transaction.get_connection(using).atomic_blocks
+            already_locked = (token is not None and token[0] == using and token[1] is blocks[0]
+                              and token[2] == related.encounter_id)
+            if not already_locked:
+                records = selected._projection_records() if not self._state.adding else set()
+                if getattr(self, 'record_id', None) is not None:
+                    records.add(self.record_id)
+                _lock_projection_records(records, using)
+            if not self._state.adding:
+                selected._invalidate_projection()
+            result = super().save(*args, **kwargs)
+            selected._invalidate_projection()
+            return result
+
+    def delete(self, using=None, keep_parents=False):
+        using = using or self._state.db or 'default'
+        with transaction.atomic(using=using):
+            selected = type(self).objects.using(using).filter(pk=self.pk)
+            _lock_projection_records(selected._projection_records(), using)
+            selected._invalidate_projection()
+            return super().delete(using=using, keep_parents=keep_parents)
 
 
 class PetIdentity(models.Model):
@@ -50,9 +143,18 @@ class ClinicalRecord(models.Model):
     encounter = models.OneToOneField(Encounter, on_delete=models.PROTECT)
     template = models.ForeignKey(Candidate, on_delete=models.PROTECT)
     current_version = models.PositiveIntegerField(default=1)
+    export_generation = models.PositiveBigIntegerField(default=0)
 
 
-class ClinicalRevision(models.Model):
+class ClinicalExportProjection(models.Model):
+    record = models.OneToOneField(ClinicalRecord, on_delete=models.CASCADE,
+                                  primary_key=True, related_name='export_projection')
+    source_signature = models.CharField(max_length=64)
+    prefix = models.BinaryField()
+    prefix_digest = models.CharField(max_length=64)
+
+
+class ClinicalRevision(ProjectionSource):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     record = models.ForeignKey(ClinicalRecord, on_delete=models.PROTECT, db_index=False)
     version = models.PositiveIntegerField()
@@ -148,7 +250,7 @@ class DeliveryRejection(models.Model):
     body_digest = models.CharField(max_length=64)
 
 
-class MedicationEntry(models.Model):
+class MedicationEntry(ProjectionSource):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     record = models.ForeignKey(ClinicalRecord, on_delete=models.PROTECT)
     original = models.ForeignKey('self', null=True, on_delete=models.PROTECT)
@@ -161,7 +263,9 @@ class MedicationEntry(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
-class Suggestion(models.Model):
+class Suggestion(ProjectionSource):
+    projection_record_path = 'decision__record_id'
+    projection_filter = {'decision__outcome': 'adopted'}
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     encounter = models.ForeignKey(Encounter, on_delete=models.PROTECT)
     source_version = models.CharField(max_length=100)
@@ -174,7 +278,8 @@ class Suggestion(models.Model):
         constraints = [models.UniqueConstraint(fields=['encounter', 'source_version', 'sample_key'], name='one_demo_suggestion')]
 
 
-class SuggestionDecision(models.Model):
+class SuggestionDecision(ProjectionSource):
+    projection_filter = {'outcome': 'adopted'}
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     suggestion = models.OneToOneField(Suggestion, on_delete=models.PROTECT, related_name='decision')
     outcome = models.CharField(max_length=12)

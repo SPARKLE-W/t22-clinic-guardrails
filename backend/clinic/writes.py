@@ -5,6 +5,7 @@ from governance.models import Operation
 from governance.services import DomainError, _uuid, require, write_audit
 from vetcontrols.compiler import _digest, _normalize, is_verified_candidate
 from .guards import evaluate
+from .export_projection import note_encounter_lock, refresh_projection
 from .models import Alert, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision
 from .services import (_clinical, _extra_values, _object, _own, _persist_guard_alerts, _policy_head_for_share,
                        _refusal, _template, _text, read)
@@ -91,11 +92,13 @@ def diagnosis(actor_id, mode, key, payload, ref):
                 else:
                     record.current_version += 1
                     record.save(update_fields=['current_version'])
+                note_encounter_lock(record, row)
                 version = ClinicalRevision.objects.create(record=record, version=record.current_version, actor=actor,
                                                           reason=payload.get('reason', ''), extra_fields=extra_fields, **values)
                 check.record = record
                 check.result_version = version
                 check.save(update_fields=['record', 'result_version'])
+                refresh_projection(record, row, template_candidate, template)
                 _audit(actor, WRITE, row, 'success', 'COMPLETED', record)
                 # Load through the same explicit, doctor-only serializer as reads.
                 row.clinicalrecord = record
