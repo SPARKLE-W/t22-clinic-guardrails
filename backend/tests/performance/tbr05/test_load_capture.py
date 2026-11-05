@@ -1,5 +1,8 @@
 import hashlib
 import importlib.util
+import json
+import tempfile
+from datetime import datetime, timezone
 import random
 import sys
 import types
@@ -14,6 +17,70 @@ load = importlib.util.module_from_spec(SPEC)
 with patch.dict(sys.modules, {'requests': types.ModuleType('requests'),
                               'psutil': types.ModuleType('psutil')}):
     SPEC.loader.exec_module(load)
+
+
+class GCPauseCaptureTests(unittest.TestCase):
+    def recorder(self, folder, enabled=True):
+        return load.GCPauseRecorder(Path(folder) / 'run', 100.0,
+                                    datetime(2026, 11, 6, tzinfo=timezone.utc), enabled)
+
+    def test_gc_events_share_request_clock_without_callback_file_io(self):
+        with tempfile.TemporaryDirectory() as folder:
+            recorder = self.recorder(folder)
+            with patch.object(load.gc, 'callbacks', []), recorder:
+                with patch.object(load.time, 'perf_counter', side_effect=[101.0, 101.048]):
+                    with patch.object(load.json, 'dump', side_effect=AssertionError('callback file IO')):
+                        recorder.callback('start', {'generation': 2})
+                        recorder.callback('stop', {'generation': 2, 'collected': 7, 'uncollectable': 0})
+            rows = json.loads((Path(folder) / 'run.gc.json').read_text())
+            self.assertEqual(['start', 'stop'], [r['phase'] for r in rows])
+            self.assertEqual([1.0, 1.048], [round(r['t'], 3) for r in rows])
+            self.assertEqual(7, rows[1]['collected'])
+            self.assertEqual(2, rows[0]['generation'])
+            self.assertEqual('2026-11-06T00:00:01', rows[0]['timestamp_utc'][:19])
+
+    def test_exception_cleanup_preserves_other_callbacks_and_gc_settings(self):
+        other = lambda phase, info: None
+        with tempfile.TemporaryDirectory() as folder:
+            recorder = self.recorder(folder)
+            before = load.gc.get_threshold(), load.gc.isenabled()
+            with patch.object(load.gc, 'callbacks', [other]):
+                with self.assertRaisesRegex(RuntimeError, 'worker failed'):
+                    with recorder:
+                        self.assertIn(recorder.callback, load.gc.callbacks)
+                        raise RuntimeError('worker failed')
+                self.assertEqual([other], load.gc.callbacks)
+            self.assertEqual(before, (load.gc.get_threshold(), load.gc.isenabled()))
+            self.assertEqual([], json.loads((Path(folder) / 'run.gc.json').read_text()))
+
+    def test_real_collection_emits_start_stop_and_preserves_callback_registry(self):
+        with tempfile.TemporaryDirectory() as folder:
+            callbacks = list(load.gc.callbacks)
+            with self.recorder(folder):
+                load.gc.collect(2)
+            self.assertEqual(callbacks, load.gc.callbacks)
+            rows = json.loads((Path(folder) / 'run.gc.json').read_text())
+            generation_two = [r for r in rows if r['generation'] == 2]
+            self.assertEqual(['start', 'stop'], [r['phase'] for r in generation_two])
+            self.assertLessEqual(generation_two[0]['t'], generation_two[1]['t'])
+
+    def test_disabled_capture_leaves_no_file_or_callback(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with patch.object(load.gc, 'callbacks', []):
+                with self.recorder(folder, enabled=False):
+                    self.assertEqual([], load.gc.callbacks)
+            self.assertEqual([], list(Path(folder).iterdir()))
+
+    def test_existing_gc_evidence_is_never_overwritten(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'run.gc.json'
+            path.write_text('original')
+            with patch.object(load.gc, 'callbacks', []):
+                with self.assertRaises(FileExistsError):
+                    with self.recorder(folder):
+                        pass
+                self.assertEqual([], load.gc.callbacks)
+            self.assertEqual('original', path.read_text())
 
 
 class Response:

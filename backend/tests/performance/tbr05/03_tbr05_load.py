@@ -1,6 +1,7 @@
 """Closed-loop, complete-body HTTP workload for frozen TBR-05 v1.0."""
 import argparse
 import csv
+import gc
 import hashlib
 import io
 import itertools
@@ -42,6 +43,39 @@ ADOPTION_RECORDS = 6665
 ADOPTION_TARGETS = ADOPTION_RECORDS * 16
 REPO_ROOT = Path(__file__).resolve().parents[4]
 SUMMARY_HITS_BY_STORE = {}
+
+
+class GCPauseRecorder:
+    """Optional GC timeline; callbacks buffer primitives without disk or queue IO."""
+
+    def __init__(self, prefix, start, started_at_utc, enabled):
+        self.path = prefix.with_suffix('.gc.json')
+        self.start = start
+        self.started_at_utc = started_at_utc
+        self.enabled = enabled
+        self.events = []
+        self.callback = self.capture
+
+    def capture(self, phase, info):
+        self.events.append((time.perf_counter(), phase, info['generation'],
+                            info.get('collected', 0), info.get('uncollectable', 0)))
+
+    def __enter__(self):
+        if self.enabled:
+            self.output = self.path.open('x', encoding='utf-8')
+            gc.callbacks.append(self.callback)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.enabled:
+            gc.callbacks.remove(self.callback)
+            with self.output:
+                json.dump([{'t': stamp - self.start,
+                            'timestamp_utc': utc_at(self.started_at_utc, stamp - self.start),
+                            'phase': phase, 'generation': generation,
+                            'collected': collected, 'uncollectable': uncollectable}
+                           for stamp, phase, generation, collected, uncollectable in self.events],
+                          self.output, ensure_ascii=False)
 
 
 class JsonlRunRecorder:
@@ -636,6 +670,8 @@ def main():
     parser.add_argument('--concurrency', type=int, default=360)
     parser.add_argument('--warmup-seconds', type=int, default=300)
     parser.add_argument('--formal-seconds', type=int, default=600)
+    parser.add_argument('--capture-gc-pauses', action='store_true',
+                        help='buffer GC events and save a timeline after the workload; does not change GC settings')
     parser.add_argument('--server-pid', type=int)
     parser.add_argument('--mysql-pid', type=int)
     parser.add_argument('--only-group', choices=['query', 'guard', 'reception', 'write',
@@ -692,7 +728,8 @@ def main():
                                         daemon=True)
     resource_watcher.start()
     try:
-        with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+        with GCPauseRecorder(prefix, start, started_at_utc, args.capture_gc_pauses), \
+                ThreadPoolExecutor(max_workers=args.concurrency) as pool:
             futures = [pool.submit(worker, n, gate, end, bases[n % len(bases)], cookies, actors, pending)
                        for n in range(args.concurrency)]
             gate.wait(timeout=180)
@@ -717,6 +754,7 @@ def main():
                       args.formal_seconds == 600 and args.only_group is None and
                       actual_duration >= total)
     summary['kind'] = 'formal_window_candidate' if exact_protocol else 'diagnostic'
+    summary['gc_pause_capture'] = args.capture_gc_pauses
     if args.only_group:
         summary['only_group'] = args.only_group
     summary.update({'concurrency': args.concurrency, 'sample_count': len(SAMPLES),
