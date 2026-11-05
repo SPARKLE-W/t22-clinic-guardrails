@@ -1,4 +1,4 @@
-param(
+﻿param(
     [ValidateSet('start','stop')][string]$Action = 'start',
     [string]$BindAddress,
     [string]$PythonExe = $env:T22_APP_PYTHON,
@@ -66,7 +66,7 @@ if ($Action -eq 'stop') {
     } while ((Get-Date) -lt $deadline)
     if ($remaining.Count -gt 0) { throw "Listeners remain on ports: $($remaining -join ', ')." }
     $state.status = 'stopped'
-    $state.stopped_at_utc = [DateTime]::UtcNow.ToString('o')
+    $state | Add-Member -NotePropertyName stopped_at_utc -NotePropertyValue ([DateTime]::UtcNow.ToString('o')) -Force
     Write-State $state
     Write-Output 'Formal-load application pool stopped; state and logs retained.'
     exit 0
