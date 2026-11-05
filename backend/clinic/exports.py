@@ -8,7 +8,7 @@ from collections import defaultdict
 from time import perf_counter
 
 import orjson
-from django.db import transaction
+from django.db import DatabaseError, connection, transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.utils import timezone
@@ -101,6 +101,27 @@ def _response(body, ref, count, name):
     response['X-Byte-Count'] = str(len(body))
     response['X-Content-SHA256'] = hashlib.sha256(body).hexdigest()
     return response
+
+
+def _audit_clinical_targets(event, refs):
+    if not refs:
+        return
+    if connection.vendor != 'mysql':
+        AuditTarget.objects.bulk_create([AuditTarget(event=event, target=ref, kind='record') for ref in refs])
+        return
+    # The IDs came from the authorized export snapshot; keep one target per row.
+    quote = connection.ops.quote_name
+    record_field = ClinicalRecord._meta.pk
+    event_id = AuditTarget._meta.get_field('event').target_field.get_db_prep_value(event.pk, connection)
+    targets = [record_field.get_db_prep_value(ref, connection) for ref in refs]
+    markers = ','.join(['%s'] * len(targets))
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f'INSERT INTO {quote(AuditTarget._meta.db_table)} (event_id, target, kind) '
+            f'SELECT %s, id, %s FROM {quote(ClinicalRecord._meta.db_table)} WHERE id IN ({markers})',
+            [event_id, 'record', *targets])
+        if cursor.rowcount != len(targets):
+            raise DatabaseError('Clinical export audit target count mismatch')
 
 
 def clinical(actor_id, payload, timings=None):
@@ -235,8 +256,7 @@ def clinical(actor_id, payload, timings=None):
                                               row_count=len(target_refs), byte_count=len(body))
         event = write_audit(actor, CLINICAL, 'success', 'COMPLETED', entry.pk, actor.store_id)
         started = perf_counter() if timings is not None else None
-        AuditTarget.objects.bulk_create([AuditTarget(event=event, target=ref, kind='record')
-                                         for ref in target_refs])
+        _audit_clinical_targets(event, target_refs)
         if timings is not None:
             timings['export-audit-targets'] = (perf_counter() - started) * 1000
     return body, entry.pk, len(target_refs)
