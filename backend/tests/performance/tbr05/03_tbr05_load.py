@@ -36,7 +36,8 @@ VERSION_BY_TARGET = {}
 VERSION_LOCK = threading.Lock()
 GUARD_TARGETS = 6670
 DIAGNOSIS_TARGETS = 6665
-ADOPTION_TARGETS = 6665
+ADOPTION_RECORDS = 6665
+ADOPTION_TARGETS = ADOPTION_RECORDS * 16
 REPO_ROOT = Path(__file__).resolve().parents[4]
 SUMMARY_HITS_BY_STORE = {}
 
@@ -309,16 +310,18 @@ def select_request(kind, sequence, rng):
         target = next_target('write_adoption')
         if target >= ADOPTION_TARGETS:
             raise RuntimeError('Suggestion target pool exhausted')
+        slot, target = divmod(target, ADOPTION_RECORDS)
         shop = target % 5
         number = 3 * (target // 5) + 2
+        suggestion_ref = ref('suggestion' if slot == 0 else f'suggestion-{slot}', shop, number)
         doctor = 0 if shop == 0 else number % 2
         payload = {'encounter_ref': ref('encounter', shop, number),
-                   'suggestion_ref': ref('suggestion', shop, number),
+                   'suggestion_ref': suggestion_ref,
                    'record_ref': ref('record', shop, number), 'reason': '合成负载人工采纳',
                    'adopted_content': {'original_version_ref': current_version_ref(shop, number),
                                        'medication': {'drug': '合成建议药品', 'amount': '1', 'unit': '片'}}}
         return choose_actor(None, 'doctor', shop, doctor), 'POST', \
-            f'/api/clinical/suggestions/{ref("suggestion", shop, number)}/adoption', payload, 'json', None
+            f'/api/clinical/suggestions/{suggestion_ref}/adoption', payload, 'json', None
     if kind in ('clinical_export', 'detail_export'):
         distribution = rng.randrange(10)
         if distribution < 6:
@@ -617,6 +620,8 @@ def main():
     private = json.loads(private_path.read_text(encoding='utf-8'))
     if not private.get('synthetic_only') or private['manifest']['seed'] != 20261024:
         parser.error('Expected only the deterministic synthetic fixture')
+    if private['manifest'].get('suggestion_targets') != ADOPTION_TARGETS:
+        parser.error('Suggestion fixture capacity mismatch; create fresh data with 01_seed_formal_data.py')
     actors = {a['username']: a for a in private['accounts']}
     global SUMMARY_HITS_BY_STORE
     SUMMARY_HITS_BY_STORE = {store['store_ref']: store['guard_hits'] for store in private['manifest']['stores']}

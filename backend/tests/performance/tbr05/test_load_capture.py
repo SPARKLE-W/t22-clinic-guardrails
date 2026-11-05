@@ -1,5 +1,6 @@
 import hashlib
 import importlib.util
+import random
 import sys
 import types
 import unittest
@@ -32,6 +33,22 @@ class Session:
 
 
 class LoadCaptureTests(unittest.TestCase):
+    def test_adoption_continues_past_old_capacity_without_reusing_suggestions(self):
+        rng = random.Random(20261024)
+        with patch.object(load, 'next_target', side_effect=[0, 6664, 6665, load.ADOPTION_TARGETS - 1]):
+            requests = [load.select_request('write', 4, rng) for _ in range(4)]
+        payloads = [request[3] for request in requests]
+        self.assertEqual(payloads[0]['record_ref'], payloads[2]['record_ref'])
+        self.assertNotEqual(payloads[0]['suggestion_ref'], payloads[2]['suggestion_ref'])
+        self.assertEqual(4, len({p['suggestion_ref'] for p in payloads}))
+        self.assertEqual(load.ref('record', 4, 3998), payloads[-1]['record_ref'])
+        for request in requests:
+            self.assertIn(request[3]['suggestion_ref'], request[2])
+            self.assertEqual('json', request[4])
+        with patch.object(load, 'next_target', return_value=load.ADOPTION_TARGETS):
+            with self.assertRaisesRegex(RuntimeError, 'pool exhausted'):
+                load.select_request('write', 4, rng)
+
     def test_target_base_pool_round_robins_all_workers(self):
         args = types.SimpleNamespace(target_base=[f'http://app:{18930 + port}/' for port in range(8)],
                                      tunnel_base=[], base='http://unused')
