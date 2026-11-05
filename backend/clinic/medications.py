@@ -4,6 +4,7 @@ from governance.models import Operation
 from governance.services import DomainError, _uuid, require
 from vetcontrols.compiler import _digest, _normalize
 from .guards import evaluate
+from .export_projection import note_encounter_lock, refresh_projection
 from .models import ClinicalCheck, ClinicalRecord, ClinicalRevision, MedicationEntry
 from .services import _object, _own, _persist_guard_alerts, _policy_head_for_share, _refusal, _text
 from .writes import _audit, _validated
@@ -58,8 +59,10 @@ def mutate(actor_id, mode, key, payload, ref):
                 _audit(actor,PERMISSION,row,'refused','GUARD_BLOCKED',record)
                 result = {'ok':False,'error':{'code':'GUARD_BLOCKED'},'event_ref':str(evaluation.pk)}
             else:
+                note_encounter_lock(record, row)
                 entry = MedicationEntry.objects.create(record=record,original=original,evaluation=evaluation,
                                                        actor=actor,reason=reason,**values)
+                refresh_projection(record, row, record.template, template)
                 _audit(actor,PERMISSION,row,'success','COMPLETED',record)
                 result = {'saved_ref':str(entry.pk),'record_ref':str(record.pk),'operation_state':'saved',
                           'original_entry_ref':str(original.pk) if original else None,
