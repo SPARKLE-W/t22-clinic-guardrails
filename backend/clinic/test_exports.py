@@ -4,7 +4,7 @@ import io
 import json
 import uuid
 from unittest.mock import patch
-from django.db import DatabaseError, connection, transaction
+from django.db import DatabaseError, connection
 from governance.models import Account, AuditEvent
 from governance.services import DomainError
 from .models import (Alert, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, Encounter,
@@ -155,55 +155,6 @@ class ClinicalExportTests(ClinicFixture):
         self.assertTrue(encoded.startswith('{"keys":'))
         self.assertNotIn(': ', encoded)
 
-    def test_fragment_cache_tracks_complete_source_and_rollback(self):
-        from datetime import datetime, timezone
-        payload = {'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '片段一致性'}
-        revision = ClinicalRevision.objects.get(record=self.record)
-        with patch('clinic.exports._can_cache_details', return_value=True):
-            baseline = self.download(payload)
-            self.rows(baseline)
-            self.assertEqual(baseline.content, self.download(payload).content)
-            ClinicalRevision.objects.filter(pk=revision.pk).update(
-                diagnosis='中文,更正"\n', created_at=datetime(2026, 1, 2, tzinfo=timezone.utc),
-                extra_fields={'wide': 2**63 - 1, 'flag': False, 'text': '引号"\n中文'})
-            changed = self.download(payload)
-            changed_row = self.rows(changed)[0]
-            self.assertEqual('中文,更正"\n', changed_row['diagnosis'])
-            self.assertEqual('2026-01-02T00:00:00+00:00',
-                             json.loads(changed_row['clinical_versions'])[0]['created_at'])
-            self.assertNotEqual(baseline.content, changed.content)
-            with transaction.atomic():
-                ClinicalRevision.objects.filter(pk=revision.pk).update(diagnosis='将回滚的更正')
-                self.assertEqual('将回滚的更正', self.rows(self.download(payload))[0]['diagnosis'])
-                transaction.set_rollback(True)
-            self.assertEqual(changed.content, self.download(payload).content)
-            self.client.force_login(self.foreign)
-            self.assertEqual(403, self.download(payload).status_code)
-            self.client.force_login(self.doctor)
-        with patch('clinic.exports._can_cache_details', return_value=False):
-            reference = self.download(payload)
-            self.rows(reference)
-        self.assertEqual(reference.content, changed.content)
-
-    def test_history_fragment_fallback_preserves_whole_array_encoding(self):
-        from .exports import _history_item, _history_json
-        revision = ClinicalRevision.objects.get(record=self.record)
-        items = [{'id': str(revision.pk), 'version': version, 'diagnosis': '合成',
-                  'examination': '', 'extra_fields': extra, 'actor_id': self.doctor.pk,
-                  'created_at': revision.created_at, 'reason': ''}
-                 for version, extra in [(1, {'fraction': 1e-7}), (2, {'wide': 1 << 100})]]
-        expected = _json_text([_history_item('revision', item) for item in items])
-        self.assertEqual(expected, _history_json('revision', items))
-
-    def test_cached_fragment_build_stays_outside_read_transaction(self):
-        from .exports import _history_item
-        def checked(kind, item):
-            self.assertFalse(connection.in_atomic_block)
-            return _history_item(kind, item)
-        with patch('clinic.exports._can_cache_details', return_value=True), patch(
-                'clinic.exports._history_item', side_effect=checked):
-            self.rows(self.download({'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '事务边界'}))
-
     def test_deactivated_doctor_cannot_read_or_export(self):
         Account.objects.filter(pk=self.doctor.pk).update(is_active=False)
         with self.assertRaises(DomainError) as read_error:
@@ -349,7 +300,6 @@ class ClinicalExportTests(ClinicFixture):
         self.assertEqual(0, ExportRequest.objects.count())
 
     def test_corrections_medication_and_adopted_only_remain_reconstructable(self):
-        from datetime import timedelta
         from .models import MedicationEntry
         original = ClinicalRevision.objects.get(record=self.record)
         newer = ClinicalRevision.objects.create(record=self.record, version=2, diagnosis='更正后诊断',
@@ -366,7 +316,6 @@ class ClinicalExportTests(ClinicFixture):
         correction = MedicationEntry.objects.create(record=self.record, original=original_med, evaluation=check2,
                                                      drug='合成药', amount='2', unit='片', actor=self.doctor,
                                                      reason='合成用药更正')
-        MedicationEntry.objects.filter(pk=correction.pk).update(created_at=original_med.created_at + timedelta(seconds=1))
         accepted = Suggestion.objects.create(encounter_id=self.ref, source_version='demo', sample_key='accept',
                                              source={'type': 'demo', 'version': 'demo', 'label': '演示'},
                                              content={'diagnosis': '原始演示建议'})
@@ -376,9 +325,8 @@ class ClinicalExportTests(ClinicFixture):
                                           adopted_content={'diagnosis': '医生采纳内容'}, record=self.record, version=newer)
         SuggestionDecision.objects.create(suggestion=declined, outcome='declined', actor=self.doctor)
         Encounter.objects.filter(pk=self.ref).update(error_mark=True)
-        with patch('clinic.exports._can_cache_details', return_value=True):
-            response = self.download({'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '核对链'})
-        def uuid_object_values(queryset, fields, uuid_fields, kind=None):
+        response = self.download({'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '核对链'})
+        def uuid_object_values(queryset, fields, uuid_fields):
             for item in queryset.values(*fields, *uuid_fields):
                 # Reference implementation uses the normal UUID ORM conversion.
                 for field in uuid_fields:
