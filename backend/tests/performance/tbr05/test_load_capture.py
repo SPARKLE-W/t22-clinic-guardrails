@@ -33,6 +33,30 @@ class Session:
 
 
 class LoadCaptureTests(unittest.TestCase):
+    def test_export_reference_cache_matches_fixed_fixture(self):
+        for (kind, shop), refs in load.EXPORT_REFS.items():
+            self.assertEqual(4000, len(refs))
+            self.assertEqual(tuple(load.ref(kind, shop, n) for n in range(4000)), refs)
+
+    def test_cached_exports_preserve_payload_and_rng_state(self):
+        class UncachedRefs:
+            def __init__(self, kind, shop):
+                self.kind, self.shop = kind, shop
+
+            def __getitem__(self, number):
+                return load.ref(self.kind, self.shop, number)
+
+        uncached = {key: UncachedRefs(*key) for key in load.EXPORT_REFS}
+        for kind in ('clinical_export', 'detail_export'):
+            cached_rng = random.Random(20261024)
+            original_rng = random.Random(20261024)
+            for sequence in range(100):
+                cached = load.select_request(kind, sequence, cached_rng)
+                with patch.object(load, 'EXPORT_REFS', uncached):
+                    original = load.select_request(kind, sequence, original_rng)
+                self.assertEqual(original, cached)
+                self.assertEqual(original_rng.getstate(), cached_rng.getstate())
+
     def test_adoption_continues_past_old_capacity_without_reusing_suggestions(self):
         rng = random.Random(20261024)
         with patch.object(load, 'next_target', side_effect=[0, 6664, 6665, load.ADOPTION_TARGETS - 1]):
