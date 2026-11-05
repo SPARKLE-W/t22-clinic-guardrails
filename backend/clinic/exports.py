@@ -5,11 +5,12 @@ import io
 import json
 import logging
 from collections import defaultdict
+from datetime import datetime, timezone as datetime_timezone
 from time import perf_counter
 
 import orjson
 from django.db import DatabaseError, connection, transaction
-from django.db.models import CharField, Count, Q
+from django.db.models import CharField, Count, Q, TextField
 from django.db.models.functions import Cast
 from django.http import HttpResponse
 from django.utils import timezone
@@ -21,6 +22,7 @@ from governance.views import _body, protected
 from .models import (AuditTarget, ClinicalRecord, ClinicalRevision, Encounter, ExportRequest,
                      GuardHit, MedicationEntry, SuggestionDecision)
 from .services import _object, _template, _text
+from .export_fragment_cache import FragmentCache
 
 CLINICAL = 'export.clinical'
 CLINICAL_COLUMNS = ['record_ref', 'encounter_ref', 'template_version_ref', 'field_meanings',
@@ -33,6 +35,7 @@ DETAIL_COLUMNS = ['event_ref', 'record_ref', 'rule_ref', 'hit_field', 'handling_
 SUMMARY_COLUMNS = ['time_range', 'rule_ref_filter', 'handling_state_filter', 'group_by',
                    'rule_ref', 'handling_state', 'hit_count', 'alert_count', 'unhandled_count']
 logger = logging.getLogger(__name__)
+_DETAIL_CACHE = FragmentCache()
 
 
 def _range(interval):
@@ -125,17 +128,93 @@ def _audit_clinical_targets(event, refs):
             raise DatabaseError('Clinical export audit target count mismatch')
 
 
-def _detail_values(queryset, fields, uuid_fields):
+def _ref_text(value):
+    if value is not None and len(value) == 32:
+        return f'{value[:8]}-{value[8:12]}-{value[12:16]}-{value[16:20]}-{value[20:]}'
+    return value
+
+
+def _can_cache_details():
+    return connection.vendor == 'mysql' and connection.timezone == datetime_timezone.utc
+
+
+def _detail_values(queryset, fields, uuid_fields, kind=None):
     """Read export-only identifiers as text, avoiding UUID object round trips."""
+    if kind is not None and _can_cache_details():
+        raw_fields = tuple(fields) + tuple(uuid_fields)
+        textual = set(uuid_fields) | {'created_at', 'extra_fields', 'adopted_content', 'suggestion__source'}
+        aliases = {'export_raw_' + field.replace('__', '_'): Cast(field, TextField())
+                   for field in raw_fields if field in textual}
+        selected = ['export_raw_' + field.replace('__', '_') if field in textual else field
+                    for field in raw_fields]
+        for values in queryset.annotate(**aliases).values_list(*selected):
+            row = dict(zip(raw_fields, values))
+            row['record_id'] = _ref_text(row['record_id'])
+            row.update(_raw=values, _raw_fields=raw_fields, _uuid_fields=tuple(uuid_fields))
+            yield row
+        return
     aliases = {'export_text_' + field: Cast(field, CharField(max_length=36))
                for field in uuid_fields}
     for row in queryset.annotate(**aliases).values(*fields, *aliases):
         for field in uuid_fields:
-            value = row.pop('export_text_' + field)
-            if value is not None and len(value) == 32:
-                value = f'{value[:8]}-{value[8:12]}-{value[12:16]}-{value[16:20]}-{value[20:]}'
-            row[field] = value
+            row[field] = _ref_text(row.pop('export_text_' + field))
         yield row
+
+
+def _history_item(kind, item):
+    common = {'actor_ref': item['actor_id'], 'created_at': item['created_at'].isoformat(),
+              'reason': item['reason']}
+    if kind == 'revision':
+        return {**common, 'version_ref': str(item['id']), 'version': item['version'],
+                'diagnosis': item['diagnosis'], 'examination': item['examination'],
+                'extra_fields': item['extra_fields']}
+    if kind == 'medication':
+        return {**common, 'entry_ref': str(item['id']),
+                'original_entry_ref': str(item['original_id']) if item['original_id'] else None,
+                'drug': item['drug'], 'amount': item['amount'], 'unit': item['unit']}
+    return {**common, 'decision_ref': str(item['id']), 'suggestion_ref': str(item['suggestion_id']),
+            'source': item['suggestion__source'], 'adopted_content': item['adopted_content'],
+            'version_ref': str(item['version_id']),
+            'medication_ref': str(item['medication_id']) if item['medication_id'] else None}
+
+
+def _decoded_detail(item):
+    if '_raw' not in item:
+        return item
+    row = dict(zip(item['_raw_fields'], item['_raw']))
+    for field in item['_uuid_fields']:
+        row[field] = _ref_text(row[field])
+    for field in ('extra_fields', 'adopted_content', 'suggestion__source'):
+        if field in row:
+            row[field] = json.loads(row[field])
+    row['created_at'] = datetime.fromisoformat(row['created_at']).replace(tzinfo=datetime_timezone.utc)
+    return row
+
+
+def _serialized_detail(kind, item):
+    def build():
+        row = _decoded_detail(item)
+        history = _history_item(kind, row)
+        try:
+            result = {'fragment': orjson.dumps(history, option=orjson.OPT_SORT_KEYS).decode('utf-8')}
+        except orjson.JSONEncodeError:
+            result = {'fragment': _json_text(history), 'fallback': True}
+        if kind == 'revision':
+            result['extra'] = _json_text(row['extra_fields'])
+        return result
+    if '_raw' in item:
+        return _DETAIL_CACHE.get((kind, item['_raw_fields'], *item['_raw']), build)
+    return build()
+
+
+def _history_json(kind, items):
+    encoded = [_serialized_detail(kind, item) for item in items]
+    if any(item.get('fallback') for item in encoded):
+        # The previous whole-array encoder used stdlib for the entire array
+        # when any item exceeded orjson's supported types or integer range.
+        return json.dumps([_history_item(kind, _decoded_detail(item)) for item in items],
+                          ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+    return '[' + ','.join(item['fragment'] for item in encoded) + ']'
 
 
 def clinical(actor_id, payload, timings=None):
@@ -176,19 +255,18 @@ def clinical(actor_id, payload, timings=None):
         for item in _detail_values(
                 ClinicalRevision.objects.filter(record_id__in=record_ids).order_by('record_id', 'version'),
                 ['version', 'diagnosis', 'examination', 'extra_fields', 'actor_id', 'created_at', 'reason'],
-                ['id', 'record_id']):
+                ['id', 'record_id'], kind='revision'):
             revisions[item.pop('record_id')].append(item)
         for item in _detail_values(
                 MedicationEntry.objects.filter(record_id__in=record_ids).order_by('record_id', 'created_at', 'id'),
                 ['drug', 'amount', 'unit', 'actor_id', 'created_at', 'reason'],
-                ['id', 'record_id', 'original_id']):
+                ['id', 'record_id', 'original_id'], kind='medication'):
             medications[item.pop('record_id')].append(item)
         for item in _detail_values(
                 SuggestionDecision.objects.filter(record_id__in=record_ids, outcome='adopted').order_by(
                     'record_id', 'created_at', 'id'),
                 ['outcome', 'adopted_content', 'actor_id', 'created_at', 'reason', 'suggestion__source'],
-                ['id', 'record_id', 'suggestion_id', 'version_id', 'medication_id']):
-            item['source'] = item.pop('suggestion__source')
+                ['id', 'record_id', 'suggestion_id', 'version_id', 'medication_id'], kind='adoption'):
             adoptions[item.pop('record_id')].append(item)
         templates = {}
         for row in rows:
@@ -233,31 +311,18 @@ def clinical(actor_id, payload, timings=None):
             if encoded_meanings is None:
                 encoded_meanings = encode(meanings)
                 encoded_field_meanings[template_id] = encoded_meanings
-            clinical_versions = [{'version_ref': str(item['id']), 'version': item['version'],
-                                  'diagnosis': item['diagnosis'], 'examination': item['examination'],
-                                  'extra_fields': item['extra_fields'], 'actor_ref': item['actor_id'],
-                                  'created_at': item['created_at'].isoformat(), 'reason': item['reason']}
-                                 for item in revision_rows]
-            medication_chain = [{'entry_ref': str(item['id']),
-                                 'original_entry_ref': str(item['original_id']) if item['original_id'] else None,
-                                 'drug': item['drug'], 'amount': item['amount'], 'unit': item['unit'],
-                                 'actor_ref': item['actor_id'], 'created_at': item['created_at'].isoformat(),
-                                 'reason': item['reason']} for item in medication_rows]
-            adopted_content = [{'decision_ref': str(item['id']), 'suggestion_ref': str(item['suggestion_id']),
-                                'source': item['source'], 'adopted_content': item['adopted_content'],
-                                'actor_ref': item['actor_id'], 'created_at': item['created_at'].isoformat(),
-                                'reason': item['reason'], 'version_ref': str(item['version_id']),
-                                'medication_ref': str(item['medication_id']) if item['medication_id'] else None}
-                               for item in adoption_rows if item['outcome'] == 'adopted']
+            clinical_versions = _history_json('revision', revision_rows)
+            medication_chain = _history_json('medication', medication_rows)
+            adopted_content = _history_json('adoption', adoption_rows)
             encounter_id = row['encounter_id']
             target_refs.append(record_id)
             yield (str(record_id), str(encounter_id), template['version'], encoded_meanings,
-                   current['diagnosis'], current['examination'], encode(current['extra_fields']),
-                   encode(adopted_content),
+                   current['diagnosis'], current['examination'], _serialized_detail('revision', current)['extra'],
+                   adopted_content,
                    encode({'doctor_ref': row['encounter__doctor_id'],
                            'receptionist_ref': row['encounter__receptionist_id'],
                            'created_at': row['encounter__created_at'].isoformat()}),
-                   encode(medication_chain), encode(clinical_versions),
+                   medication_chain, clinical_versions,
                    'true' if row['encounter__error_mark'] else 'false',
                    encode([str(row['encounter__rebuilt_id'])] if row['encounter__rebuilt_id'] else []))
 
