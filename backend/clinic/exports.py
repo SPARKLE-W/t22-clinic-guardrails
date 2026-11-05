@@ -347,7 +347,8 @@ def guard(actor_id, permission, payload):
         allowed = ['scope', 'time_range', 'rule_ref', 'handling_state'] if permission == DETAIL else [
             'time_range', 'rule_ref', 'handling_state', 'group_by']
         _object(payload, allowed)
-        hits = GuardHit.objects.filter(evaluation__encounter__store_id=actor.store_id)
+        hits = GuardHit.objects.filter(store_id=actor.store_id,
+                                       evaluation__encounter__store_id=actor.store_id)
         if permission == DETAIL:
             hits = hits.filter(evaluation__encounter__doctor_id=actor.pk)
             if 'scope' in payload:

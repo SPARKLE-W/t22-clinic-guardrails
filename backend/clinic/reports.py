@@ -23,7 +23,8 @@ def summary(actor_id, query):
         interval = query.get('time_range')
         # Store restriction precedes aggregation; no caller-supplied store/ref.
         encounters = Encounter.objects.filter(store_id=actor.store_id)
-        hits = GuardHit.objects.filter(evaluation__encounter__store_id=actor.store_id)
+        hits = GuardHit.objects.filter(store_id=actor.store_id,
+                                       evaluation__encounter__store_id=actor.store_id)
         if 'time_range' in query:
             _object(interval, ['from', 'to'], ['from', 'to'])
             try:
