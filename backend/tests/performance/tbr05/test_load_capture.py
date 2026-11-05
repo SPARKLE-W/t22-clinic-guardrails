@@ -33,6 +33,16 @@ class Session:
 
 
 class LoadCaptureTests(unittest.TestCase):
+    def test_request_identifiers_are_unique_without_per_request_entropy(self):
+        with patch.object(load.uuid, 'uuid4', side_effect=AssertionError('entropy in request loop')):
+            refs = {load.request_ref(purpose, n) for purpose in ('pet', 'idempotency') for n in range(10000)}
+            self.assertEqual(20000, len(refs))
+            first = load.request_ref('pet', 1)
+            self.assertEqual(first, load.select_request('reception', 1, random.Random(4))[3]['pet_ref'])
+            self.assertEqual(5, load.uuid.UUID(first).version)
+            with patch.object(load, 'REQUEST_NAMESPACE', load.uuid.UUID(int=0)):
+                self.assertNotEqual(first, load.request_ref('pet', 1))
+
     def test_export_reference_cache_matches_fixed_fixture(self):
         for (kind, shop), refs in load.EXPORT_REFS.items():
             self.assertEqual(4000, len(refs))

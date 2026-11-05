@@ -23,6 +23,8 @@ import requests
 import psutil
 
 NAMESPACE = uuid.UUID('23863255-7eb6-4692-96e2-cb87d8dbf54c')
+# One random namespace per process, before the measured request loop.
+REQUEST_NAMESPACE = uuid.uuid4()
 MIX = (['query'] * 6 + ['guard'] * 3 + ['reception'] * 3 + ['write'] * 4 +
        ['clinical_export'] * 2 + ['detail_export', 'summary_export'])
 LOCK = threading.Lock()
@@ -271,6 +273,10 @@ def choose_actor(private, role, shop, doctor=None):
     return name
 
 
+def request_ref(purpose, sequence):
+    return str(uuid.uuid5(REQUEST_NAMESPACE, f'{purpose}:{sequence}'))
+
+
 def select_request(kind, sequence, rng):
     shop = rng.randrange(5)
     number = rng.randrange(4000)
@@ -280,7 +286,7 @@ def select_request(kind, sequence, rng):
         return actor, 'GET', f'/api/clinical/encounters/{ref("encounter", shop, number)}', None, 'json', None
     if kind == 'reception':
         actor = choose_actor(None, 'frontdesk', shop)
-        payload = {'pet_identity_choice': 'new', 'pet_ref': str(uuid.uuid4()),
+        payload = {'pet_identity_choice': 'new', 'pet_ref': request_ref('pet', sequence),
                    'species': '猫', 'complaint': f'合成压测主诉 {sequence}',
                    'doctor_ref': None, 'pet_name': '合成负载新宠物'}
         return actor, 'POST', '/api/encounters', payload, 'json', shop
@@ -376,7 +382,7 @@ def run_one(session, base, cookies, actors, number, kind, rng):
     if method == 'POST':
         headers['X-CSRFToken'] = request_cookies['csrftoken']
         if kind in ('reception', 'guard', 'write'):
-            headers['Idempotency-Key'] = str(uuid.uuid4())
+            headers['Idempotency-Key'] = request_ref('idempotency', number)
     started = time.perf_counter()
     preparation = {'client_select_ms': (selected - preparing) * 1000,
                    'client_headers_ms': (started - selected) * 1000}
@@ -563,7 +569,7 @@ def summarize(rows, samples, start, end, warmup):
         minutes.append({'minute': minute + 1, 'completed': len(selected),
                         'success': sum(r['ok'] for r in selected), 'failures': sum(not r['ok'] for r in selected)})
     during = [s['in_flight'] for s in samples if warmup <= s['seconds'] < end - start]
-    return {'kind': 'diagnostic',
+    return {'kind': 'diagnostic', 'request_namespace': str(REQUEST_NAMESPACE),
             'planned_seconds': end - start, 'warmup_seconds': warmup,
             'formal_requests_started': len(formal), 'formal_failures': sum(not r['ok'] for r in formal),
             'groups': groups, 'minutes': minutes, 'in_flight_min': min(during, default=None),
