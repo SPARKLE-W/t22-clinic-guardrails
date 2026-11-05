@@ -10,7 +10,7 @@ from governance.services import DomainError
 from .models import (Alert, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, Encounter,
                      ExportRequest, MedicationEntry, Suggestion, SuggestionDecision)
 from .tests import ClinicFixture
-from .exports import _csv, _csv_values, _json_text, clinical, guard, SUMMARY
+from .exports import _audit_clinical_targets, _csv, _csv_values, _json_text, clinical, guard, SUMMARY
 from .services import read
 from .writes import diagnosis
 
@@ -217,13 +217,28 @@ class ClinicalExportTests(ClinicFixture):
         self.assertTrue(AuditTarget.objects.filter(target=self.record.pk, kind='record',
                                                     event__action='export.clinical').exists())
 
+    def test_missing_mysql_insert_select_target_rolls_back_export(self):
+        if connection.vendor != 'mysql':
+            self.skipTest('MySQL INSERT SELECT row-count guard')
+
+        def include_missing_target(event, refs):
+            return _audit_clinical_targets(event, [*refs, uuid.uuid4()])
+
+        with patch('clinic.exports._audit_clinical_targets', side_effect=include_missing_target):
+            response = self.download({'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': 'audit rollback'})
+        self.assertEqual(503, response.status_code)
+        self.assertFalse(response['Content-Type'].startswith('text/csv'))
+        self.assertFalse(ExportRequest.objects.exists())
+        self.assertFalse(AuditEvent.objects.filter(action='export.clinical', outcome='success').exists())
+        self.assertFalse(AuditTarget.objects.filter(target=self.record.pk, event__action='export.clinical').exists())
+
     def test_generation_or_audit_failure_yields_no_csv(self):
         payload = {'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '核对'}
         with patch('clinic.exports.write_audit', side_effect=DatabaseError('synthetic audit outage')):
             response = self.download(payload)
         self.assertEqual(503, response.status_code)
         self.assertFalse(response['Content-Type'].startswith('text/csv'))
-        with patch('clinic.exports.AuditTarget.objects.bulk_create', side_effect=DatabaseError('target outage')):
+        with patch('clinic.exports._audit_clinical_targets', side_effect=DatabaseError('target outage')):
             response = self.download(payload)
         self.assertEqual(503, response.status_code)
         self.assertFalse(response['Content-Type'].startswith('text/csv'))
