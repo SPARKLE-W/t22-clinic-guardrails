@@ -579,6 +579,7 @@ def summarize(rows, samples, start, end, warmup):
 
 
 SERVER_TIMINGS = {'queue': 'queue_ms', 'app': 'app_ms', 'sql': 'sql_ms', 'commit': 'commit_ms',
+                  'db-connect': 'db_connect_ms',
                   'export-snapshot': 'export_snapshot_ms', 'export-csv': 'export_csv_ms',
                   'export-audit-targets': 'export_audit_targets_ms'}
 
@@ -592,6 +593,8 @@ def parse_server_profile(headers):
             result[SERVER_TIMINGS[name]] = float(value)
     for header, key, converter in (
             ('X-T22-SQL-Count', 'sql_count', int),
+            ('X-T22-DB-Connect-Count', 'db_connect_count', int),
+            ('X-T22-DB-Connect-Error-Code', 'db_connect_error_code', int),
             ('X-T22-Server-PID', 'server_pid', int),
             ('X-T22-Process-CPU', 'process_cpu_seconds', float),
             ('X-T22-App-Start', 'app_start_monotonic', float),

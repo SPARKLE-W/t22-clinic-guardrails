@@ -153,6 +153,15 @@ class LoadCaptureTests(unittest.TestCase):
                           'export_audit_targets_ms': 8, 'commit_ms': 2},
                          load.parse_server_profile(headers))
 
+    def test_connection_profile_keeps_numeric_diagnostics_only(self):
+        headers = {'Server-Timing': 'db-connect;dur=125.5, sql;dur=0',
+                   'X-T22-DB-Connect-Count': '1', 'X-T22-DB-Connect-Error-Code': '2003'}
+        self.assertEqual({'db_connect_ms': 125.5, 'sql_ms': 0,
+                          'db_connect_count': 1, 'db_connect_error_code': 2003},
+                         load.parse_server_profile(headers))
+        headers['X-T22-DB-Connect-Error-Code'] = 'private error text'
+        self.assertNotIn('db_connect_error_code', load.parse_server_profile(headers))
+
     def test_export_validation_checks_complete_bytes_after_http_timing(self):
         body = b'event_ref,record_ref\r\na,b\r\n'
         digest = hashlib.sha256(body).hexdigest()
