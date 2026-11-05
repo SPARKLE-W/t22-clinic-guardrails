@@ -4,7 +4,7 @@
     "processes": 8,
     "threads_per_process": 48,
     "first_port": 18930,
-    "CONN_MAX_AGE": 0,
+    "CONN_MAX_AGE": 60,
     "CONN_HEALTH_CHECKS": false
   },
   "mysql": {

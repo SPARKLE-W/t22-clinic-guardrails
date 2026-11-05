@@ -96,19 +96,21 @@ $PythonExe = [System.IO.Path]::GetFullPath($PythonExe)
 if (-not (Test-Path -LiteralPath $PythonExe)) { throw 'Python executable does not exist.' }
 
 $configuration = Get-Content -LiteralPath $env:T22_APP_CONFIG -Raw | ConvertFrom-Json
+$candidate = Get-Content -LiteralPath $candidatePath -Raw | ConvertFrom-Json
 $databaseName = [string]$configuration.database.NAME
 if (-not $databaseName) { $databaseName = [string]$configuration.database.name }
 if ($databaseName -notmatch '^t22_perf_[A-Za-z0-9_]+$') { throw 'Configuration must target a t22_perf_ isolated database.' }
 $connectionAge = $configuration.database.CONN_MAX_AGE
 if ($null -eq $connectionAge) { $connectionAge = $configuration.database.conn_max_age }
-if ($null -ne $connectionAge -and [int]$connectionAge -ne 0) { throw 'This candidate requires CONN_MAX_AGE=0.' }
+if ($null -eq $connectionAge -or [int]$connectionAge -ne [int]$candidate.application.CONN_MAX_AGE) {
+    throw "Configuration must match candidate CONN_MAX_AGE=$($candidate.application.CONN_MAX_AGE)."
+}
 $healthChecks = $configuration.database.CONN_HEALTH_CHECKS
 if ($null -eq $healthChecks) { $healthChecks = $configuration.database.conn_health_checks }
 if ($null -ne $healthChecks -and [bool]$healthChecks) { throw 'This candidate requires CONN_HEALTH_CHECKS=false.' }
 $allowedHosts = @($env:T22_ALLOWED_HOSTS -split ',' | ForEach-Object { $_.Trim() })
 if ($allowedHosts -notcontains $BindAddress) { throw 'Include the current private BindAddress in T22_ALLOWED_HOSTS before starting.' }
 
-$candidate = Get-Content -LiteralPath $candidatePath -Raw | ConvertFrom-Json
 $processCount = [int]$candidate.application.processes
 $threadCount = [int]$candidate.application.threads_per_process
 $firstPort = [int]$candidate.application.first_port
