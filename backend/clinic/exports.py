@@ -9,7 +9,8 @@ from time import perf_counter
 
 import orjson
 from django.db import DatabaseError, connection, transaction
-from django.db.models import Count, Q
+from django.db.models import CharField, Count, Q
+from django.db.models.functions import Cast
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -124,6 +125,19 @@ def _audit_clinical_targets(event, refs):
             raise DatabaseError('Clinical export audit target count mismatch')
 
 
+def _detail_values(queryset, fields, uuid_fields):
+    """Read export-only identifiers as text, avoiding UUID object round trips."""
+    aliases = {'export_text_' + field: Cast(field, CharField(max_length=36))
+               for field in uuid_fields}
+    for row in queryset.annotate(**aliases).values(*fields, *aliases):
+        for field in uuid_fields:
+            value = row.pop('export_text_' + field)
+            if value is not None and len(value) == 32:
+                value = f'{value[:8]}-{value[8:12]}-{value[12:16]}-{value[16:20]}-{value[20:]}'
+            row[field] = value
+        yield row
+
+
 def clinical(actor_id, payload, timings=None):
     started = perf_counter() if timings is not None else None
     with transaction.atomic():
@@ -159,18 +173,21 @@ def clinical(actor_id, payload, timings=None):
             {row['template_id'] for row in rows})
         record_ids = [row['id'] for row in rows]
         revisions, medications, adoptions = defaultdict(list), defaultdict(list), defaultdict(list)
-        for item in ClinicalRevision.objects.filter(record_id__in=record_ids).values(
-                'id', 'record_id', 'version', 'diagnosis', 'examination', 'extra_fields',
-                'actor_id', 'created_at', 'reason').order_by('record_id', 'version'):
+        for item in _detail_values(
+                ClinicalRevision.objects.filter(record_id__in=record_ids).order_by('record_id', 'version'),
+                ['version', 'diagnosis', 'examination', 'extra_fields', 'actor_id', 'created_at', 'reason'],
+                ['id', 'record_id']):
             revisions[item.pop('record_id')].append(item)
-        for item in MedicationEntry.objects.filter(record_id__in=record_ids).values(
-                'id', 'record_id', 'original_id', 'drug', 'amount', 'unit', 'actor_id',
-                'created_at', 'reason').order_by('record_id', 'created_at', 'id'):
+        for item in _detail_values(
+                MedicationEntry.objects.filter(record_id__in=record_ids).order_by('record_id', 'created_at', 'id'),
+                ['drug', 'amount', 'unit', 'actor_id', 'created_at', 'reason'],
+                ['id', 'record_id', 'original_id']):
             medications[item.pop('record_id')].append(item)
-        for item in SuggestionDecision.objects.filter(record_id__in=record_ids, outcome='adopted').values(
-                'id', 'record_id', 'suggestion_id', 'outcome', 'adopted_content', 'actor_id',
-                'created_at', 'reason', 'version_id', 'medication_id', 'suggestion__source').order_by(
-                    'record_id', 'created_at', 'id'):
+        for item in _detail_values(
+                SuggestionDecision.objects.filter(record_id__in=record_ids, outcome='adopted').order_by(
+                    'record_id', 'created_at', 'id'),
+                ['outcome', 'adopted_content', 'actor_id', 'created_at', 'reason', 'suggestion__source'],
+                ['id', 'record_id', 'suggestion_id', 'version_id', 'medication_id']):
             item['source'] = item.pop('suggestion__source')
             adoptions[item.pop('record_id')].append(item)
         templates = {}
@@ -192,6 +209,7 @@ def clinical(actor_id, payload, timings=None):
     def export_rows():
         for row in rows:
             record_id = row['id']
+            record_key = str(record_id)
             template_id = row['template_id']
             try:
                 template = templates[template_id]
@@ -201,13 +219,13 @@ def clinical(actor_id, payload, timings=None):
                     meanings = {**clinical_template['field_types'],
                                 **{item['id']: item['type'] for item in clinical_template['extra_fields']}}
                     field_meanings[template_id] = meanings
-                current = next((revision for revision in revisions[record_id]
+                current = next((revision for revision in revisions[record_key]
                                 if revision['version'] == row['current_version']), None)
                 if not current or not current['diagnosis'].strip():
                     raise DomainError('RECORD_UNAVAILABLE', 503)
-                revision_rows = revisions[record_id]
-                medication_rows = medications[record_id]
-                adoption_rows = adoptions[record_id]
+                revision_rows = revisions[record_key]
+                medication_rows = medications[record_key]
+                adoption_rows = adoptions[record_key]
             except (KeyError, AttributeError, TypeError, UnicodeError):
                 logger.exception('Clinical export generation failed')
                 raise DomainError('EXPORT_GENERATION_UNAVAILABLE', 503) from None

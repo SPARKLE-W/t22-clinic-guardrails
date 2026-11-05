@@ -326,6 +326,18 @@ class ClinicalExportTests(ClinicFixture):
         SuggestionDecision.objects.create(suggestion=declined, outcome='declined', actor=self.doctor)
         Encounter.objects.filter(pk=self.ref).update(error_mark=True)
         response = self.download({'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '核对链'})
+        def uuid_object_values(queryset, fields, uuid_fields):
+            for item in queryset.values(*fields, *uuid_fields):
+                # Reference implementation uses the normal UUID ORM conversion.
+                for field in uuid_fields:
+                    item[field] = str(item[field]) if item[field] is not None else None
+                yield item
+
+        with patch('clinic.exports._detail_values', side_effect=uuid_object_values):
+            reference = self.download({'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '核对链'})
+        self.rows(reference)
+        self.assertEqual(reference.content, response.content)
+        self.assertEqual(reference['X-Content-SHA256'], response['X-Content-SHA256'])
         row = self.rows(response)[0]
         self.assertEqual('true', row['error_mark'])
         self.assertEqual([str(original.pk), str(newer.pk)],
