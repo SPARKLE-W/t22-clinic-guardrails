@@ -1,4 +1,5 @@
 import uuid
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from governance.models import Account, AuditEvent, Candidate, Store
 
@@ -194,13 +195,53 @@ class ClinicalCheck(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+def _derive_hit_stores(rows, using):
+    # This is an index key derived from immutable encounter ownership, not authorization.
+    stores = dict(ClinicalCheck.objects.using(using).filter(
+        pk__in={row.evaluation_id for row in rows}).values_list('pk', 'encounter__store_id'))
+    for row in rows:
+        store_id = stores[uuid.UUID(str(row.evaluation_id))]
+        if row.store_id is not None and uuid.UUID(str(row.store_id)) != store_id:
+            raise ValidationError('Guard hit store must match its evaluation encounter.')
+        row.store_id = store_id
+
+
+class GuardHitQuerySet(models.QuerySet):
+    def bulk_create(self, objs, *args, **kwargs):
+        rows = list(objs)
+        if set(kwargs.get('update_fields') or ()) & {'evaluation', 'evaluation_id', 'store', 'store_id'}:
+            raise ValidationError('Change guard hit lineage with source-aware save().')
+        with transaction.atomic(using=self.db):
+            _derive_hit_stores(rows, self.db)
+            return super().bulk_create(rows, *args, **kwargs)
+
+    def update(self, **kwargs):
+        if set(kwargs) & {'evaluation', 'evaluation_id', 'store', 'store_id'}:
+            raise ValidationError('Change guard hit lineage with source-aware save().')
+        return super().update(**kwargs)
+
+
 class GuardHit(models.Model):
+    objects = GuardHitQuerySet.as_manager()
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    store = models.ForeignKey(Store, on_delete=models.PROTECT, db_index=False)
     evaluation = models.ForeignKey(ClinicalCheck, on_delete=models.PROTECT)
     rule_ref = models.CharField(max_length=100)
     rule_version = models.CharField(max_length=100)
     field = models.CharField(max_length=100)
     value = models.JSONField(null=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['store', 'rule_ref'], name='guard_hit_store_rule_idx')]
+
+    def save(self, *args, **kwargs):
+        using = kwargs.get('using') or self._state.db or 'default'
+        with transaction.atomic(using=using):
+            _derive_hit_stores([self], using)
+            if kwargs.get('update_fields') is not None:
+                kwargs['update_fields'] = set(kwargs['update_fields']) | {'store'}
+            return super().save(*args, **kwargs)
+
 
 
 class Alert(models.Model):
