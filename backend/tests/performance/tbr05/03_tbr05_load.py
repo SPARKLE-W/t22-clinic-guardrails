@@ -563,11 +563,15 @@ def summarize(rows, samples, start, end, warmup):
                     'p50_ms': quantile(tier_times, .5), 'p95_ms': quantile(tier_times, .95),
                     'p99_ms': quantile(tier_times, .99), 'max_ms': max(tier_times, default=None)}
     minutes = []
-    for minute in range(10):
-        left, right = start + warmup + minute * 60, start + warmup + (minute + 1) * 60
+    for minute in range(math.ceil(max(0, end - start - warmup) / 60)):
+        left = start + warmup + minute * 60
+        right = min(left + 60, end)
         selected = [r for r in rows if left <= r['ended'] < right]
-        minutes.append({'minute': minute + 1, 'completed': len(selected),
-                        'success': sum(r['ok'] for r in selected), 'failures': sum(not r['ok'] for r in selected)})
+        counts = {'minute': minute + 1, 'completed': len(selected),
+                  'success': sum(r['ok'] for r in selected), 'failures': sum(not r['ok'] for r in selected)}
+        if right - left < 60:
+            counts['duration_seconds'] = right - left
+        minutes.append(counts)
     during = [s['in_flight'] for s in samples if warmup <= s['seconds'] < end - start]
     return {'kind': 'diagnostic', 'request_namespace': str(REQUEST_NAMESPACE),
             'planned_seconds': end - start, 'warmup_seconds': warmup,
