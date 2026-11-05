@@ -13,9 +13,11 @@ import queue
 import random
 import re
 import threading
+import sys
 import time
 import uuid
 from collections import Counter
+from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -43,6 +45,20 @@ ADOPTION_RECORDS = 6665
 ADOPTION_TARGETS = ADOPTION_RECORDS * 16
 REPO_ROOT = Path(__file__).resolve().parents[4]
 SUMMARY_HITS_BY_STORE = {}
+
+
+@contextmanager
+def gil_switch_interval(milliseconds):
+    if milliseconds is not None and (not math.isfinite(milliseconds) or milliseconds <= 0):
+        raise ValueError('GIL switch interval must be finite and positive')
+    original = sys.getswitchinterval()
+    if milliseconds is not None:
+        sys.setswitchinterval(milliseconds / 1000)
+    try:
+        yield sys.getswitchinterval()
+    finally:
+        if milliseconds is not None:
+            sys.setswitchinterval(original)
 
 
 class GCPauseRecorder:
@@ -670,6 +686,8 @@ def main():
     parser.add_argument('--concurrency', type=int, default=360)
     parser.add_argument('--warmup-seconds', type=int, default=300)
     parser.add_argument('--formal-seconds', type=int, default=600)
+    parser.add_argument('--gil-switch-interval-ms', type=float,
+                        help='optional sender interpreter scheduling candidate; acceptance limits are unchanged')
     parser.add_argument('--capture-gc-pauses', action='store_true',
                         help='buffer GC events and save a timeline after the workload; does not change GC settings')
     parser.add_argument('--server-pid', type=int)
@@ -677,6 +695,9 @@ def main():
     parser.add_argument('--only-group', choices=['query', 'guard', 'reception', 'write',
                                                   'clinical_export', 'detail_export', 'summary_export'])
     args = parser.parse_args()
+    if args.gil_switch_interval_ms is not None and (
+            not math.isfinite(args.gil_switch_interval_ms) or args.gil_switch_interval_ms <= 0):
+        parser.error('GIL switch interval must be finite and positive')
     if args.concurrency < 1 or args.output_prefix.with_suffix('.summary.json').exists():
         parser.error('Invalid concurrency or existing result; results are never overwritten')
     private_path = args.private_accounts.resolve()
@@ -728,7 +749,8 @@ def main():
                                         daemon=True)
     resource_watcher.start()
     try:
-        with GCPauseRecorder(prefix, start, started_at_utc, args.capture_gc_pauses), \
+        with gil_switch_interval(args.gil_switch_interval_ms) as active_interval, \
+                GCPauseRecorder(prefix, start, started_at_utc, args.capture_gc_pauses), \
                 ThreadPoolExecutor(max_workers=args.concurrency) as pool:
             futures = [pool.submit(worker, n, gate, end, bases[n % len(bases)], cookies, actors, pending)
                        for n in range(args.concurrency)]
@@ -755,6 +777,7 @@ def main():
                       actual_duration >= total)
     summary['kind'] = 'formal_window_candidate' if exact_protocol else 'diagnostic'
     summary['gc_pause_capture'] = args.capture_gc_pauses
+    summary['gil_switch_interval_ms'] = active_interval * 1000
     if args.only_group:
         summary['only_group'] = args.only_group
     summary.update({'concurrency': args.concurrency, 'sample_count': len(SAMPLES),
