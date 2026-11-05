@@ -114,6 +114,28 @@ class LoadCaptureTests(unittest.TestCase):
         pending.put_nowait(stop)
         self.assertIs(stop, pending.get_nowait())
 
+    def test_preparation_timings_do_not_shift_http_interval(self):
+        with patch.object(load, 'select_request', return_value=('doctor', 'GET', '/api', None, 'json', None)):
+            with patch.object(load.time, 'perf_counter', side_effect=[1, 1.1, 1.2, 1.3, 1.4]):
+                row = load.run_one(Session(), 'http://test', {'doctor': {}}, {}, 1, 'query', None)[0]
+        self.assertAlmostEqual(100, row['client_select_ms'])
+        self.assertAlmostEqual(100, row['client_headers_ms'])
+        self.assertEqual(1.2, row['started'])
+        self.assertEqual(1.3, row['first'])
+        self.assertEqual(1.4, row['ended'])
+        self.assertEqual(0, load.ACTIVE)
+
+    def test_preparation_timings_survive_transport_failure(self):
+        with patch.object(load, 'select_request', return_value=('doctor', 'GET', '/api', None, 'json', None)):
+            with patch.object(Session, 'request', side_effect=OSError('synthetic')):
+                with patch.object(load.time, 'perf_counter', side_effect=[1, 1.1, 1.2, 1.4]):
+                    row = load.run_one(Session(), 'http://test', {'doctor': {}}, {}, 1, 'query', None)[0]
+        self.assertFalse(row['ok'])
+        self.assertAlmostEqual(100, row['client_headers_ms'])
+        self.assertEqual(1.2, row['started'])
+        self.assertEqual(1.4, row['ended'])
+        self.assertEqual(0, load.ACTIVE)
+
     def test_export_phase_timings_survive_header_parsing(self):
         headers = {'Server-Timing': 'export-snapshot;dur=12.5, export-csv;dur=3, '
                                     'export-audit-targets;dur=8, commit;dur=2'}
