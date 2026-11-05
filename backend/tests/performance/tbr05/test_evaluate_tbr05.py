@@ -120,6 +120,39 @@ class Tbr05EvaluatorTests(unittest.TestCase):
         self.assertEqual({'count': 1, 'p95': 70, 'max': 70},
                          report['validation_enqueue_wait_ms'])
 
+    def test_tolerance_requires_attributed_handoffs(self):
+        def rows(gap):
+            return [{'worker_id': worker, 'started': left, 'ended': right,
+                     'validation_queue_full': False}
+                    for worker in range(360)
+                    for left, right in ((299, 300.5), (300.5 + gap, 302))]
+
+        valid = rows(.005)
+        self.assertTrue(evaluator._handoff_tolerance(valid, 300, 302)['passed'])
+        self.assertFalse(evaluator._handoff_tolerance(rows(.006), 300, 302)['passed'])
+        for key, value in (('validation_queue_full', True), ('worker_id', None),
+                           ('started', 300.001)):
+            invalid = [*valid]
+            invalid[0] = {**valid[0], key: value}
+            self.assertFalse(evaluator._handoff_tolerance(invalid, 300, 302)['passed'])
+        self.assertFalse(evaluator._handoff_tolerance(rows(-.001), 300, 302)['passed'])
+
+    def test_tolerance_rejects_accumulated_gaps_and_rolling_spikes(self):
+        def run(starts, end):
+            intervals = list(zip([299, *(at + .004 for at in starts)], [*starts, end]))
+            return evaluator._handoff_tolerance(
+                [{'worker_id': worker, 'started': left, 'ended': right,
+                  'validation_queue_full': False}
+                 for worker in range(360) for left, right in intervals], 300, end)
+
+        rolling = run([300.8, 301.0, 301.2], 310)
+        self.assertFalse(rolling['passed'])
+        self.assertAlmostEqual(4.32, rolling['worst_one_second_missing_request_seconds'])
+        cumulative = run([300.4 + step * .5 for step in range(20)], 310)
+        self.assertFalse(cumulative['passed'])
+        self.assertAlmostEqual(28.8, cumulative['missing_request_seconds'])
+        self.assertLess(cumulative['worst_one_second_missing_request_seconds'], 3.6)
+
     def test_rejects_per_class_p95_above_limit(self):
         summary, requests, inflight = evidence()
         slow_queries = [row for row in requests if row['kind'] == 'query'][:100]

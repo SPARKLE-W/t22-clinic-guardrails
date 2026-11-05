@@ -482,7 +482,13 @@ def validator(pending, results, recorder, stop, errors):
 
 class ValidationQueue(queue.Queue):
     def submit(self, capture):
-        self.put((capture, time.perf_counter()))
+        item = (capture, time.perf_counter())
+        capture[0]['validation_queue_full'] = False
+        try:
+            self.put_nowait(item)
+        except queue.Full:
+            capture[0]['validation_queue_full'] = True
+            self.put(item)
 
     def _put(self, item):
         # Set timing under the queue lock, before the validator can see the row.

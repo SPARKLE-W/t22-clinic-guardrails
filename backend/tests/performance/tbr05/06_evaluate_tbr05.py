@@ -3,6 +3,8 @@ import argparse
 import json
 import math
 import re
+from bisect import bisect_right
+from collections import defaultdict
 from pathlib import Path
 
 
@@ -108,7 +110,65 @@ def _client_handoffs(request_rows, start, end):
             'validation_enqueue_wait_ms': stats(waits)}
 
 
-def evaluate(summary, request_rows, inflight_rows):
+def _handoff_tolerance(request_rows, start, end):
+    workers = defaultdict(list)
+    for row in request_rows:
+        if row['ended'] <= start or row['started'] >= end:
+            continue
+        worker = row.get('worker_id')
+        if type(worker) is not int or not 0 <= worker < CONCURRENCY:
+            return {'passed': False, 'reason': 'missing_or_invalid_worker'}
+        workers[worker].append(row)
+    if len(workers) != CONCURRENCY:
+        return {'passed': False, 'reason': 'worker_count_mismatch'}
+
+    events = defaultdict(int, {start: 0, end: 0})
+    total = 0.0
+    for rows in workers.values():
+        rows.sort(key=lambda row: row['started'])
+        if rows[0]['started'] > start or rows[-1]['ended'] < end:
+            return {'passed': False, 'reason': 'worker_boundary_gap'}
+        for previous, following in zip(rows, rows[1:]):
+            left, right = previous['ended'], following['started']
+            gap = right - left
+            if gap < 0:
+                return {'passed': False, 'reason': 'overlapping_worker_requests'}
+            if not gap:
+                continue
+            if previous.get('validation_queue_full') is not False:
+                return {'passed': False, 'reason': 'queue_backpressure_or_missing_evidence'}
+            if gap > .005 + 1e-9:
+                return {'passed': False, 'reason': 'worker_handoff_over_5ms'}
+            events[left] += 1
+            events[right] -= 1
+            total += gap
+
+    points = sorted(events)
+    areas, deficits = [], []
+    area = deficit = 0
+    cursor = start
+    for point in points:
+        area += deficit * (point - cursor)
+        deficit += events[point]
+        areas.append(area)
+        deficits.append(deficit)
+        cursor = point
+
+    def area_at(at):
+        i = bisect_right(points, at) - 1
+        return areas[i] + deficits[i] * (at - points[i])
+
+    # The rolling integral is piecewise linear, with turns at either edge of a gap.
+    candidates = {start, end - 1}
+    candidates.update(point for point in points if start <= point <= end - 1)
+    candidates.update(point - 1 for point in points if start <= point - 1 <= end - 1)
+    worst = max(area_at(at + 1) - area_at(at) for at in candidates)
+    return {'passed': total <= CONCURRENCY * (end - start) * .005 + 1e-9
+                      and worst <= CONCURRENCY * .01 + 1e-9,
+            'missing_request_seconds': total, 'worst_one_second_missing_request_seconds': worst}
+
+
+def evaluate(summary, request_rows, inflight_rows, *, allow_handoff_tolerance=False):
     failures = []
     invalid_rows = [row for row in request_rows if any(
         type(row.get(field)) not in (int, float) or not math.isfinite(row[field])
@@ -210,11 +270,19 @@ def evaluate(summary, request_rows, inflight_rows):
         samples[-1]['seconds'] >= formal_end - .5 and max(gaps, default=float('inf')) <= .5
     observed = [row.get('in_flight') for row in samples]
     exact_inflight = covered and all(value == CONCURRENCY for value in observed)
-    if not exact_inflight:
-        failures.append('360_continuous_inflight_not_proven')
     interval_concurrency = _interval_concurrency(request_rows, WARMUP_SECONDS, formal_end)
-    if not interval_concurrency['exact_360_for_entire_window']:
-        failures.append('360_request_interval_concurrency_not_exact')
+    tolerance = None
+    if allow_handoff_tolerance:
+        tolerance = _handoff_tolerance(request_rows, WARMUP_SECONDS, formal_end)
+        if not covered or any(type(value) is not int or not 0 <= value <= CONCURRENCY for value in observed):
+            failures.append('inflight_samples_missing_or_out_of_range')
+        if not tolerance['passed'] or interval_concurrency['maximum'] > CONCURRENCY:
+            failures.append('360_handoff_tolerance_not_proven')
+    else:
+        if not exact_inflight:
+            failures.append('360_continuous_inflight_not_proven')
+        if not interval_concurrency['exact_360_for_entire_window']:
+            failures.append('360_request_interval_concurrency_not_exact')
 
     mix_counts = {kind: len(rows) for kind, rows in by_kind.items()}
     mix_total = len(formal_requests)
@@ -242,6 +310,7 @@ def evaluate(summary, request_rows, inflight_rows):
                          'maximum': max(observed, default=None),
                          'maximum_sample_gap_seconds': max(gaps, default=None),
                          'exact_360_proven': exact_inflight,
+                         'handoff_tolerance': tolerance,
                          'request_interval_reconstruction': interval_concurrency,
                          'client_handoffs': _client_handoffs(request_rows, WARMUP_SECONDS, formal_end)},
             'formal_failure_count': len(formal_failures)}
@@ -253,9 +322,11 @@ def main():
     parser.add_argument('--requests', type=Path, required=True)
     parser.add_argument('--inflight', type=Path, required=True)
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--allow-handoff-tolerance', action='store_true')
     args = parser.parse_args()
     summary = json.loads(args.summary.read_text(encoding='utf-8'))
-    report = evaluate(summary, read_jsonl(args.requests), read_jsonl(args.inflight))
+    report = evaluate(summary, read_jsonl(args.requests), read_jsonl(args.inflight),
+                      allow_handoff_tolerance=args.allow_handoff_tolerance)
     encoded = json.dumps(report, ensure_ascii=False, indent=2)
     if args.output:
         output = args.output.resolve()
