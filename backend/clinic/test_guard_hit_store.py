@@ -70,3 +70,8 @@ class GuardHitStoreTests(ClinicFixture):
         self.assertEqual(self.a.pk, self.hit.store_id)
         _, _, count = guard(self.manager.pk, SUMMARY, {})
         self.assertEqual(1, count)
+
+    def test_positional_conflict_updates_cannot_bypass_lineage_validation(self):
+        with self.assertRaises(ValidationError):
+            GuardHit.objects.bulk_create([self.clone()], 500, False, True, ['store'], ['id'])
+        self.assertEqual(1, GuardHit.objects.count())
