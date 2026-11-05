@@ -45,7 +45,7 @@ def _timing_report(rows):
 
 def _interval_concurrency(request_rows, start, end):
     """Reconstruct in-flight request count from complete request intervals."""
-    events = []
+    events = [(end, 0)]
     for row in request_rows:
         request_start, request_end = row['started'], row['ended']
         if request_end <= start or request_start >= end or request_end <= request_start:
@@ -57,23 +57,55 @@ def _interval_concurrency(request_rows, start, end):
     minimum = None
     maximum = 0
     cursor = start
+    below = longest_gap = current_gap = 0.0
     index = 0
     while index < len(events):
         at = events[index][0]
         if at > cursor:
             minimum = active if minimum is None else min(minimum, active)
             maximum = max(maximum, active)
+            if active < CONCURRENCY:
+                duration = at - cursor
+                below += duration
+                current_gap += duration
+                longest_gap = max(longest_gap, current_gap)
+            else:
+                current_gap = 0.0
             cursor = at
         delta = 0
         while index < len(events) and events[index][0] == at:
             delta += events[index][1]
             index += 1
         active += delta
-    if cursor < end:
-        minimum = active if minimum is None else min(minimum, active)
-        maximum = max(maximum, active)
     return {'minimum': minimum or 0, 'maximum': maximum,
-            'exact_360_for_entire_window': minimum == CONCURRENCY == maximum}
+            'exact_360_for_entire_window': minimum == CONCURRENCY == maximum,
+            'below_360_seconds': below, 'longest_below_360_seconds': longest_gap}
+
+
+def _client_handoffs(request_rows, start, end):
+    workers = {}
+    waits = []
+    for row in request_rows:
+        worker = row.get('worker_id')
+        if worker is not None:
+            workers.setdefault(worker, []).append(row)
+        wait = row.get('validation_enqueue_wait_ms')
+        if start <= row['ended'] < end and isinstance(wait, (int, float)):
+            waits.append(wait)
+    gaps = []
+    for rows in workers.values():
+        rows.sort(key=lambda row: row['started'])
+        for previous, following in zip(rows, rows[1:]):
+            gap = min(end, following['started']) - max(start, previous['ended'])
+            if gap > 0:
+                gaps.append(gap * 1000)
+
+    def stats(values):
+        return {'count': len(values), 'p95': percentile(values, .95),
+                'max': max(values, default=None)}
+
+    return {'worker_count': len(workers), 'handoff_gap_ms': stats(gaps),
+            'validation_enqueue_wait_ms': stats(waits)}
 
 
 def evaluate(summary, request_rows, inflight_rows):
@@ -210,7 +242,8 @@ def evaluate(summary, request_rows, inflight_rows):
                          'maximum': max(observed, default=None),
                          'maximum_sample_gap_seconds': max(gaps, default=None),
                          'exact_360_proven': exact_inflight,
-                         'request_interval_reconstruction': interval_concurrency},
+                         'request_interval_reconstruction': interval_concurrency,
+                         'client_handoffs': _client_handoffs(request_rows, WARMUP_SECONDS, formal_end)},
             'formal_failure_count': len(formal_failures)}
 
 

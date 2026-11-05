@@ -61,6 +61,7 @@ def serve_profiled(port, threads, host):
             started_utc = datetime.now(timezone.utc).isoformat(timespec='microseconds').replace('+00:00', 'Z')
             started = time.perf_counter()
             counters = {'sql_ms': 0.0, 'sql_count': 0, 'commit_ms': 0.0}
+            export_timings = environ['t22.export_timings'] = {}
             database = connections['default']
             original_commit = database._commit
 
@@ -86,6 +87,8 @@ def serve_profiled(port, threads, host):
                           f"sql;dur={counters['sql_ms']:.4f}, "
                           f"commit;dur={counters['commit_ms']:.4f}, "
                           f"queue;dur={getattr(local, 'queue_ms', 0):.4f}")
+                for name, duration in export_timings.items():
+                    timing += f", {name};dur={duration:.4f}"
                 extra = [
                     ('Server-Timing', timing),
                     ('X-T22-Profile-Scope', 'through-start-response; iterable-excluded'),

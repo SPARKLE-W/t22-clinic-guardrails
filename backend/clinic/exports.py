@@ -5,6 +5,7 @@ import io
 import json
 import logging
 from collections import defaultdict
+from time import perf_counter
 
 import orjson
 from django.db import transaction
@@ -102,7 +103,8 @@ def _response(body, ref, count, name):
     return response
 
 
-def clinical(actor_id, payload):
+def clinical(actor_id, payload, timings=None):
+    started = perf_counter() if timings is not None else None
     with transaction.atomic():
         actor = require(actor_id, CLINICAL)
         _object(payload, ['scope', 'purpose'], ['scope', 'purpose'])
@@ -160,6 +162,8 @@ def clinical(actor_id, payload):
                     logger.exception('Clinical export generation failed')
                     raise DomainError('EXPORT_GENERATION_UNAVAILABLE', 503) from None
         store_id = actor.store_id
+    if timings is not None:
+        timings['export-snapshot'] = (perf_counter() - started) * 1000
     field_meanings, encoded_field_meanings = {}, {}
     target_refs = []
     encode = _json_text
@@ -218,7 +222,10 @@ def clinical(actor_id, payload):
                    'true' if row['encounter__error_mark'] else 'false',
                    encode([str(row['encounter__rebuilt_id'])] if row['encounter__rebuilt_id'] else []))
 
+    started = perf_counter() if timings is not None else None
     body = _csv_values(CLINICAL_COLUMNS, export_rows())
+    if timings is not None:
+        timings['export-csv'] = (perf_counter() - started) * 1000
     with transaction.atomic():
         actor = require(actor_id, CLINICAL, lock=True)
         if actor.store_id != store_id:
@@ -227,8 +234,11 @@ def clinical(actor_id, payload):
                                               scope=scope, purpose=payload['purpose'], record_count=len(target_refs),
                                               row_count=len(target_refs), byte_count=len(body))
         event = write_audit(actor, CLINICAL, 'success', 'COMPLETED', entry.pk, actor.store_id)
+        started = perf_counter() if timings is not None else None
         AuditTarget.objects.bulk_create([AuditTarget(event=event, target=ref, kind='record')
                                          for ref in target_refs])
+        if timings is not None:
+            timings['export-audit-targets'] = (perf_counter() - started) * 1000
     return body, entry.pk, len(target_refs)
 
 
@@ -236,7 +246,7 @@ def clinical(actor_id, payload):
 @csrf_protect
 def clinical_records(request):
     try:
-        body, ref, count = clinical(request.user.pk, _body(request))
+        body, ref, count = clinical(request.user.pk, _body(request), request.META.get('t22.export_timings'))
         return _response(body, ref, count, 'clinical-records')
     except DomainError as error:
         error.event_store = request.user.store_id
