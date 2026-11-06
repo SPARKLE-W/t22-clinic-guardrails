@@ -1,6 +1,10 @@
 """Reception writes and scoped reads; no clinical write operation in this slice."""
+import csv
+import io
+import json
 import uuid
 from django.db import IntegrityError, connection, transaction
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Prefetch, prefetch_related_objects
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -100,7 +104,7 @@ def _policy_head_for_share(store_id):
 def _own(actor, ref, clinical=False, lock=False, join_read_templates=False):
     rows = Encounter.objects
     if join_read_templates:
-        related = ('template', 'clinicalrecord') if clinical else ('template',)
+        related = ('template', 'clinicalrecord__export_projection') if clinical else ('template',)
         rows = rows.select_related(*related)
     rows = rows.select_for_update() if lock else rows
     row = rows.filter(pk=_uuid(ref)).first()
@@ -282,6 +286,48 @@ def _clinical(row, templates, field_meanings_cache=None):
                           for item in sorted(_related_rows(record, 'suggestion_decisions', 'prefetched_adopted_suggestions'),key=lambda item:(item.created_at,str(item.pk))) if item.outcome == 'adopted']}
 
 
+def _projected_clinical(row):
+    """Reuse the transactional export snapshot for an authorized single read."""
+    from .export_projection import validated_prefix
+
+    try:
+        record = row.clinicalrecord
+        projection = record.export_projection
+    except ObjectDoesNotExist:
+        return None
+    value = {'id': record.pk, 'encounter_id': row.pk, 'template_id': record.template_id,
+                'current_version': record.current_version, 'export_generation': record.export_generation,
+                'encounter__store_id': row.store_id, 'encounter__template_id': row.template_id,
+                'encounter__doctor_id': row.doctor_id, 'encounter__receptionist_id': row.receptionist_id,
+                'encounter__created_at': row.created_at}
+    value.update({'export_projection__prefix': projection.prefix,
+                  'export_projection__prefix_digest': projection.prefix_digest,
+                  'export_projection__source_signature': projection.source_signature})
+    candidate = row.template if row.template_id == row.clinicalrecord.template_id else row.clinicalrecord.template
+    template = _template(candidate, row.store_id)
+    prefix = validated_prefix(value, candidate.digest)
+    if prefix is None:
+        return None
+    try:
+        records = list(csv.reader(io.StringIO(prefix.decode('utf-8'), newline=''), strict=True))
+        if len(records) != 1 or len(records[0]) != 11:
+            return None
+        cells = records[0]
+        if cells[:3] != [str(value['id']), str(row.pk), template['version']] or not cells[4].strip():
+            return None
+        decoded = {key: json.loads(cells[index]) for key, index in
+                   [('field_meanings', 3), ('extra_fields', 6), ('adoptions', 7),
+                    ('medication_chain', 9), ('clinical_versions', 10)]}
+        if any(type(decoded[key]) is not dict for key in ('field_meanings', 'extra_fields')):
+            return None
+        if any(type(decoded[key]) is not list for key in ('adoptions', 'medication_chain', 'clinical_versions')):
+            return None
+        return {'record_ref': cells[0], 'encounter_ref': cells[1], 'template_version_ref': cells[2],
+                'diagnosis': cells[4], 'examination': cells[5], **decoded}
+    except (ValueError, UnicodeError, csv.Error):
+        return None
+
+
 def read(actor_id, clinical=False, ref=None, query=None):
     permission = 'clinical.read' if clinical else 'encounter.read'
     explicit_ref = ref
@@ -327,8 +373,9 @@ def read(actor_id, clinical=False, ref=None, query=None):
                     raise DomainError('INPUT_INVALID', 422)
                 total = values.count()
                 rows = list(values[(page-1)*50:page*50])
+            projected = _projected_clinical(rows[0]) if clinical and explicit_ref else None
             relations = ['template', 'receptionrevision_set']
-            if clinical:
+            if clinical and projected is None:
                 if not explicit_ref:
                     relations.append('clinicalrecord__template')
                 relations += [Prefetch('clinicalrecord__clinicalrevision_set', to_attr='prefetched_clinical_revisions'),
@@ -340,7 +387,7 @@ def read(actor_id, clinical=False, ref=None, query=None):
                 if row.template_id not in templates:
                     templates[row.template_id] = _template(row.template, row.store_id)
                 reception = _reception(row)
-                record = _clinical(row, templates, field_meanings) if clinical else None
+                record = (projected if projected is not None else _clinical(row, templates, field_meanings)) if clinical else None
                 items.append({'reception': reception, 'clinical': record} if clinical else reception)
                 targets.append((row.pk, 'encounter'))
                 if record:

@@ -19,6 +19,7 @@ from .tests import ClinicFixture
 from .writes import diagnosis
 from .medications import mutate as medication
 from .suggestions import mutate as suggestion
+from .services import read
 
 
 class ExportProjectionTests(ClinicFixture):
@@ -39,6 +40,9 @@ class ExportProjectionTests(ClinicFixture):
     def row(self):
         body = self.body()
         self.assertEqual(self.body(source=True), body)
+        with patch('clinic.services._projected_clinical', return_value=None):
+            expected = read(self.doctor.pk, clinical=True, ref=self.ref)
+        self.assertEqual(expected, read(self.doctor.pk, clinical=True, ref=self.ref))
         return next(csv.DictReader(io.StringIO(body.decode('utf-8'))))
 
     def correct(self, diagnosis_value='更正后诊断', key=None):
@@ -47,6 +51,37 @@ class ExportProjectionTests(ClinicFixture):
         return diagnosis(self.doctor.pk, 'correct', key or str(uuid.uuid4()), {
             'diagnosis': diagnosis_value, 'original_content_ref': str(self.record.pk),
             'original_version_ref': str(current.pk), 'reason': '合成更正'}, self.ref)
+
+    def test_single_read_projection_matches_history_and_reduces_queries(self):
+        with patch('clinic.services._projected_clinical', return_value=None):
+            with CaptureQueriesContext(connection) as source_queries:
+                expected = read(self.doctor.pk, clinical=True, ref=self.ref)
+        with CaptureQueriesContext(connection) as cached_queries:
+            actual = read(self.doctor.pk, clinical=True, ref=self.ref)
+        self.assertEqual(expected, actual)
+        self.assertLess(len(cached_queries), len(source_queries))
+        self.correct()
+        with patch('clinic.services._projected_clinical', return_value=None):
+            expected = read(self.doctor.pk, clinical=True, ref=self.ref)
+        self.assertEqual(expected, read(self.doctor.pk, clinical=True, ref=self.ref))
+
+    def test_single_read_invalid_projection_falls_back(self):
+        with patch('clinic.services._projected_clinical', return_value=None):
+            expected = read(self.doctor.pk, clinical=True, ref=self.ref)
+        ClinicalExportProjection.objects.filter(record=self.record).update(prefix=b'broken')
+        self.assertEqual(expected, read(self.doctor.pk, clinical=True, ref=self.ref))
+
+    def test_single_read_checks_owner_before_loading_projection(self):
+        for actor in (self.doctor2, self.foreign):
+            with patch('clinic.services._projected_clinical') as cached:
+                with self.assertRaises(DomainError):
+                    read(actor.pk, clinical=True, ref=self.ref)
+                cached.assert_not_called()
+
+    def test_single_read_audit_failure_does_not_return_projection(self):
+        with patch('clinic.services.write_audit', side_effect=DatabaseError('synthetic failure')):
+            with self.assertRaises(DatabaseError):
+                read(self.doctor.pk, clinical=True, ref=self.ref)
 
     def test_live_projection_matches_source_without_history_queries(self):
         self.assertEqual(1, self.record.export_generation)
