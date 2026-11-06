@@ -345,8 +345,8 @@ def clinical(actor_id, payload, timings=None):
     return body, entry.pk, len(target_refs)
 
 
-@gzip_page
 @protected(CLINICAL, ['POST'], database_preflight=False)
+@gzip_page
 @csrf_protect
 def clinical_records(request):
     try:
@@ -457,8 +457,8 @@ def guard(actor_id, permission, payload):
     return body, entry.pk, entry.record_count
 
 
-@gzip_page
 @protected(DETAIL, ['POST'], database_preflight=False)
+@gzip_page
 @csrf_protect
 def alert_hits(request):
     try:
@@ -471,8 +471,8 @@ def alert_hits(request):
         raise
 
 
-@gzip_page
 @protected(SUMMARY, ['POST'], database_preflight=False)
+@gzip_page
 @csrf_protect
 def alert_summary(request):
     try:
