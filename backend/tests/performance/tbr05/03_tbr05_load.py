@@ -19,7 +19,7 @@ import sys
 import time
 import uuid
 from collections import Counter
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -169,6 +169,8 @@ class JsonlRunRecorder:
                         row = {**row, 'started': row['started'] - self.start,
                                'first': row['first'] - self.start if row['first'] else None,
                                'ended': row['ended'] - self.start,
+                               **{key: row[key] - self.start for key in
+                                  ('client_prepared_started', 'client_prepared_ended') if key in row},
                                **request_timestamps(row, self.start, self.started_at_utc)}
                     self.files[kind].write(json.dumps(row, ensure_ascii=False) + '\n')
                     self.events.task_done()
@@ -466,11 +468,26 @@ def select_request(kind, sequence, rng):
     return actor, 'POST', '/api/exports/alert-summary', {'group_by': 'rule'}, 'summary', None
 
 
-def run_one(session, base, cookies, actors, number, kind, rng):
+def prepare_task(rng):
+    started = time.perf_counter()
+    number, kind = next_task()
+    selected = time.perf_counter()
+    selection = select_request(kind, number, rng)
+    ended = time.perf_counter()
+    return {'number': number, 'kind': kind, 'selection': selection,
+            'started': started, 'ended': ended,
+            'task_selection_ms': (selected - started) * 1000,
+            'selection_ms': (ended - selected) * 1000}
+
+
+def run_one(session, base, cookies, actors, number, kind, rng, prepared=None):
     preparing = time.perf_counter()
-    actor, method, path, payload, tier, expected_count = select_request(kind, number, rng)
+    actor, method, path, payload, tier, expected_count = (
+        prepared['selection'] if prepared is not None else select_request(kind, number, rng))
     selected = time.perf_counter()
     target_key = payload.pop('_load_target_key', None) if payload else None
+    if prepared is not None and target_key:
+        payload['original_version_ref'] = current_version_ref(*target_key)
     if kind == 'reception':
         payload['doctor_ref'] = actors[f'load_{expected_count + 1}_doctor_1']['account_ref']
     if kind == 'summary_export':
@@ -482,8 +499,10 @@ def run_one(session, base, cookies, actors, number, kind, rng):
         if kind in ('reception', 'guard', 'write'):
             headers['Idempotency-Key'] = request_ref('idempotency', number)
     started = time.perf_counter()
-    preparation = {'client_select_ms': (selected - preparing) * 1000,
+    preparation = {'client_select_ms': prepared['selection_ms'] if prepared is not None else (selected - preparing) * 1000,
                    'client_headers_ms': (started - selected) * 1000}
+    if prepared is not None:
+        preparation.update(client_prepared_started=prepared['started'], client_prepared_ended=prepared['ended'])
     first = None
     response = None
     result = None
@@ -622,24 +641,41 @@ class ValidationQueue(queue.Queue):
         super()._put(item)
 
 
-def worker(index, gate, end_at, base, cookies, actors, pending):
+def worker(index, gate, end_at, base, cookies, actors, pending, preparer=None):
     rng = random.Random(20261024 + index)
     session = requests.Session()
     try:
         gate.wait(timeout=180)
+        prepared = prepare_task(rng) if preparer is not None else None
         while time.perf_counter() < end_at:
-            task_started = time.perf_counter()
-            number, kind = next_task()
-            task_selected = time.perf_counter()
-            capture = run_one(session, base, cookies, actors, number, kind, rng)
+            if preparer is None:
+                task_started = time.perf_counter()
+                number, kind = next_task()
+                task_ms = (time.perf_counter() - task_started) * 1000
+                capture = run_one(session, base, cookies, actors, number, kind, rng)
+            else:
+                number, kind = prepared['number'], prepared['kind']
+                task_ms = prepared['task_selection_ms']
+                following = preparer.submit(prepare_task, rng)
+                capture = run_one(session, base, cookies, actors, number, kind, rng, prepared=prepared)
             capture[0]['worker_id'] = index
-            capture[0]['client_task_selection_ms'] = (task_selected - task_started) * 1000
+            capture[0]['client_task_selection_ms'] = task_ms
+            capture[0]['client_preparation_ahead'] = preparer is not None
             capture[0]['client_inline_validation_ms'] = 0.0
             if kind in ('guard', 'write'):
                 validating = time.perf_counter()
                 capture = (validate_capture(capture), None, {}, None)
                 capture[0]['client_inline_validation_ms'] = (time.perf_counter() - validating) * 1000
-            pending.submit(capture)
+            waiting = time.perf_counter() if preparer is not None else None
+            try:
+                if preparer is not None:
+                    prepared = following.result()
+            finally:
+                if preparer is not None:
+                    capture[0]['client_prepare_wait_ms'] = (time.perf_counter() - waiting) * 1000
+                pending.submit(capture)
+        if prepared is not None:
+            return {'request_id': prepared['number'], 'kind': prepared['kind']}
     finally:
         session.close()
 
@@ -820,6 +856,8 @@ def main():
     parser.add_argument('--capture-gc-pauses', action='store_true',
                         help='buffer GC events and save a timeline after the workload; does not change GC settings')
     parser.add_argument('--server-pid', type=int)
+    parser.add_argument('--prepare-ahead', action='store_true',
+                        help='prepare at most one following request per worker on one background thread')
     parser.add_argument('--mysql-pid', type=int)
     parser.add_argument('--only-group', choices=['query', 'guard', 'reception', 'write',
                                                   'clinical_export', 'detail_export', 'summary_export'])
@@ -902,15 +940,20 @@ def main():
                                         args=(start, started_at_utc, args.server_pid, args.mysql_pid, recorder),
                                         daemon=True)
     resource_watcher.start()
+    preparation_context = ThreadPoolExecutor(max_workers=1) if args.prepare_ahead else nullcontext()
+    prepared_unsent = []
     try:
         with gil_switch_interval(args.gil_switch_interval_ms) as active_interval, \
                 GCPauseRecorder(prefix, start, started_at_utc, args.capture_gc_pauses), \
+                preparation_context as preparer, \
                 ThreadPoolExecutor(max_workers=args.concurrency) as pool:
-            futures = [pool.submit(worker, n + worker_offset, gate, end, bases[(n + worker_offset) % len(bases)], cookies, actors, pending)
+            futures = [pool.submit(worker, n + worker_offset, gate, end, bases[(n + worker_offset) % len(bases)], cookies, actors, pending, preparer)
                        for n in range(args.concurrency)]
             gate.wait(timeout=180)
             for future in futures:
-                future.result()
+                unused = future.result()
+                if unused is not None:
+                    prepared_unsent.append(unused)
     finally:
         pending.join()
         for _ in validators:
@@ -940,6 +983,9 @@ def main():
     summary['load_script_sha256'] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     summary['gc_pause_capture'] = args.capture_gc_pauses
     summary['gil_switch_interval_ms'] = active_interval * 1000
+    summary['client_preparation_ahead'] = args.prepare_ahead
+    summary['prepared_unsent'] = prepared_unsent
+    summary['target_assignments_scope'] = 'allocated including prepared_unsent' if args.prepare_ahead else 'dispatched'
     if args.only_group:
         summary['only_group'] = args.only_group
     summary.update({'concurrency': args.concurrency, 'sample_count': len(SAMPLES),

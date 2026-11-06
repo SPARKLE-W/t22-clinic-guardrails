@@ -68,6 +68,7 @@ def main():
     parser.add_argument('--formal-seconds', type=int, default=600)
     parser.add_argument('--gil-switch-interval-ms', type=float)
     parser.add_argument('--capture-gc-pauses', action='store_true')
+    parser.add_argument('--prepare-ahead', action='store_true')
     args = parser.parse_args()
     if args.processes < 1 or args.concurrency < args.processes or args.concurrency % args.processes:
         parser.error('Concurrency must divide evenly across positive process count')
@@ -104,6 +105,8 @@ def main():
             command.extend(['--gil-switch-interval-ms', str(args.gil_switch_interval_ms)])
         if args.capture_gc_pauses:
             command.append('--capture-gc-pauses')
+        if args.prepare_ahead:
+            command.append('--prepare-ahead')
         commands.append(command)
     resource_rows, cpu_last = [], {}
     parent = driver.psutil.Process(os.getpid())
@@ -134,6 +137,8 @@ def main():
             resources.flush()
         run_clients(commands, prefix, origin + args.warmup_seconds + args.formal_seconds + 300, sample)
     _, reports = evidence.verify_shard_reports(parts, clock_path)
+    if any(report.get('client_preparation_ahead', False) is not args.prepare_ahead for report in reports):
+        raise ValueError('Shard preparation mode mismatch')
     if args.capture_gc_pauses:
         events = []
         for index, part in enumerate(parts):
@@ -154,6 +159,7 @@ def main():
         for row in samples:
             stream.write(json.dumps(row, ensure_ascii=False) + '\n')
     summary = {**reports[0], **statistics.summarize(samples)}
+    summary['prepared_unsent'] = [item for report in reports for item in report.get('prepared_unsent', [])]
     elapsed = time.perf_counter() - origin
     summary.update(controller_script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                    concurrency=args.concurrency, shard_count=args.processes,
