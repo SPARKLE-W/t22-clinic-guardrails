@@ -75,3 +75,6 @@ python 07_tbr05_sharded_load.py --private-accounts "$ACCOUNTS" --output-prefix "
 每行保留PDH原timestamp_utc，并另记sampling_started/completed_utc、sampling_duration_ms及process_snapshot_started/completed_utc。进程快照在PDH之后读取，并非完全同步；采样耗时包含Get-Counter等待，不能当作采集CPU开销。现有两样本读取在本机约2秒一行，配置1秒不保证1秒实际间隔。
 
 本地Windows 10秒原生运行写出5行、每行约426进程，无整行采样错误；非管理员下183个进程不可读并显式标记。79项工具回归通过，新增用例覆盖其他服务CPU、用户/内核拆分、启动身份、Idle排除和不可读记录。该验证不能代替云端管理员权限及高负载采样验证。
+
+
+导出选样候选在启动时建立全量/偶数/奇数三份不可变元组，避免每次导出重建2000/4000个整数。原random.sample、店/医生选择、范围分布与目标顺序保留；80项工具回归及5000份新旧完整请求/RNG状态对照通过。本地准备耗时下降不代表云端交接容差或280ms通过；R19结果及下一步见实施计划33。
