@@ -39,10 +39,10 @@ def verify_shard_reports(prefixes, clock_path):
     return clock, reports
 
 
-def merge_request_rows(prefixes, reports):
+def iter_request_rows(prefixes, reports):
     if not prefixes or len(prefixes) != len(reports):
         raise ValueError('Incomplete shard request set')
-    rows, seen = [], set()
+    seen = set()
     for prefix, report in zip(prefixes, reports):
         offset, workers = report['worker_offset'], report['concurrency']
         base = report['request_id_base']
@@ -59,10 +59,13 @@ def merge_request_rows(prefixes, reports):
                     raise ValueError('Invalid original request interval')
                 seen.add(request)
                 observed.add(worker)
-                rows.append(row)
+                yield row
         if observed != set(range(offset, offset + workers)):
             raise ValueError('Missing worker evidence')
-    return rows
+
+
+def merge_request_rows(prefixes, reports):
+    return list(iter_request_rows(prefixes, reports))
 
 
 def merge_inflight_samples(shards, workers_per_shard, warmup, formal):
