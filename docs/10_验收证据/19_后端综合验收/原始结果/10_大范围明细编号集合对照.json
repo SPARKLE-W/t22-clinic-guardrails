@@ -404,7 +404,7 @@
     "Large diagnostic audit indexes exceeded the old128MiB buffer, contributing to drift; source histories and business snapshot remained unchanged",
     "Local implementation regression: 68 real MySQL export/projection/write-budget tests passed, including 2000 encounter CSV parity and missing/foreign/other-doctor rejection",
     "Mixed HTTP and full CI remain separate gates; no strict pass claimed",
-    "Final materialized candidate passed 68 real MySQL regressions, but new mixed HTTP and updated CI remain pending; PR stays draft until verified."
+    "Materialized candidate: 68 local MySQL tests and source44985f6 full CI passed; current9 completed local64-thread HTTP integration. No cloud/360-inflight/280ms acceptance follows. Documentation-only final commit must still meet repository CI."
   ],
   "flat_candidate_exports_sha256": "badb11d7b02156a840a850eb3944b9889aef0988d3e4de5005309f4ca00dd3c2",
   "flat_candidate_change": "Reuse existing >=2000 UUID JSON_TABLE membership in both same-store/doctor encounter count and hit lookup. Smaller scopes and other DB vendors retain IN. Authorization, missing-target check, sort, CSV and audit unchanged.",
@@ -545,5 +545,63 @@
       "materialized_checks": 86.5085999994335
     },
     "plan": "-> Sort row IDs: clinic_clinicalcheck.created_at, clinic_guardhit.id\n    -> Table scan on <temporary>  (cost=7570..7584 rows=936)\n        -> Temporary table  (cost=7570..7570 rows=936)\n            -> Nested loop inner join  (cost=7476 rows=936)\n                -> Nested loop inner join  (cost=7284 rows=989)\n                    -> Nested loop inner join  (cost=5118 rows=6187)\n                        -> Nested loop left join  (cost=2953 rows=6187)\n                            -> Index lookup on clinic_guardhit using guard_hit_store_rule_idx (store_id='d9e8f55580a25e1baf112c022e4babd9'), with index condition: (clinic_guardhit.store_id = 'd9e8f55580a25e1baf112c022e4babd9')  (cost=787 rows=6187)\n                            -> Single-row index lookup on clinic_alert using hit_id (hit_id=clinic_guardhit.id)  (cost=0.25 rows=1)\n                        -> Single-row index lookup on clinic_clinicalcheck using PRIMARY (id=clinic_guardhit.evaluation_id)  (cost=0.25 rows=1)\n                    -> Filter: ((clinic_encounter.store_id = 'd9e8f55580a25e1baf112c022e4babd9') and (clinic_encounter.doctor_id = 3))  (cost=0.25 rows=0.16)\n                        -> Single-row index lookup on clinic_encounter using PRIMARY (id=clinic_clinicalcheck.encounter_id)  (cost=0.25 rows=1)\n                -> Single-row index lookup on <subquery2> using <auto_distinct_key> (id=clinic_guardhit.evaluation_id)  (cost=8775..8775 rows=1)\n                    -> Materialize with deduplication  (cost=8775..8775 rows=0.947)\n                        -> Table scan on scoped  (cost=8775..8775 rows=0.947)\n                            -> Materialize  (cost=8772..8772 rows=0.947)\n                                -> Group (no aggregates)  (cost=8772 rows=0.947)\n                                    -> Nested loop inner join  (cost=5899 rows=28732)\n                                        -> Index scan on clinic_clinicalcheck using PRIMARY  (cost=1589 rows=14366)\n                                        -> Single-row index lookup on <subquery4> using <auto_distinct_key> (id=clinic_clinicalcheck.encounter_id)  (cost=721..721 rows=1)\n                                            -> Materialize with deduplication  (cost=2.93..2.93 rows=2)\n                                                -> Filter: (selected.id is not null)  (cost=2.73 rows=2)\n                                                    -> Materialize table function  (cost=2.73 rows=2)\n"
+  },
+  "materialized_http_checks": {
+    "source_revision": "44985f65a4647c688679813e101ef86d46859c49",
+    "configuration": "4 app workers x24 threads, 64 sender workers/4 shards, 5s warmup+15s measurement, 2GiB local MySQL buffer/512 connections, 8MiB Waitress output buffer; shared Windows host",
+    "current8": {
+      "overall_run_accepted": false,
+      "reason": "inflight samples had 0.598-0.627s gaps; original0.5s completeness gate unchanged",
+      "business_status": {
+        "scope": "Business request/export verification only. Overall diagnostic rejected by inflight sample completeness; no concurrency/window pass claimed.",
+        "requests": 6247,
+        "business_failures": 0,
+        "overall_run_accepted": false
+      },
+      "business_export_audit": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1245,
+        "verified_record_targets": 334022,
+        "requests": 6247,
+        "passed": false,
+        "business_exports_verified": true,
+        "overall_run_accepted": false
+      },
+      "files_sha256": {
+        "metadata.json": "b7d389f094c060fa8c5b5fc009680da141abcfdc18a30af25f235c44b74cf6cf",
+        "business-only.requests.jsonl": "260202cb40190bb99dd7c48fdb36edc24854fc9fabfb4ba3fa4ac723830a7e59",
+        "business-only-audit-verification.json": "023e5b221934aba5e582c4ff658a88ab45ae988322047a77e24fda0dbf8d6601"
+      }
+    },
+    "current9": {
+      "integration_completed": true,
+      "strict_acceptance_claimed": false,
+      "all_requests": 6445,
+      "formal_requests": 4771,
+      "formal_failures": 0,
+      "p95_ms": {
+        "clinical_export": 575.6858000004286,
+        "detail_export": 539.7921999992832,
+        "guard": 345.90190000017174,
+        "query": 205.29979999992065,
+        "reception": 275.7235999997647,
+        "summary_export": 232.55929999868385,
+        "write": 374.4298000001436
+      },
+      "export_audit": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1284,
+        "verified_record_targets": 281049,
+        "requests": 6445,
+        "passed": true
+      },
+      "incomplete_resource_samples": 0,
+      "files_sha256": {
+        "metadata.json": "1528be434dc307e7a70d402ab01d606620e25cc8969b8068bb5d6bbd6867537c",
+        "combined.summary.json": "460b4bfc7b75b4e00ba2e9c27bd9d9b71a75b5e7e75c7ebf5d039b695c940bb1",
+        "combined.requests.jsonl": "93cd310b28ed542742a598e786519c6c5c0d1960405515eec59c9ae1533568bd",
+        "export-audit-verification.json": "9572f179c18aab67a0361129c519dca56f0202c78fceade7b9a69d8f0c0d57f1"
+      }
+    }
   }
 }
