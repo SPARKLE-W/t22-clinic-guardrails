@@ -308,12 +308,17 @@ def _projected_clinical(row):
     prefix = validated_prefix(value, candidate.digest)
     if prefix is None:
         return None
+    return _clinical_prefix_payload(prefix, record.pk, row.pk, template['version'])
+
+
+def _clinical_prefix_payload(prefix, record_ref, encounter_ref, template_version):
+    """Decode the same clinical fields from a verified or just-generated prefix."""
     try:
         records = list(csv.reader(io.StringIO(prefix.decode('utf-8'), newline=''), strict=True))
         if len(records) != 1 or len(records[0]) != 11:
             return None
         cells = records[0]
-        if cells[:3] != [str(value['id']), str(row.pk), template['version']] or not cells[4].strip():
+        if cells[:3] != [str(record_ref), str(encounter_ref), template_version] or not cells[4].strip():
             return None
         decoded = {key: json.loads(cells[index]) for key, index in
                    [('field_meanings', 3), ('extra_fields', 6), ('adoptions', 7),

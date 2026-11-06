@@ -7,7 +7,7 @@ from vetcontrols.compiler import _digest, _normalize, is_verified_candidate
 from .guards import evaluate
 from .export_projection import note_encounter_lock, refresh_projection
 from .models import Alert, AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision
-from .services import (_clinical, _extra_values, _object, _own, _persist_guard_alerts, _policy_head_for_share,
+from .services import (_clinical, _clinical_prefix_payload, _extra_values, _object, _own, _persist_guard_alerts, _policy_head_for_share,
                        _refusal, _template, _text, read)
 
 WRITE = 'clinical.diagnosis.write'
@@ -97,11 +97,13 @@ def diagnosis(actor_id, mode, key, payload, ref):
                 check.record = record
                 check.result_version = version
                 check.save(update_fields=['record', 'result_version'])
-                refresh_projection(record, row, template_candidate, template, save_version=current is not None)
+                prefix = refresh_projection(record, row, template_candidate, template, save_version=current is not None)
                 _audit(actor, WRITE, row, 'success', 'COMPLETED', record)
                 # Load through the same explicit, doctor-only serializer as reads.
                 row.clinicalrecord = record
-                result = _clinical(row, {template_candidate.pk: template})
+                result = _clinical_prefix_payload(prefix, record.pk, row.pk, template['version'])
+                if result is None:
+                    result = _clinical(row, {template_candidate.pk: template})
             Operation.objects.create(actor=actor, permission=WRITE, key=operation_key, digest=digest, result=result)
             return result
     except DomainError as error:

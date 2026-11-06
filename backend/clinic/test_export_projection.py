@@ -100,6 +100,20 @@ class ExportProjectionTests(ClinicFixture):
         foreign = ClinicalRecord.objects.filter(encounter__doctor_id=self.foreign.pk)
         self.assertEqual([], _record_values(foreign.filter(pk__in=_clinical_id_selection(refs))))
 
+    def test_diagnosis_response_reuses_generated_prefix(self):
+        with CaptureQueriesContext(connection) as cached_queries:
+            actual = self.correct('中文,"更正\n诊断')
+        with patch('clinic.services._projected_clinical', return_value=None):
+            expected = read(self.doctor.pk, clinical=True, ref=self.ref)['clinical']
+        self.assertEqual(expected, actual)
+        with patch('clinic.writes._clinical_prefix_payload', return_value=None):
+            with CaptureQueriesContext(connection) as source_queries:
+                fallback = self.correct('第二次更正')
+        with patch('clinic.services._projected_clinical', return_value=None):
+            expected = read(self.doctor.pk, clinical=True, ref=self.ref)['clinical']
+        self.assertEqual(expected, fallback)
+        self.assertEqual(len(cached_queries) + 3, len(source_queries))
+
     def test_live_projection_matches_source_without_history_queries(self):
         self.assertEqual(1, self.record.export_generation)
         self.assertTrue(ClinicalExportProjection.objects.filter(record=self.record).exists())
