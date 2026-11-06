@@ -147,13 +147,18 @@ def request_one(session, account, base, number, rng, pools, worker_id):
             rows = None
             code = None
             digest_ok = None
+            server_ref = record_count = content_length = None
             if valid and 'export' in kind:
                 raw = bytes(body)
                 rows = sum(1 for _ in csv.reader(io.StringIO(raw.decode('utf-8')))) - 1
                 digest_ok = (int(response.headers['Content-Length']) == len(raw) ==
                              int(response.headers['X-Byte-Count']) and
                              hashlib.sha256(raw).hexdigest() == response.headers['X-Content-SHA256'])
-                valid = digest_ok and (kind != 'clinical_export' or rows == expected)
+                server_ref = str(uuid.UUID(response.headers['X-Export-Ref']))
+                record_count = int(response.headers['X-Record-Count'])
+                content_length = int(response.headers['Content-Length'])
+                valid = digest_ok and record_count >= 0 and (
+                    rows == expected == record_count if kind != 'summary_export' else rows == 1)
             elif valid:
                 result = json.loads(body)
                 valid = result.get('ok') is not False
@@ -168,6 +173,9 @@ def request_one(session, account, base, number, rng, pools, worker_id):
                     'first': first, 'ended': ended, 'status': response.status_code,
                     'code': code, 'ok': bool(valid), 'bytes': len(body), 'rows': rows,
                     'sha256_match': digest_ok,
+                    'server_ref': server_ref, 'record_count': record_count,
+                    'expected_count': expected if 'export' in kind else None,
+                    'content_length': content_length,
                     'server_timing': response.headers.get('Server-Timing'),
                     'sql_count': response.headers.get('X-PRE-SQL-Count')}
         finally:
@@ -319,7 +327,7 @@ def main():
     summary = summarize(results, start, args.warmup_seconds, args.formal_seconds, unique_sessions,
                         len({person['username'] for person in people}))
     summary['target_offset'] = args.target_offset
-    summary['protocol_version'] = 'course-v1.1.1'
+    summary['protocol_version'] = 'course-v1.1.2'
     summary['tunnel_count'] = len(bases)
     summary['tunnel_bases'] = bases
     if args.target_offset:
