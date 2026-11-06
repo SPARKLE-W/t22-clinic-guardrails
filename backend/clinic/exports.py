@@ -19,7 +19,7 @@ from django.views.decorators.csrf import csrf_protect
 from governance.models import Candidate
 from governance.services import DomainError, _uuid, require, write_audit
 from governance.views import _body, protected
-from .models import (AuditTarget, ClinicalRecord, ClinicalRevision, Encounter, ExportRequest,
+from .models import (AuditTarget, ClinicalCheck, ClinicalRecord, ClinicalRevision, Encounter, ExportRequest,
                      GuardHit, MedicationEntry, SuggestionDecision)
 from .services import _object, _template, _text
 from .export_projection import validated_prefix as _projection_prefix
@@ -384,7 +384,17 @@ def guard(actor_id, permission, payload):
                     error = DomainError('TARGET_UNAVAILABLE', 403)
                     error.export_targets = ('encounter', refs)
                     raise error
-                hits = hits.filter(evaluation__encounter_id__in=selected_refs)
+                if isinstance(selected_refs, RawSQL):
+                    # Keep the check-ID boundary: flattening the JSON scope into
+                    # the hit joins can expand encounters x store hits first.
+                    checks = RawSQL(
+                        'SELECT scoped.id FROM (SELECT DISTINCT id FROM '
+                        + connection.ops.quote_name(ClinicalCheck._meta.db_table)
+                        + ' WHERE encounter_id IN (' + selected_refs.sql + ')) AS scoped',
+                        selected_refs.params)
+                    hits = hits.filter(evaluation_id__in=checks)
+                else:
+                    hits = hits.filter(evaluation__encounter_id__in=refs)
         if 'time_range' in payload:
             start, end = _range(payload['time_range'])
             hits = hits.filter(evaluation__created_at__gte=start, evaluation__created_at__lt=end)

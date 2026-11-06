@@ -1,8 +1,6 @@
 {
   "scope": "local serial complete guard-detail export comparisons; commits, all CSV bytes and exact persistent audit targets verified; not HTTP/360-inflight or cloud acceptance",
   "baseline_commit": "39d7585",
-  "candidate_exports_sha256": "badb11d7b02156a840a850eb3944b9889aef0988d3e4de5005309f4ca00dd3c2",
-  "change": "Reuse existing >=2000 UUID JSON_TABLE membership in both same-store/doctor encounter count and hit lookup. Smaller scopes and other DB vendors retain IN. Authorization, missing-target check, sort, CSV and audit unchanged.",
   "runs": [
     {
       "run": "detail-json-selection-full-1.json",
@@ -405,6 +403,147 @@
     "Compare alternating pairs within the same profile; do not combine absolute times from 128MiB and 2GiB runs",
     "Large diagnostic audit indexes exceeded the old128MiB buffer, contributing to drift; source histories and business snapshot remained unchanged",
     "Local implementation regression: 68 real MySQL export/projection/write-budget tests passed, including 2000 encounter CSV parity and missing/foreign/other-doctor rejection",
-    "Mixed HTTP and full CI remain separate gates; no strict pass claimed"
-  ]
+    "Mixed HTTP and full CI remain separate gates; no strict pass claimed",
+    "Final materialized candidate passed 68 real MySQL regressions, but new mixed HTTP and updated CI remain pending; PR stays draft until verified."
+  ],
+  "flat_candidate_exports_sha256": "badb11d7b02156a840a850eb3944b9889aef0988d3e4de5005309f4ca00dd3c2",
+  "flat_candidate_change": "Reuse existing >=2000 UUID JSON_TABLE membership in both same-store/doctor encounter count and hit lookup. Smaller scopes and other DB vendors retain IN. Authorization, missing-target check, sort, CSV and audit unchanged.",
+  "flat_candidate_adopted": false,
+  "materialized_candidate_exports_sha256": "e6f08bc6cc75ca68090b10101d4e072566adb0ee941442deb15917c0f533a6f1",
+  "final_candidate_change": "Keep authorized encounter count using bounded UUID selection; materialize DISTINCT ClinicalCheck IDs inside the hit SELECT before joining hits. Preserve all ownership filters, target completeness, ordering and audit.",
+  "flat_candidate_mixed_failure": {
+    "run": "local-business-http-current7",
+    "formal_requests": 3340,
+    "formal_failures": 16,
+    "all_failed_exports": 18,
+    "http_503": 13,
+    "read_timeouts": 5,
+    "successful_export_audit": {
+      "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+      "verified_exports": 950,
+      "verified_record_targets": 148269,
+      "requests": 4865,
+      "passed": false,
+      "successful_exports_verified": true,
+      "failed_exports": 18
+    },
+    "statement_error_count": 18,
+    "plan_estimated_intermediate_rows": 28400000,
+    "notes": [
+      "Loader exit0 means artifacts generated, not acceptance",
+      "Global temporary-file write error counter increased; no per-request error-code history was enabled",
+      "Statement SUM_LOCK_TIME=0 does not exclude every kind of row-lock wait"
+    ],
+    "files_sha256": {
+      "metadata.json": "017ec91f5b8c4d28bdfd03387c909060a6712587701fd3f99301485c3293635e",
+      "combined.summary.json": "d3074f45ade6018d02044854c250bd21cec7dcdfc8b23d002a230b187da8b23e",
+      "combined.requests.jsonl": "1ba5a3cede73f733b91358bcbe2ebafcdc4ae3487e9b1a911a7e1295dbf277d1",
+      "partial-export-audit-verification.json": "5acc1d5df08aa869ae5357cf009176654495fe5a8e8f0ecb982a8e00056a79a9"
+    }
+  },
+  "materialized_candidate_full_export_trials": [
+    {
+      "run": "detail-materialized-full-1.json",
+      "sizes": {
+        "2000": {
+          "median_ms": {
+            "original": 122.1524499997031,
+            "candidate": 121.26845000057074
+          },
+          "bytes": 208095,
+          "verified_exports": 12,
+          "csv_sha256": "4fda9e788c4fd5c99776d7d53f5be8de69089022706be204a7f0e8de3320eba2"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 253.71614999949088,
+            "candidate": 202.89914999921166
+          },
+          "bytes": 416095,
+          "verified_exports": 12,
+          "csv_sha256": "edc6abf99be9b7ffa798dc3d6ccc499b022b4ea9090dac6e75a992ce5f75f27f"
+        }
+      },
+      "file_sha256": "154d56a48c18b0f3021c786fe463dd437e865341e4b44a12472e1f8543afa2d0"
+    },
+    {
+      "run": "detail-materialized-full-2.json",
+      "sizes": {
+        "2000": {
+          "median_ms": {
+            "original": 145.89574999990873,
+            "candidate": 123.69560000024649
+          },
+          "bytes": 208095,
+          "verified_exports": 12,
+          "csv_sha256": "4fda9e788c4fd5c99776d7d53f5be8de69089022706be204a7f0e8de3320eba2"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 245.58369999977003,
+            "candidate": 207.6203999995414
+          },
+          "bytes": 416095,
+          "verified_exports": 12,
+          "csv_sha256": "edc6abf99be9b7ffa798dc3d6ccc499b022b4ea9090dac6e75a992ce5f75f27f"
+        }
+      },
+      "file_sha256": "26e19e06abd3e22b4afd9ade08b06a6511199ab54284ab28f4e01034a084f405"
+    },
+    {
+      "run": "detail-materialized-full-3.json",
+      "sizes": {
+        "2000": {
+          "median_ms": {
+            "original": 132.68430000061926,
+            "candidate": 132.6780499994129
+          },
+          "bytes": 208095,
+          "verified_exports": 12,
+          "csv_sha256": "4fda9e788c4fd5c99776d7d53f5be8de69089022706be204a7f0e8de3320eba2"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 286.5004499990391,
+            "candidate": 223.57610000017303
+          },
+          "bytes": 416095,
+          "verified_exports": 12,
+          "csv_sha256": "edc6abf99be9b7ffa798dc3d6ccc499b022b4ea9090dac6e75a992ce5f75f27f"
+        }
+      },
+      "file_sha256": "849064ed139caa9281aef31fe37f3510b99f7dcdbc6723e1fdd544f5e0a1849b"
+    }
+  ],
+  "materialized_candidate_bounded_reproduction": {
+    "scope": "bounded local read-only reproduction on failed mixed-run dataset; max SELECT execution 2000ms; no sustained acceptance",
+    "rows": 3666,
+    "samples_ms": {
+      "legacy_in": [
+        110.79739999877347,
+        118.16800000087824,
+        94.54229999937525,
+        103.7118999993254,
+        106.10079999969457,
+        103.27539999889268,
+        108.4179999998014,
+        98.78449999996519
+      ],
+      "materialized_checks": [
+        88.39369999986957,
+        89.78879999995115,
+        90.59630000047036,
+        71.37859999966167,
+        80.35879999988538,
+        87.34129999902507,
+        77.88609999988694,
+        85.67589999984193
+      ]
+    },
+    "median_ms": {
+      "legacy_in": 104.90634999950998,
+      "materialized_checks": 86.5085999994335
+    },
+    "plan": "-> Sort row IDs: clinic_clinicalcheck.created_at, clinic_guardhit.id\n    -> Table scan on <temporary>  (cost=7570..7584 rows=936)\n        -> Temporary table  (cost=7570..7570 rows=936)\n            -> Nested loop inner join  (cost=7476 rows=936)\n                -> Nested loop inner join  (cost=7284 rows=989)\n                    -> Nested loop inner join  (cost=5118 rows=6187)\n                        -> Nested loop left join  (cost=2953 rows=6187)\n                            -> Index lookup on clinic_guardhit using guard_hit_store_rule_idx (store_id='d9e8f55580a25e1baf112c022e4babd9'), with index condition: (clinic_guardhit.store_id = 'd9e8f55580a25e1baf112c022e4babd9')  (cost=787 rows=6187)\n                            -> Single-row index lookup on clinic_alert using hit_id (hit_id=clinic_guardhit.id)  (cost=0.25 rows=1)\n                        -> Single-row index lookup on clinic_clinicalcheck using PRIMARY (id=clinic_guardhit.evaluation_id)  (cost=0.25 rows=1)\n                    -> Filter: ((clinic_encounter.store_id = 'd9e8f55580a25e1baf112c022e4babd9') and (clinic_encounter.doctor_id = 3))  (cost=0.25 rows=0.16)\n                        -> Single-row index lookup on clinic_encounter using PRIMARY (id=clinic_clinicalcheck.encounter_id)  (cost=0.25 rows=1)\n                -> Single-row index lookup on <subquery2> using <auto_distinct_key> (id=clinic_guardhit.evaluation_id)  (cost=8775..8775 rows=1)\n                    -> Materialize with deduplication  (cost=8775..8775 rows=0.947)\n                        -> Table scan on scoped  (cost=8775..8775 rows=0.947)\n                            -> Materialize  (cost=8772..8772 rows=0.947)\n                                -> Group (no aggregates)  (cost=8772 rows=0.947)\n                                    -> Nested loop inner join  (cost=5899 rows=28732)\n                                        -> Index scan on clinic_clinicalcheck using PRIMARY  (cost=1589 rows=14366)\n                                        -> Single-row index lookup on <subquery4> using <auto_distinct_key> (id=clinic_clinicalcheck.encounter_id)  (cost=721..721 rows=1)\n                                            -> Materialize with deduplication  (cost=2.93..2.93 rows=2)\n                                                -> Filter: (selected.id is not null)  (cost=2.73 rows=2)\n                                                    -> Materialize table function  (cost=2.73 rows=2)\n"
+  }
 }

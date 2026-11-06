@@ -425,6 +425,11 @@ class GuardExportTests(ClinicFixture):
         self.assertEqual(payload, entry.scope)
         if connection.vendor == 'mysql':
             self.assertEqual(2, sum('JSON_TABLE' in query['sql'] for query in queries))
+            detail_queries = [query['sql'] for query in queries
+                              if 'FROM `clinic_guardhit`' in query['sql']]
+            self.assertEqual(1, len(detail_queries))
+            self.assertTrue('SELECT scoped.id FROM (SELECT DISTINCT id FROM' in detail_queries[0],
+                            'large detail scopes must materialize unique check IDs')
         before = ExportRequest.objects.count()
         for actor, selected in ((self.doctor2, refs), (self.foreign, refs),
                                 (self.doctor, [*refs[:-1], str(uuid.uuid4())])):
