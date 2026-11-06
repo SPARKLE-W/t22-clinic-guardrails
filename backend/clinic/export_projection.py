@@ -39,7 +39,7 @@ def _write_projections(rows, candidates, templates):
     options = {'unique_fields': ['record']} if connection.features.supports_update_conflicts_with_target else {}
     ClinicalExportProjection.objects.bulk_create(projections, update_conflicts=True,
         update_fields=['source_signature', 'prefix', 'prefix_digest'], **options)
-    return len(projections)
+    return projections
 
 
 def rebuild_projections(record_ids):
@@ -54,7 +54,7 @@ def rebuild_projections(record_ids):
             template_id = row['template_id']
             if template_id not in templates:
                 templates[template_id] = _template(candidates[template_id], row['encounter__store_id'])
-        return _write_projections(rows, candidates, templates)
+        return len(_write_projections(rows, candidates, templates))
 
 
 def note_encounter_lock(record, encounter):
@@ -74,4 +74,4 @@ def refresh_projection(record, encounter, candidate, template, *, save_version=F
            'encounter__created_at': encounter.created_at, 'encounter__doctor_id': encounter.doctor_id,
            'encounter__receptionist_id': encounter.receptionist_id,
            'encounter__error_mark': encounter.error_mark, 'encounter__rebuilt_id': encounter.rebuilt_id}
-    _write_projections([row], {candidate.pk: candidate}, {candidate.pk: template})
+    return _write_projections([row], {candidate.pk: candidate}, {candidate.pk: template})[0].prefix
