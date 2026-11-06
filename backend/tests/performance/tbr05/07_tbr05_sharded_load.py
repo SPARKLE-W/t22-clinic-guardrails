@@ -134,7 +134,6 @@ def main():
             resources.flush()
         run_clients(commands, prefix, origin + args.warmup_seconds + args.formal_seconds + 300, sample)
     _, reports = evidence.verify_shard_reports(parts, clock_path)
-    rows = evidence.merge_request_rows(parts, reports)
     if args.capture_gc_pauses:
         events = []
         for index, part in enumerate(parts):
@@ -146,12 +145,15 @@ def main():
     shards = [[json.loads(line) for line in part.with_suffix('.inflight.jsonl').open(encoding='utf-8')]
               for part in parts]
     samples = evidence.merge_inflight_samples(shards, local, args.warmup_seconds, args.formal_seconds)
-    for suffix, values in [('.requests.jsonl', rows), ('.inflight.jsonl', samples)]:
-        with prefix.with_suffix(suffix).open('x', encoding='utf-8') as stream:
-            for row in values:
-                stream.write(json.dumps(row, ensure_ascii=False) + '\n')
-    summary = {**reports[0], **driver.summarize(rows, samples, 0,
-                args.warmup_seconds + args.formal_seconds, args.warmup_seconds)}
+    statistics = driver.RequestStatistics(0, args.warmup_seconds + args.formal_seconds, args.warmup_seconds)
+    with prefix.with_suffix('.requests.jsonl').open('x', encoding='utf-8') as stream:
+        for row in evidence.iter_request_rows(parts, reports):
+            statistics.append(row)
+            stream.write(json.dumps(row, ensure_ascii=False) + '\n')
+    with prefix.with_suffix('.inflight.jsonl').open('x', encoding='utf-8') as stream:
+        for row in samples:
+            stream.write(json.dumps(row, ensure_ascii=False) + '\n')
+    summary = {**reports[0], **statistics.summarize(samples)}
     elapsed = time.perf_counter() - origin
     summary.update(controller_script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                    concurrency=args.concurrency, shard_count=args.processes,

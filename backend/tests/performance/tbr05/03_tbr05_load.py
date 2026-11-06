@@ -1,5 +1,7 @@
 """Closed-loop, complete-body HTTP workload for frozen TBR-05 v1.0."""
 import argparse
+from array import array
+from bisect import bisect_right
 import csv
 import gc
 import hashlib
@@ -690,6 +692,80 @@ def summarize(rows, samples, start, end, warmup):
             'actual_mix': {kind: groups[kind]['count'] / len(formal) if formal else 0 for kind in groups}}
 
 
+class RequestStatistics:
+    """Keep exact numeric samples, never retain full request dictionaries."""
+
+    def __init__(self, start, end, warmup):
+        self.start, self.end, self.warmup = start, end, warmup
+        self.left = start + warmup
+        self.lock = threading.Lock()
+        self.groups = {kind: {'times': array('d'), 'failures': 0, 'profiled': 0,
+                             'scopes': set(), 'metrics': {}, 'tiers': {}}
+                       for kind in sorted(set(MIX))}
+        self.minutes = []
+        for minute in range(math.ceil(max(0, end - self.left) / 60)):
+            left, right = self.left + minute * 60, min(self.left + (minute + 1) * 60, end)
+            row = {'minute': minute + 1, 'completed': 0, 'success': 0, 'failures': 0}
+            if right - left < 60:
+                row['duration_seconds'] = right - left
+            self.minutes.append(row)
+        self.edges = [self.left + i * 60 for i in range(len(self.minutes))] + [end]
+
+    def append(self, row):
+        with self.lock:
+            if self.left <= row['ended'] < self.end:
+                minute = self.minutes[bisect_right(self.edges, row['ended']) - 1]
+                minute['completed'] += 1
+                minute['success' if row['ok'] else 'failures'] += 1
+            if not self.left <= row['started'] < self.end:
+                return
+            group = self.groups[row['kind']]
+            elapsed = (row['ended'] - row['started']) * 1000
+            group['times'].append(elapsed)
+            group['failures'] += not row['ok']
+            profile = row.get('server_profile')
+            if profile:
+                group['profiled'] += 1
+                if profile.get('scope'):
+                    group['scopes'].add(profile['scope'])
+                for metric in SERVER_TIMINGS.values():
+                    if metric in profile:
+                        group['metrics'].setdefault(metric, array('d')).append(profile[metric])
+            if 'export' in row['kind']:
+                tier = group['tiers'].setdefault(row.get('tier'), {'times': array('d'), 'failures': 0})
+                tier['times'].append(elapsed)
+                tier['failures'] += not row['ok']
+
+    @staticmethod
+    def timings(values):
+        return {'p50_ms': quantile(values, .5), 'p95_ms': quantile(values, .95),
+                'p99_ms': quantile(values, .99), 'max_ms': max(values, default=None)}
+
+    def summarize(self, samples):
+        groups = {}
+        for kind, group in self.groups.items():
+            groups[kind] = {'count': len(group['times']), 'failures': group['failures'],
+                            **self.timings(group['times']), 'profiled_count': group['profiled'],
+                            'profile_scopes': sorted(group['scopes']),
+                            'server_profile': {metric: {'count': len(values), **self.timings(values)}
+                                               for metric, values in group['metrics'].items()}}
+            if 'export' in kind:
+                groups[kind]['tiers'] = {tier: {'count': len(value['times']),
+                    'failures': value['failures'], **self.timings(value['times'])}
+                    for tier, value in sorted(group['tiers'].items())}
+        total = sum(group['count'] for group in groups.values())
+        during = [row['in_flight'] for row in samples
+                  if self.warmup <= row['seconds'] < self.end - self.start]
+        return {'kind': 'diagnostic', 'request_namespace': str(REQUEST_NAMESPACE),
+                'planned_seconds': self.end - self.start, 'warmup_seconds': self.warmup,
+                'formal_requests_started': total,
+                'formal_failures': sum(group['failures'] for group in groups.values()),
+                'groups': groups, 'minutes': self.minutes,
+                'in_flight_min': min(during, default=None), 'in_flight_p50': quantile(during, .5),
+                'in_flight_p95': quantile(during, .95), 'in_flight_max': max(during, default=None),
+                'actual_mix': {kind: group['count'] / total if total else 0 for kind, group in groups.items()}}
+
+
 SERVER_TIMINGS = {'queue': 'queue_ms', 'app': 'app_ms', 'sql': 'sql_ms', 'commit': 'commit_ms',
                   'db-connect': 'db_connect_ms',
                   'export-snapshot': 'export_snapshot_ms', 'export-csv': 'export_csv_ms',
@@ -810,7 +886,7 @@ def main():
     end = start + total
     worker_offset = args.shard_index * args.concurrency
     gate = threading.Barrier(args.concurrency + 1)
-    results = []
+    results = RequestStatistics(start, end, args.warmup_seconds)
     pending = ValidationQueue(maxsize=args.concurrency * 2)
     validation_stop = object()
     validation_errors = []
@@ -847,7 +923,7 @@ def main():
         recorder.close()
     if validation_errors:
         raise RuntimeError('Run response validation or recording failed') from validation_errors[0]
-    summary = summarize(results, SAMPLES, start, end, args.warmup_seconds)
+    summary = results.summarize(SAMPLES)
     actual_duration = time.perf_counter() - start
     exact_protocol = (args.concurrency == 360 and args.warmup_seconds == 300 and
                       args.formal_seconds == 600 and args.only_group is None and

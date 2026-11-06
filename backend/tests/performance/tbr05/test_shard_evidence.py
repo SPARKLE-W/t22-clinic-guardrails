@@ -86,5 +86,29 @@ class ShardEvidenceTests(unittest.TestCase):
                 evidence.merge_request_rows(prefixes, reports)
 
 
+    def test_request_iterator_yields_before_later_duplicate_and_still_rejects_it(self):
+        with tempfile.TemporaryDirectory() as folder:
+            prefix = Path(folder) / 'stream'
+            row = {'worker_id': 0, 'request_id': 1, 'started': .1, 'ended': .2}
+            prefix.with_suffix('.requests.jsonl').write_text((json.dumps(row) + '\n') * 2)
+            iterator = evidence.iter_request_rows([prefix],
+                [{'worker_offset': 0, 'concurrency': 1, 'request_id_base': 0}])
+            self.assertIs(iter(iterator), iterator)
+            self.assertEqual(row, next(iterator))
+            with self.assertRaisesRegex(ValueError, 'Duplicate'):
+                next(iterator)
+
+    def test_request_iterator_rejects_missing_worker_at_end(self):
+        with tempfile.TemporaryDirectory() as folder:
+            prefix = Path(folder) / 'stream'
+            row = {'worker_id': 0, 'request_id': 1, 'started': .1, 'ended': .2}
+            prefix.with_suffix('.requests.jsonl').write_text(json.dumps(row) + '\n')
+            iterator = evidence.iter_request_rows([prefix],
+                [{'worker_offset': 0, 'concurrency': 2, 'request_id_base': 0}])
+            self.assertEqual(row, next(iterator))
+            with self.assertRaisesRegex(ValueError, 'Missing worker'):
+                next(iterator)
+
+
 if __name__ == '__main__':
     unittest.main()
