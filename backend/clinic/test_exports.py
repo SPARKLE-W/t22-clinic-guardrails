@@ -43,6 +43,15 @@ class ClinicalExportTests(ClinicFixture):
         self.assertEqual(len(plain.content), entry.byte_count)
         self.assertIn('Accept-Encoding', response['Vary'])
 
+    def test_gzip_explicit_refusal_and_invalid_quality_use_plain_csv(self):
+        payload = {'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': 'compression'}
+        expected = self.download(payload).content
+        for encoding in ('gzip;q=0', 'gzip;q=invalid', 'gzip;q=2', 'br', ''):
+            response = self.client.post(self.url, json.dumps(payload), content_type='application/json',
+                                        HTTP_ACCEPT_ENCODING=encoding)
+            self.assertEqual(expected, response.content)
+            self.assertNotIn('Content-Encoding', response)
+
     def rows(self, response):
         self.assertEqual(200, response.status_code, response.content[:300])
         self.assertTrue(response['Content-Type'].startswith('text/csv'))

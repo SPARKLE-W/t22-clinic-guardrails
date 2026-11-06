@@ -1,9 +1,12 @@
 """Generate complete authorized CSV before writing the required export audit."""
 import csv
+import gzip
 import hashlib
 import io
 import json
 import logging
+import secrets
+from functools import wraps
 from collections import defaultdict
 from time import perf_counter
 
@@ -15,8 +18,9 @@ from django.db.models.expressions import RawSQL
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.utils.cache import patch_vary_headers
+from django.utils.http import parse_header_parameters
 from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.gzip import gzip_page
 from governance.models import Candidate
 from governance.services import DomainError, _uuid, require, write_audit
 from governance.views import _body, protected
@@ -120,6 +124,40 @@ def _response(body, ref, count, name):
     response['X-Byte-Count'] = str(len(body))
     response['X-Content-SHA256'] = hashlib.sha256(body).hexdigest()
     return response
+
+
+def _gzip_csv(view):
+    @wraps(view)
+    def wrapped(request, *args, **kwargs):
+        response = view(request, *args, **kwargs)
+        if (response.status_code != 200 or response.streaming or response.has_header('Content-Encoding')
+                or not response.get('Content-Type', '').startswith('text/csv') or len(response.content) < 200):
+            return response
+        patch_vary_headers(response, ('Accept-Encoding',))
+        accepted = False
+        for value in request.META.get('HTTP_ACCEPT_ENCODING', '').split(','):
+            coding, parameters = parse_header_parameters(value.strip())
+            if coding.lower() == 'gzip':
+                try:
+                    accepted = 0 < float(parameters.get('q', '1')) <= 1
+                except ValueError:
+                    accepted = False
+                break
+        if not accepted:
+            return response
+        buffer = io.BytesIO()
+        # Random FNAME padding follows Django's mitigation for compressed secrets.
+        filename = 'a' * (1 + secrets.randbelow(100))
+        with gzip.GzipFile(fileobj=buffer, mode='wb', filename=filename, compresslevel=1, mtime=0) as stream:
+            stream.write(response.content)
+        compressed = buffer.getvalue()
+        if len(compressed) >= len(response.content):
+            return response
+        response.content = compressed
+        response['Content-Length'] = str(len(compressed))
+        response['Content-Encoding'] = 'gzip'
+        return response
+    return wrapped
 
 
 def _audit_clinical_targets(event, refs):
@@ -346,7 +384,7 @@ def clinical(actor_id, payload, timings=None):
 
 
 @protected(CLINICAL, ['POST'], database_preflight=False)
-@gzip_page
+@_gzip_csv
 @csrf_protect
 def clinical_records(request):
     try:
@@ -458,7 +496,7 @@ def guard(actor_id, permission, payload):
 
 
 @protected(DETAIL, ['POST'], database_preflight=False)
-@gzip_page
+@_gzip_csv
 @csrf_protect
 def alert_hits(request):
     try:
@@ -472,7 +510,7 @@ def alert_hits(request):
 
 
 @protected(SUMMARY, ['POST'], database_preflight=False)
-@gzip_page
+@_gzip_csv
 @csrf_protect
 def alert_summary(request):
     try:
