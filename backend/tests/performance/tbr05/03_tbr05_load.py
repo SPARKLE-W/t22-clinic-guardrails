@@ -31,6 +31,8 @@ REQUEST_NAMESPACE = uuid.uuid4()
 MIX = (['query'] * 6 + ['guard'] * 3 + ['reception'] * 3 + ['write'] * 4 +
        ['clinical_export'] * 2 + ['detail_export', 'summary_export'])
 LOCK = threading.Lock()
+SERIAL_LOCK = threading.Lock()
+TARGET_LOCK = threading.Lock()
 SERIAL = itertools.count()
 TARGETS = Counter()
 ACTIVE = 0
@@ -217,7 +219,7 @@ def quantile(values, fraction):
 
 
 def next_task():
-    with LOCK:
+    with SERIAL_LOCK:
         number = next(SERIAL)
     return number, MIX[number % len(MIX)]
 
@@ -237,7 +239,7 @@ def target_worker_assignments(concurrency, target_count):
 
 
 def next_target(label):
-    with LOCK:
+    with TARGET_LOCK:
         number = TARGETS[label]
         TARGETS[label] += 1
     return number
@@ -263,11 +265,12 @@ def monitor(start, started_at_utc, recorder=None, pending=None):
     while not STOP_SAMPLER.is_set():
         elapsed = time.perf_counter() - start
         with LOCK:
-            sample = {'seconds': elapsed, 'timestamp_utc': utc_at(started_at_utc, elapsed),
-                      'in_flight': ACTIVE}
-            if pending is not None:
-                sample['validation_pending'] = pending.qsize()
-            SAMPLES.append(sample)
+            active = ACTIVE
+        sample = {'seconds': elapsed, 'timestamp_utc': utc_at(started_at_utc, elapsed),
+                  'in_flight': active}
+        if pending is not None:
+            sample['validation_pending'] = pending.qsize()
+        SAMPLES.append(sample)
         if recorder:
             recorder.sample('inflight', sample)
         STOP_SAMPLER.wait(0.1)

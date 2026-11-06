@@ -126,6 +126,49 @@ class Session:
 
 
 class LoadCaptureTests(unittest.TestCase):
+    def test_slow_queue_sampling_does_not_hold_request_counter_lock(self):
+        entered = load.threading.Event()
+        release = load.threading.Event()
+        stop = load.threading.Event()
+        def slow_size():
+            entered.set()
+            release.wait(2)
+            stop.set()
+            return 0
+        pending = types.SimpleNamespace(qsize=slow_size)
+        with patch.object(load, 'STOP_SAMPLER', stop), patch.object(load, 'SAMPLES', []):
+            thread = load.threading.Thread(target=load.monitor,
+                                          args=(load.time.perf_counter(), datetime.now(timezone.utc), None, pending))
+            thread.start()
+            acquired = False
+            try:
+                self.assertTrue(entered.wait(1), 'monitor did not reach queue sampling')
+                acquired = load.LOCK.acquire(timeout=.2)
+                if acquired:
+                    load.LOCK.release()
+            finally:
+                release.set()
+                stop.set()
+                thread.join(2)
+            self.assertFalse(thread.is_alive())
+            self.assertTrue(acquired, 'queue sampling blocked request in-flight updates')
+
+    def test_telemetry_lock_does_not_block_work_item_allocation(self):
+        done = load.threading.Event()
+        values = []
+        def allocate():
+            values.append((load.next_task(), load.next_target('telemetry_lock_test')))
+            done.set()
+        with load.LOCK:
+            thread = load.threading.Thread(target=allocate)
+            thread.start()
+            completed_while_telemetry_locked = done.wait(.2)
+        thread.join(2)
+        self.assertFalse(thread.is_alive())
+        self.assertTrue(completed_while_telemetry_locked)
+        self.assertEqual(load.MIX[values[0][0][0] % len(load.MIX)], values[0][0][1])
+        self.assertIsInstance(values[0][1], int)
+
     def test_request_identifiers_are_unique_without_per_request_entropy(self):
         with patch.object(load.uuid, 'uuid4', side_effect=AssertionError('entropy in request loop')):
             refs = {load.request_ref(purpose, n) for purpose in ('pet', 'idempotency') for n in range(10000)}
