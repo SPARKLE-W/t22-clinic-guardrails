@@ -384,5 +384,44 @@ class LoadSummaryWindowTests(unittest.TestCase):
         self.assertEqual(1, sum(row['success'] for row in report['minutes']))
 
 
+class ExportPopulationTests(unittest.TestCase):
+    def test_reused_populations_preserve_selection_rng_and_ownership(self):
+        owner = self
+        seen = {}
+
+        class CheckedRandom(random.Random):
+            def sample(self, population, k):
+                owner.assertIsInstance(population, tuple)
+                key = (len(population), population[0])
+                if key in seen:
+                    owner.assertIs(seen[key], population)
+                seen[key] = population
+                reference = random.Random()
+                reference.setstate(self.getstate())
+                selected = super().sample(population, k)
+                owner.assertEqual(reference.sample(list(population), k), selected)
+                owner.assertEqual(reference.getstate(), self.getstate())
+                self.population = population
+                self.selected = selected
+                return selected
+
+        tiers = set()
+        for seed in range(100):
+            rng = CheckedRandom(seed)
+            for kind in ('clinical_export', 'detail_export'):
+                for number in range(10):
+                    actor, _, _, payload, tier, size = load.select_request(kind, number, rng)
+                    shop = int(actor.split('_')[1]) - 1
+                    doctor = int(actor.rsplit('_', 1)[1]) - 1
+                    expected = tuple(range(4000)) if shop == 0 else tuple(range(doctor, 4000, 2))
+                    self.assertEqual(expected, rng.population)
+                    ref_kind, field = ('record', 'record_refs') if kind == 'clinical_export' else ('encounter', 'encounter_refs')
+                    self.assertEqual([load.EXPORT_REFS[ref_kind, shop][n] for n in rng.selected], payload['scope'][field])
+                    self.assertEqual(size, len(rng.selected))
+                    tiers.add(tier)
+        self.assertEqual({(4000, 0), (2000, 0), (2000, 1)}, set(seen))
+        self.assertEqual({'1-20', '50-200', '1000-4000'}, tiers)
+
+
 if __name__ == '__main__':
     unittest.main()

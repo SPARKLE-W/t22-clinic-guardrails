@@ -215,6 +215,8 @@ def ref(kind, shop, number):
 
 
 # Fixed fixture identifiers only; built before authentication and the timed window.
+# Immutable populations preserve random.sample ordering without rebuilding integers per request.
+EXPORT_POPULATIONS = (tuple(range(4000)), tuple(range(0, 4000, 2)), tuple(range(1, 4000, 2)))
 EXPORT_REFS = {(kind, shop): tuple(ref(kind, shop, n) for n in range(4000))
                for kind in ('record', 'encounter') for shop in range(5)}
 
@@ -450,10 +452,7 @@ def select_request(kind, sequence, rng):
             doctor = 0 if shop == 0 else rng.randrange(2)
         if shop != 0 and kind == 'detail_export':
             doctor = 0
-        candidates = (list(range(4000)) if shop == 0 else
-                      list(range(doctor, 4000, 2)))
-        if kind == 'detail_export' and shop != 0:
-            candidates = list(range(0, 4000, 2))
+        candidates = EXPORT_POPULATIONS[0 if shop == 0 else doctor + 1]
         size = min(size, len(candidates))
         chosen = rng.sample(candidates, size)
         actor = choose_actor(None, 'doctor', shop, doctor)
