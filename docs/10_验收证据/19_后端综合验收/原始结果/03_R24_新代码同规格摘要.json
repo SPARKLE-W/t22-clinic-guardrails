@@ -1,0 +1,563 @@
+{
+  "kind": "diagnostic_summary_not_formal_acceptance",
+  "source_commit": "38d9a2c9682af8a49f2dd97cbadfc3053f6cd9c8",
+  "main_equivalent": "38d9a2c",
+  "unit": "t22-diagnostic-38d9a2c-r24.service",
+  "invocation_id": "160e784e81bf4b8ca40a5167fe599414",
+  "application_pids": [
+    4732,
+    7216,
+    10372,
+    3448,
+    9528,
+    10132,
+    5724,
+    8208,
+    2724,
+    9284,
+    11344,
+    10840,
+    8436,
+    3144,
+    2916,
+    8376,
+    2080,
+    10648,
+    4728,
+    4380,
+    1404,
+    10268,
+    12060,
+    9884
+  ],
+  "mysql_pid": 5452,
+  "original_mysql_pids": [
+    5444
+  ],
+  "sender_archive_sha256": "6bcb04f80104869cb3be1b5423cdd7721d32ba02dc02e3ca4437fea04b169edd",
+  "app_archive_sha256": "eb01df861a641d60169503ab24dbad08fa1d82f74b1e58a41bc8e7b5c97f571f",
+  "diagnostic_only": true,
+  "receiver_logical_cpus": 32,
+  "receiver_memory_gib": 61.98,
+  "sender_cpus": 4,
+  "layout": "24x16",
+  "web_thread_budget": 384,
+  "mysql_max_connections": 512,
+  "warmup_seconds": 60,
+  "formal_seconds": 120,
+  "formal_started_at_utc": "2026-11-06T06:11:25.411Z",
+  "formal_ended_at_utc": "2026-11-06T06:13:25.411Z",
+  "requests_started": 132685,
+  "failures": 0,
+  "minutes": [
+    {
+      "minute": 1,
+      "completed": 66841,
+      "success": 66841,
+      "failures": 0
+    },
+    {
+      "minute": 2,
+      "completed": 65843,
+      "success": 65843,
+      "failures": 0
+    }
+  ],
+  "p95_ms": {
+    "clinical_export": 1295.9355910006707,
+    "detail_export": 781.1150239995186,
+    "guard": 604.8848109985556,
+    "query": 369.1782339992642,
+    "reception": 430.56544399951235,
+    "summary_export": 379.80120399879524,
+    "write": 633.3274900007382
+  },
+  "handoff_p95_ms": 0.7687839988648193,
+  "max_handoff_ms": 56.08913100149948,
+  "handoffs_over_5ms": 571,
+  "handoff_tolerance": {
+    "passed": false,
+    "reason": "worker_handoff_over_5ms"
+  },
+  "interval": {
+    "minimum": 347,
+    "maximum": 360,
+    "exact_360_for_entire_window": false,
+    "below_360_seconds": 28.581536033998418,
+    "longest_below_360_seconds": 0.13860253600068972,
+    "mean_inflight": 359.6950658083593,
+    "queue_full_count": 0
+  },
+  "receiver_resources": {
+    "samples": 28,
+    "host_cpu_mean_percent": 99.96185906702131,
+    "app_cpu_cores": 19.179957131396733,
+    "new_mysql_cpu_cores": 12.298044923829817,
+    "old_mysql_cpu_cores": 0.00041515657797508047,
+    "minimum_available_memory_bytes": 47889813504,
+    "data_disk_mean": {
+      "read_iops": 2.413212539628037,
+      "write_iops": 7402.3698609243065,
+      "average_latency_ms": 0.33294098036746317,
+      "queue_length": 0.6071428571428571,
+      "write_bytes_per_second": 146868460.68391898
+    }
+  },
+  "sender_resources": {
+    "formal_samples": 120,
+    "mean_host_cpu_percent": 55.405,
+    "formal_peak_summed_rss": 2526552064,
+    "all_peak_summed_rss": 2526552064,
+    "cgroup_memory_peak": 2525990912,
+    "last_formal_summed_rss": 2526552064,
+    "note": "RSS sum double-counts shared pages; cgroup peak separately observed via systemctl before stop. Short run does not prove 900s capacity."
+  },
+  "sender_network": {
+    "scope": "host-wide network counters from shard 0 only; no summation across shards",
+    "samples": 120,
+    "network_MBps": {
+      "host_bytes_sent": 2.7599216829977116,
+      "host_bytes_recv": 50.41582425026607
+    }
+  },
+  "large_clinical_body_receive": {
+    "scope": "successful large clinical export requests started in formal window; first-byte to final-body receive only, not pure network time",
+    "large_clinical_count": 1313,
+    "response_body_after_first_byte_ms_median": 276.190710001174,
+    "response_body_after_first_byte_ms_p95": 713.5527640002692,
+    "bytes_median": 3415984
+  },
+  "export_audit": {
+    "export_responses_checked": 40007,
+    "audit_targets_checked": 8744186,
+    "result": "passed",
+    "scope": "all recorded successful export responses including warmup; exact scope targets and persisted counts/bytes/actor/store/action"
+  },
+  "tiers": {
+    "scope": "successful requests started within measurement window; residual paired per request, not subtraction of independent quantiles; app profile excludes response iteration; residual is not pure network time",
+    "groups": [
+      {
+        "kind": "clinical_export",
+        "tier": "1-20",
+        "count": 7958,
+        "http_ms": {
+          "median": 244.7515800004112,
+          "p95": 400.80925400070555
+        },
+        "server_profile_ms_except_sql_count": {
+          "app_ms": {
+            "median": 206.14954999999998,
+            "p95": 349.2052
+          },
+          "sql_ms": {
+            "median": 118.55685,
+            "p95": 222.3478
+          },
+          "commit_ms": {
+            "median": 14.9131,
+            "p95": 52.1329
+          },
+          "queue_ms": {
+            "median": 6.4346,
+            "p95": 33.0481
+          },
+          "export_snapshot_ms": {
+            "median": 89.16085,
+            "p95": 184.7687
+          },
+          "export_csv_ms": {
+            "median": 0.0932,
+            "p95": 0.2382
+          },
+          "export_audit_targets_ms": {
+            "median": 8.5165,
+            "p95": 38.65
+          },
+          "sql_count": {
+            "median": 10.0,
+            "p95": 10
+          }
+        },
+        "outside_app_and_reported_queue_ms": {
+          "median": 20.43030500046194,
+          "p95": 83.62746299989664
+        }
+      },
+      {
+        "kind": "clinical_export",
+        "tier": "1000-4000",
+        "count": 1313,
+        "http_ms": {
+          "median": 1301.7719609997584,
+          "p95": 2472.725747000368
+        },
+        "server_profile_ms_except_sql_count": {
+          "app_ms": {
+            "median": 744.757,
+            "p95": 1497.8448
+          },
+          "sql_ms": {
+            "median": 327.3517,
+            "p95": 497.9325
+          },
+          "commit_ms": {
+            "median": 16.4478,
+            "p95": 54.4636
+          },
+          "queue_ms": {
+            "median": 10.0764,
+            "p95": 41.9994
+          },
+          "export_snapshot_ms": {
+            "median": 438.1829,
+            "p95": 1123.2729
+          },
+          "export_csv_ms": {
+            "median": 22.2292,
+            "p95": 70.7218
+          },
+          "export_audit_targets_ms": {
+            "median": 128.4687,
+            "p95": 210.4696
+          },
+          "sql_count": {
+            "median": 10,
+            "p95": 10
+          }
+        },
+        "outside_app_and_reported_queue_ms": {
+          "median": 510.9911010009114,
+          "p95": 1117.8869599996294
+        }
+      },
+      {
+        "kind": "clinical_export",
+        "tier": "50-200",
+        "count": 3995,
+        "http_ms": {
+          "median": 282.93144700000994,
+          "p95": 451.9692339999892
+        },
+        "server_profile_ms_except_sql_count": {
+          "app_ms": {
+            "median": 240.0055,
+            "p95": 397.0304
+          },
+          "sql_ms": {
+            "median": 132.8207,
+            "p95": 241.992
+          },
+          "commit_ms": {
+            "median": 15.3748,
+            "p95": 54.8215
+          },
+          "queue_ms": {
+            "median": 6.6312,
+            "p95": 33.4603
+          },
+          "export_snapshot_ms": {
+            "median": 111.8411,
+            "p95": 223.3881
+          },
+          "export_csv_ms": {
+            "median": 0.3854,
+            "p95": 0.9842
+          },
+          "export_audit_targets_ms": {
+            "median": 14.3087,
+            "p95": 48.5853
+          },
+          "sql_count": {
+            "median": 10,
+            "p95": 10
+          }
+        },
+        "outside_app_and_reported_queue_ms": {
+          "median": 23.519530000476443,
+          "p95": 89.8470219996979
+        }
+      },
+      {
+        "kind": "detail_export",
+        "tier": "1-20",
+        "count": 3963,
+        "http_ms": {
+          "median": 217.8469310001674,
+          "p95": 364.87379600112035
+        },
+        "server_profile_ms_except_sql_count": {
+          "app_ms": {
+            "median": 181.2382,
+            "p95": 306.5245
+          },
+          "sql_ms": {
+            "median": 105.8063,
+            "p95": 205.3345
+          },
+          "commit_ms": {
+            "median": 17.2099,
+            "p95": 57.2408
+          },
+          "queue_ms": {
+            "median": 6.4837,
+            "p95": 32.6825
+          },
+          "sql_count": {
+            "median": 9,
+            "p95": 9
+          }
+        },
+        "outside_app_and_reported_queue_ms": {
+          "median": 20.193302000545486,
+          "p95": 81.51413799981
+        }
+      },
+      {
+        "kind": "detail_export",
+        "tier": "1000-4000",
+        "count": 663,
+        "http_ms": {
+          "median": 781.1150239995186,
+          "p95": 1205.7210769999074
+        },
+        "server_profile_ms_except_sql_count": {
+          "app_ms": {
+            "median": 650.4462,
+            "p95": 936.6999
+          },
+          "sql_ms": {
+            "median": 425.9765,
+            "p95": 617.3381
+          },
+          "commit_ms": {
+            "median": 16.3555,
+            "p95": 61.2976
+          },
+          "queue_ms": {
+            "median": 8.9296,
+            "p95": 43.3834
+          },
+          "sql_count": {
+            "median": 9,
+            "p95": 9
+          }
+        },
+        "outside_app_and_reported_queue_ms": {
+          "median": 88.5404850004933,
+          "p95": 390.1468289994722
+        }
+      },
+      {
+        "kind": "detail_export",
+        "tier": "50-200",
+        "count": 2008,
+        "http_ms": {
+          "median": 242.92305600010877,
+          "p95": 398.30168899970886
+        },
+        "server_profile_ms_except_sql_count": {
+          "app_ms": {
+            "median": 204.65215,
+            "p95": 345.8778
+          },
+          "sql_ms": {
+            "median": 122.29159999999999,
+            "p95": 222.0527
+          },
+          "commit_ms": {
+            "median": 16.5104,
+            "p95": 58.0747
+          },
+          "queue_ms": {
+            "median": 6.5908999999999995,
+            "p95": 31.9372
+          },
+          "sql_count": {
+            "median": 9.0,
+            "p95": 9
+          }
+        },
+        "outside_app_and_reported_queue_ms": {
+          "median": 20.91082200021181,
+          "p95": 85.36446699949363
+        }
+      },
+      {
+        "kind": "guard",
+        "tier": "json",
+        "count": 19905,
+        "http_ms": {
+          "median": 407.8342110005906,
+          "p95": 604.8848109985556
+        },
+        "server_profile_ms_except_sql_count": {
+          "app_ms": {
+            "median": 368.3696,
+            "p95": 555.1723
+          },
+          "sql_ms": {
+            "median": 291.669,
+            "p95": 456.5151
+          },
+          "commit_ms": {
+            "median": 8.5608,
+            "p95": 38.2804
+          },
+          "queue_ms": {
+            "median": 6.6376,
+            "p95": 33.976
+          },
+          "sql_count": {
+            "median": 25,
+            "p95": 25
+          }
+        },
+        "outside_app_and_reported_queue_ms": {
+          "median": 20.43539599950223,
+          "p95": 82.40171599919191
+        }
+      },
+      {
+        "kind": "query",
+        "tier": "json",
+        "count": 39816,
+        "http_ms": {
+          "median": 222.4424749992977,
+          "p95": 369.1782339992642
+        },
+        "server_profile_ms_except_sql_count": {
+          "app_ms": {
+            "median": 184.8025,
+            "p95": 315.8596
+          },
+          "sql_ms": {
+            "median": 127.79140000000001,
+            "p95": 237.2149
+          },
+          "commit_ms": {
+            "median": 8.60765,
+            "p95": 37.1043
+          },
+          "queue_ms": {
+            "median": 6.5360499999999995,
+            "p95": 33.0805
+          },
+          "sql_count": {
+            "median": 11.0,
+            "p95": 11
+          }
+        },
+        "outside_app_and_reported_queue_ms": {
+          "median": 19.70197950018846,
+          "p95": 82.74118700062957
+        }
+      },
+      {
+        "kind": "reception",
+        "tier": "json",
+        "count": 19901,
+        "http_ms": {
+          "median": 268.94786400043813,
+          "p95": 430.56544399951235
+        },
+        "server_profile_ms_except_sql_count": {
+          "app_ms": {
+            "median": 230.5977,
+            "p95": 376.8267
+          },
+          "sql_ms": {
+            "median": 175.49,
+            "p95": 302.7775
+          },
+          "commit_ms": {
+            "median": 8.5983,
+            "p95": 36.8748
+          },
+          "queue_ms": {
+            "median": 6.4534,
+            "p95": 32.6203
+          },
+          "sql_count": {
+            "median": 15,
+            "p95": 15
+          }
+        },
+        "outside_app_and_reported_queue_ms": {
+          "median": 20.67839299990062,
+          "p95": 82.27379799878244
+        }
+      },
+      {
+        "kind": "summary_export",
+        "tier": "summary",
+        "count": 6634,
+        "http_ms": {
+          "median": 242.30220499975985,
+          "p95": 379.80120399879524
+        },
+        "server_profile_ms_except_sql_count": {
+          "app_ms": {
+            "median": 205.03705,
+            "p95": 326.6673
+          },
+          "sql_ms": {
+            "median": 131.55185,
+            "p95": 223.8516
+          },
+          "commit_ms": {
+            "median": 17.77115,
+            "p95": 57.193
+          },
+          "queue_ms": {
+            "median": 6.3216,
+            "p95": 32.8488
+          },
+          "sql_count": {
+            "median": 7.0,
+            "p95": 7
+          }
+        },
+        "outside_app_and_reported_queue_ms": {
+          "median": 20.464825000250887,
+          "p95": 81.11000400079809
+        }
+      },
+      {
+        "kind": "write",
+        "tier": "json",
+        "count": 26529,
+        "http_ms": {
+          "median": 410.49962600118306,
+          "p95": 633.3274900007382
+        },
+        "server_profile_ms_except_sql_count": {
+          "app_ms": {
+            "median": 372.1568,
+            "p95": 587.8639
+          },
+          "sql_ms": {
+            "median": 292.9604,
+            "p95": 486.7618
+          },
+          "commit_ms": {
+            "median": 8.5656,
+            "p95": 37.1374
+          },
+          "queue_ms": {
+            "median": 6.4682,
+            "p95": 32.7084
+          },
+          "sql_count": {
+            "median": 25,
+            "p95": 32
+          }
+        },
+        "outside_app_and_reported_queue_ms": {
+          "median": 20.53636700079652,
+          "p95": 83.23689300062584
+        }
+      }
+    ]
+  },
+  "scope_note": "60+120 second diagnostic only; original mix and export ranges; full request evidence retained locally; no paid capacity change"
+}
