@@ -1,0 +1,201 @@
+{
+  "kind": "diagnostic_summary_not_formal_acceptance",
+  "source_commit": "08b5a36f4f45534aae189a190b17add5c832a325",
+  "main_equivalent": "08b5a36",
+  "unit": "t22-diagnostic-08b5a36-r27.service",
+  "invocation_id": "cc8cec69f48e45d1ab3d4d6a89f5e274",
+  "application_pids": [
+    8784,
+    7300,
+    9144,
+    11680,
+    8912,
+    9444,
+    9736,
+    7632,
+    11944,
+    9452,
+    7340,
+    9128,
+    2840,
+    10100,
+    6880,
+    12260,
+    7712,
+    10956,
+    9996,
+    5880,
+    12132,
+    9400,
+    2876,
+    8984
+  ],
+  "mysql_pid": 5452,
+  "original_mysql_pids": [
+    5444
+  ],
+  "sender_archive_sha256": "d3a13127f94b144d4cf718847c52d73cff214d70036dd7b6c8cb5280d157e807",
+  "app_archive_sha256": "1f56344783780a86f06bc6d148d177e989358411912c314ee701869158ed8002",
+  "diagnostic_only": true,
+  "runtime_zip_sha256": "e94ffe808e926cbb90ac6efcb5d5d426accc89833e0a54412622130e639160cc",
+  "receiver_cpus": 32,
+  "receiver_memory_gib": 61.98,
+  "sender_cpus": 4,
+  "layout": "24x16",
+  "web_threads": 384,
+  "mysql_max_connections": 512,
+  "single_variable": "client receive chunk 64KiB to 1MiB; all other runtime files match R24",
+  "warmup_seconds": 60,
+  "formal_seconds": 120,
+  "formal_started_at_utc": "2026-11-06T06:43:36.697Z",
+  "formal_ended_at_utc": "2026-11-06T06:45:36.697Z",
+  "requests_started": 132634,
+  "failures": 0,
+  "minutes": [
+    {
+      "minute": 1,
+      "completed": 66725,
+      "success": 66725,
+      "failures": 0
+    },
+    {
+      "minute": 2,
+      "completed": 65909,
+      "success": 65909,
+      "failures": 0
+    }
+  ],
+  "p95_ms": {
+    "clinical_export": 1307.4864689988317,
+    "detail_export": 757.9269650013885,
+    "guard": 604.0491800013115,
+    "query": 373.9389710026444,
+    "reception": 432.69601200154284,
+    "summary_export": 388.22217699998873,
+    "write": 636.9049000022642
+  },
+  "handoff_p95_ms": 0.802135000412818,
+  "max_handoff_ms": 52.72812499970314,
+  "handoffs_over_5ms": 555,
+  "handoff_tolerance": {
+    "passed": false,
+    "reason": "worker_handoff_over_5ms"
+  },
+  "interval": {
+    "minimum": 341,
+    "maximum": 360,
+    "exact_360_for_entire_window": false,
+    "below_360_seconds": 28.757284891529707,
+    "longest_below_360_seconds": 0.13344719900123891,
+    "mean_inflight": 359.6930106653024,
+    "queue_full_count": 0
+  },
+  "receiver_resources": {
+    "samples": 28,
+    "host_cpu_mean_percent": 99.9618374955629,
+    "app_cpu_cores": 19.147909623025026,
+    "new_mysql_cpu_cores": 12.362712288965469,
+    "old_mysql_cpu_cores": 0.0011032841193592778,
+    "minimum_available_memory_bytes": 47682887680,
+    "data_disk_mean": {
+      "read_iops": 1.600092200278776,
+      "write_iops": 7206.331650832275,
+      "average_latency_ms": 0.3426785327860327,
+      "queue_length": 1,
+      "write_bytes_per_second": 146620008.68211725
+    }
+  },
+  "sender_resources": {
+    "formal_samples": 120,
+    "mean_host_cpu_percent": 55.455,
+    "formal_peak_summed_rss": 2380398592,
+    "all_peak_summed_rss": 2421116928,
+    "cgroup_memory_peak": 2563489792,
+    "last_formal_summed_rss": 2374692864,
+    "note": "RSS sum double-counts shared pages; cgroup peak separately observed via systemctl before stop. Short run does not prove 900s capacity."
+  },
+  "mysql_window_counters": {
+    "samples": 24,
+    "first_utc": "2026-11-06T06:43:41.195796+00:00",
+    "last_utc": "2026-11-06T06:45:36.294929+00:00",
+    "delta_counters": {
+      "Innodb_row_lock_time": 20666,
+      "Innodb_log_waits": 0,
+      "Innodb_buffer_pool_reads": 0,
+      "Innodb_buffer_pool_read_requests": 428610126,
+      "Innodb_os_log_written": 3147579904,
+      "Innodb_data_fsyncs": 221100,
+      "Aborted_connects": 0
+    },
+    "counter_decreases_invalid_for_delta": {},
+    "max_current_waits": 2,
+    "peak_threads_running": 22,
+    "scope": "successful samples fully inside formal window; deltas cover first-to-last sample, not entire boundary; decreasing counters invalid without guessing wrap/reset; log waits zero does not exclude CPU/commit wait"
+  },
+  "sql_digest_availability": {
+    "scope": "read-only post-window instrumentation availability; no reset/enable/change performed",
+    "utc": "2026-11-06T06:50:39.177874+00:00",
+    "consumers": [
+      {
+        "NAME": "events_statements_cpu",
+        "ENABLED": "NO"
+      },
+      {
+        "NAME": "events_statements_current",
+        "ENABLED": "YES"
+      },
+      {
+        "NAME": "events_statements_history",
+        "ENABLED": "YES"
+      },
+      {
+        "NAME": "events_statements_history_long",
+        "ENABLED": "NO"
+      },
+      {
+        "NAME": "global_instrumentation",
+        "ENABLED": "YES"
+      },
+      {
+        "NAME": "thread_instrumentation",
+        "ENABLED": "YES"
+      },
+      {
+        "NAME": "statements_digest",
+        "ENABLED": "YES"
+      }
+    ],
+    "digest_table_counts": [
+      {
+        "total_entries": 10000,
+        "matching_entries": "0",
+        "null_digest_entries": "1"
+      }
+    ],
+    "digest_status": [
+      {
+        "Variable_name": "Performance_schema_digest_lost",
+        "Value": "15009376"
+      }
+    ],
+    "statement_instrument_counts": [
+      {
+        "ENABLED": "YES",
+        "count": 199
+      },
+      {
+        "ENABLED": "NO",
+        "count": 15
+      }
+    ]
+  },
+  "sql_digest_availability_file_sha256": "e7f7240a60794d46a32df066518a0df9561f8dbb231f4155d85b0122a8277f06",
+  "export_audit": {
+    "export_responses_checked": 40003,
+    "audit_targets_checked": 8816725,
+    "result": "passed",
+    "scope": "all recorded successful export responses including warmup; exact scope targets and persisted counts/bytes/actor/store/action"
+  },
+  "candidate_decision": "restore 64KiB capture after comparison: no demonstrated cloud improvement in complete-response latency, throughput, CPU or handoff gate; local loopback improvement retained as scoped evidence; no claim of statistically significant regression",
+  "scope_note": "short diagnostic, not 300+600 formal acceptance; first captured-chunk timestamps not comparable across chunk sizes"
+}
