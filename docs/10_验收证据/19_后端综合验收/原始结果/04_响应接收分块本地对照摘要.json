@@ -1,0 +1,34 @@
+{
+  "scope": "local loopback synthetic full-body reception with actual driver run_one, eight threads; no database/cloud/capacity acceptance claim; only chunk size varied",
+  "bytes": 6774284,
+  "sha256": "4d318bace12577cf3259bb371c00cb511841037303426b0fde77afc2031f5ba0",
+  "python": "3.12.7",
+  "client_gil_switch_interval_ms": 0.09999999999999999,
+  "results": {
+    "65536": {
+      "samples": 72,
+      "median_ms": 108.38665000119363,
+      "p95_ms": 125.11959999756073
+    },
+    "262144": {
+      "samples": 72,
+      "median_ms": 63.673250000647386,
+      "p95_ms": 72.38539999889326
+    },
+    "1048576": {
+      "samples": 72,
+      "median_ms": 50.3614999979618,
+      "p95_ms": 58.06239999947138
+    }
+  },
+  "additional_limits": "Loopback HTTP sender and stub receiver share the local Python process; no cloud improvement prediction. First captured chunk timestamp has a different granularity, while request start and complete-body end definitions remain unchanged.",
+  "integration": {
+    "scope": "local stub HTTP plumbing only, Python 3.14.3; seven groups, full validation, controller exited zero; not cloud acceptance",
+    "requests": 12667,
+    "workers": 8,
+    "processes": 4,
+    "all_valid": true,
+    "merged_equals_raw_shard_concatenation": true,
+    "requests_sha256": "e9dab4a7e4ccfe34793dec52c1119b998d11044cfa1e3e4535f3adddc83743a5"
+  }
+}
