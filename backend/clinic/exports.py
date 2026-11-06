@@ -204,9 +204,13 @@ def _clinical_rows(rows, templates, histories):
     encode = _json_text
     for row in rows:
         if row.get('_projection_prefix') is not None:
-            yield row['_projection_prefix'] + b',' + _csv_line([
-                'true' if row['encounter__error_mark'] else 'false',
-                _json_text([str(row['encounter__rebuilt_id'])] if row['encounter__rebuilt_id'] else [])])
+            if row['encounter__rebuilt_id'] is None:
+                suffix = b',true,[]\r\n' if row['encounter__error_mark'] else b',false,[]\r\n'
+            else:
+                suffix = b',' + _csv_line([
+                    'true' if row['encounter__error_mark'] else 'false',
+                    _json_text([str(row['encounter__rebuilt_id'])])])
+            yield row['_projection_prefix'] + suffix
             continue
         record_id = row['id']
         record_key = str(record_id)
