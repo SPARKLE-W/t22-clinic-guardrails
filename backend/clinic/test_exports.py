@@ -61,6 +61,18 @@ class ClinicalExportTests(ClinicFixture):
         self.assertEqual(2, AuditTarget.objects.filter(target=self.record.pk,
                                                        event__action='export.clinical').count())
 
+    def test_export_registration_does_not_fetch_store_object(self):
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as captured:
+            body, ref, count = clinical(self.doctor.pk, {
+                'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': 'query budget'})
+        self.assertEqual(1, count)
+        store_reads = [q['sql'] for q in captured.captured_queries
+                       if q['sql'].lstrip().upper().startswith('SELECT') and
+                       'governance_store' in q['sql']]
+        self.assertEqual([], store_reads)
+        self.assertEqual(self.doctor.store_id, ExportRequest.objects.get(pk=ref).store_id)
+
     def test_explicit_authorized_record_is_complete_and_audited(self):
         response = self.download({'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': '课程合成病例核对'})
         rows = self.rows(response)
@@ -378,6 +390,54 @@ class GuardExportTests(ClinicFixture):
         self.assertNotIn('value', rows[0])
         self.assertNotIn('合成主诉', response.content.decode('utf-8-sig'))
         self.assertEqual(1, ExportRequest.objects.filter(permission='export.guard_detail').count())
+
+    def test_detail_audit_uses_distinct_record_batch_and_rolls_back_on_failure(self):
+        from .models import GuardHit
+        record = self.record_fixture(self.ref)
+        hit = Alert.objects.get().hit
+        ClinicalCheck.objects.filter(pk=hit.evaluation_id).update(record=record)
+        GuardHit.objects.create(evaluation=hit.evaluation, rule_ref='second-hit',
+                                rule_version='v1', field='diagnosis', value='synthetic')
+        with patch('clinic.exports._audit_clinical_targets', wraps=_audit_clinical_targets) as batch:
+            body, ref, count = guard(self.doctor.pk, 'export.guard_detail',
+                                     {'scope': {'encounter_refs': [self.ref]}})
+        self.assertEqual(2, count)
+        batch.assert_called_once()
+        self.assertEqual({str(record.pk)}, {str(value) for value in batch.call_args.args[1]})
+        self.assertEqual(1, AuditTarget.objects.filter(event__target=ref, target=record.pk).count())
+        before = ExportRequest.objects.count()
+        with patch('clinic.exports._audit_clinical_targets', side_effect=DatabaseError('synthetic')):
+            with self.assertRaises(DatabaseError):
+                guard(self.doctor.pk, 'export.guard_detail', {'scope': {'encounter_refs': [self.ref]}})
+        self.assertEqual(before, ExportRequest.objects.count())
+        self.assertEqual(1, AuditEvent.objects.filter(action='export.guard_detail', outcome='success').count())
+
+    def test_detail_mysql_missing_audit_target_rolls_back_export(self):
+        if connection.vendor != 'mysql':
+            self.skipTest('MySQL INSERT SELECT row-count guard')
+        record = self.record_fixture(self.ref)
+        ClinicalCheck.objects.filter(encounter_id=self.ref).update(record=record)
+
+        def include_missing_target(event, refs):
+            return _audit_clinical_targets(event, [*refs, uuid.uuid4()])
+
+        with patch('clinic.exports._audit_clinical_targets', side_effect=include_missing_target):
+            with self.assertRaises(DatabaseError):
+                guard(self.doctor.pk, 'export.guard_detail', {'scope': {'encounter_refs': [self.ref]}})
+        self.assertFalse(ExportRequest.objects.exists())
+        self.assertFalse(AuditEvent.objects.filter(action='export.guard_detail', outcome='success').exists())
+        self.assertFalse(AuditTarget.objects.filter(event__action='export.guard_detail').exists())
+
+    def test_guard_export_registration_does_not_fetch_store_object(self):
+        from django.test.utils import CaptureQueriesContext
+        for actor, permission in [(self.doctor, 'export.guard_detail'), (self.manager, SUMMARY)]:
+            with self.subTest(permission=permission), CaptureQueriesContext(connection) as captured:
+                _, ref, _ = guard(actor.pk, permission, {})
+            store_reads = [q['sql'] for q in captured.captured_queries
+                           if q['sql'].lstrip().upper().startswith('SELECT') and
+                           'governance_store' in q['sql']]
+            self.assertEqual([], store_reads)
+            self.assertEqual(actor.store_id, ExportRequest.objects.get(pk=ref).store_id)
 
     def test_manager_summary_has_counts_without_case_identifiers(self):
         self.client.force_login(self.manager)

@@ -317,7 +317,7 @@ def clinical(actor_id, payload, timings=None):
         actor = require(actor_id, CLINICAL, lock=True)
         if actor.store_id != store_id:
             raise DomainError('TARGET_UNAVAILABLE', 403)
-        entry = ExportRequest.objects.create(store=actor.store, actor=actor, permission=CLINICAL,
+        entry = ExportRequest.objects.create(store_id=actor.store_id, actor=actor, permission=CLINICAL,
                                               scope=scope, purpose=payload['purpose'], record_count=len(target_refs),
                                               row_count=len(target_refs), byte_count=len(body))
         event = write_audit(actor, CLINICAL, 'success', 'COMPLETED', entry.pk, actor.store_id)
@@ -430,13 +430,12 @@ def guard(actor_id, permission, payload):
         actor = require(actor_id, permission, lock=True)
         if actor.store_id != store_id:
             raise DomainError('TARGET_UNAVAILABLE', 403)
-        entry = ExportRequest.objects.create(store=actor.store, actor=actor, permission=permission,
+        entry = ExportRequest.objects.create(store_id=actor.store_id, actor=actor, permission=permission,
                                               scope=payload, record_count=sum(int(row.get('hit_count', 1)) for row in rows),
                                               row_count=len(rows), byte_count=len(body))
         event = write_audit(actor, permission, 'success', 'COMPLETED', entry.pk, actor.store_id)
         if permission == DETAIL:
-            AuditTarget.objects.bulk_create([AuditTarget(event=event, target=record_ref, kind='record')
-                                             for record_ref in {row['record_ref'] for row in rows if row['record_ref']}])
+            _audit_clinical_targets(event, list({row['record_ref'] for row in rows if row['record_ref']}))
     return body, entry.pk, entry.record_count
 
 
