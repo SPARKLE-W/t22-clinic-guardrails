@@ -47,6 +47,9 @@ ADOPTION_RECORDS = 6665
 ADOPTION_TARGETS = ADOPTION_RECORDS * 16
 REPO_ROOT = Path(__file__).resolve().parents[4]
 SUMMARY_HITS_BY_STORE = {}
+CLIENT_SHARD_COUNT = 1
+CLIENT_SHARD_INDEX = 0
+TASK_ID_STRIDE = 10 ** 12  # Multiple of 20 preserves the mix and write-subtype phase.
 
 
 @contextmanager
@@ -218,6 +221,50 @@ def quantile(values, fraction):
     return sorted(values)[math.ceil(fraction * len(values)) - 1] if values else None
 
 
+def partition_size(total, index, count):
+    if type(count) is not int or type(index) is not int or not 1 <= count <= total or not 0 <= index < count:
+        raise ValueError('Invalid client target partition')
+    return (total - 1 - index) // count + 1
+
+
+def partition_target(number, total, index, count):
+    return index + number % partition_size(total, index, count) * count
+
+
+def adoption_target(number, index, count):
+    records = partition_size(ADOPTION_RECORDS, index, count)
+    slot, local_record = divmod(number, records)
+    if slot >= ADOPTION_TARGETS // ADOPTION_RECORDS:
+        raise RuntimeError('Suggestion target pool exhausted')
+    return slot, index + local_record * count
+
+
+def configure_client_shard(count, index):
+    partition_size(min(GUARD_TARGETS, DIAGNOSIS_TARGETS, ADOPTION_RECORDS), index, count)
+    global CLIENT_SHARD_COUNT, CLIENT_SHARD_INDEX, SERIAL
+    CLIENT_SHARD_COUNT, CLIENT_SHARD_INDEX = count, index
+    base = index * TASK_ID_STRIDE
+    SERIAL = itertools.count(base)
+    return base
+
+
+def read_common_clock(path, shard_count, concurrency, warmup, formal):
+    raw = path.read_bytes()
+    clock = json.loads(raw)
+    expected = {'clock_version': 1, 'shard_count': shard_count,
+                'concurrency': concurrency * shard_count,
+                'warmup_seconds': warmup, 'formal_seconds': formal}
+    if any(type(clock.get(key)) is not int or clock[key] != value for key, value in expected.items()):
+        raise ValueError('Shared clock run parameters mismatch')
+    start = clock.get('monotonic_start')
+    if type(start) not in (int, float) or not math.isfinite(start) or start < 0:
+        raise ValueError('Shared clock requires a finite monotonic origin')
+    utc = clock.get('utc_start')
+    if not isinstance(utc, str) or datetime.fromisoformat(utc.replace('Z', '+00:00')).tzinfo is None:
+        raise ValueError('Shared clock requires a timezone-aware UTC origin')
+    return {**clock, 'sha256': hashlib.sha256(raw).hexdigest()}
+
+
 def next_task():
     with SERIAL_LOCK:
         number = next(SERIAL)
@@ -231,10 +278,10 @@ def resolve_target_bases(args):
     return [base.rstrip('/') for base in configured]
 
 
-def target_worker_assignments(concurrency, target_count):
+def target_worker_assignments(concurrency, target_count, worker_offset=0):
     if target_count < 1:
         raise ValueError('At least one target endpoint is required')
-    return [sum(1 for worker in range(concurrency) if worker % target_count == target)
+    return [sum(1 for worker in range(worker_offset, worker_offset + concurrency) if worker % target_count == target)
             for target in range(target_count)]
 
 
@@ -344,7 +391,7 @@ def select_request(kind, sequence, rng):
                    'doctor_ref': None, 'pet_name': '合成负载新宠物'}
         return actor, 'POST', '/api/encounters', payload, 'json', shop
     if kind == 'guard':
-        target = next_target('guard') % GUARD_TARGETS
+        target = partition_target(next_target('guard'), GUARD_TARGETS, CLIENT_SHARD_INDEX, CLIENT_SHARD_COUNT)
         shop = target % 5
         number = 3 * (target // 5)
         doctor = 0 if shop == 0 else number % 2
@@ -357,7 +404,7 @@ def select_request(kind, sequence, rng):
     if kind == 'write':
         subtype = sequence % 5
         if subtype in (0, 1):
-            target = next_target('write_diagnosis') % DIAGNOSIS_TARGETS
+            target = partition_target(next_target('write_diagnosis'), DIAGNOSIS_TARGETS, CLIENT_SHARD_INDEX, CLIENT_SHARD_COUNT)
             shop = target % 5
             number = 3 * (target // 5) + 1
             doctor = 0 if shop == 0 else number % 2
@@ -371,10 +418,7 @@ def select_request(kind, sequence, rng):
             payload = {'drug': '合成负载药品', 'amount': '1', 'unit': '片'}
             return choose_actor(None, 'doctor', shop, doctor), 'POST', \
                 f'/api/clinical/encounters/{ref("encounter", shop, number)}/medications', payload, 'json', None
-        target = next_target('write_adoption')
-        if target >= ADOPTION_TARGETS:
-            raise RuntimeError('Suggestion target pool exhausted')
-        slot, target = divmod(target, ADOPTION_RECORDS)
+        slot, target = adoption_target(next_target('write_adoption'), CLIENT_SHARD_INDEX, CLIENT_SHARD_COUNT)
         shop = target % 5
         number = 3 * (target // 5) + 2
         suggestion_ref = ref('suggestion' if slot == 0 else f'suggestion-{slot}', shop, number)
@@ -689,6 +733,9 @@ def main():
     parser.add_argument('--private-accounts', type=Path, required=True)
     parser.add_argument('--output-prefix', type=Path, required=True)
     parser.add_argument('--concurrency', type=int, default=360)
+    parser.add_argument('--shard-count', type=int, default=1)
+    parser.add_argument('--shard-index', type=int, default=0)
+    parser.add_argument('--common-clock', type=Path)
     parser.add_argument('--warmup-seconds', type=int, default=300)
     parser.add_argument('--formal-seconds', type=int, default=600)
     parser.add_argument('--gil-switch-interval-ms', type=float,
@@ -700,6 +747,12 @@ def main():
     parser.add_argument('--only-group', choices=['query', 'guard', 'reception', 'write',
                                                   'clinical_export', 'detail_export', 'summary_export'])
     args = parser.parse_args()
+    try:
+        request_id_base = configure_client_shard(args.shard_count, args.shard_index)
+    except ValueError as error:
+        parser.error(str(error))
+    if args.shard_count > 1 and (args.common_clock is None or args.only_group):
+        parser.error('Sharded runs require a common clock and the complete workload mix')
     if args.gil_switch_interval_ms is not None and (
             not math.isfinite(args.gil_switch_interval_ms) or args.gil_switch_interval_ms <= 0):
         parser.error('GIL switch interval must be finite and positive')
@@ -724,7 +777,19 @@ def main():
         bases = resolve_target_bases(args)
     except ValueError as error:
         parser.error(str(error))
+    common_clock = None
+    if args.common_clock:
+        clock_path = args.common_clock.resolve()
+        if REPO_ROOT == clock_path or REPO_ROOT in clock_path.parents:
+            parser.error('Keep shared run clocks outside the repository')
+        try:
+            common_clock = read_common_clock(clock_path, args.shard_count, args.concurrency,
+                                             args.warmup_seconds, args.formal_seconds)
+        except (OSError, ValueError) as error:
+            parser.error(str(error))
     cookies = authentication(bases[0], private)
+    if common_clock and time.perf_counter() >= common_clock['monotonic_start']:
+        raise RuntimeError('Common start missed; the run must not silently shorten warmup')
     prefix = args.output_prefix
     private_path = args.private_accounts.resolve()
     output_path = prefix.resolve()
@@ -733,10 +798,17 @@ def main():
         parser.error('Keep private credentials and raw load evidence outside the repository')
     recorder = JsonlRunRecorder(prefix)
     total = args.warmup_seconds + args.formal_seconds
-    started_at_utc = datetime.now(timezone.utc)
-    start = time.perf_counter()
+    if common_clock:
+        start = common_clock['monotonic_start']
+        started_at_utc = datetime.fromisoformat(common_clock['utc_start'].replace('Z', '+00:00')).astimezone(timezone.utc)
+        while time.perf_counter() < start:
+            time.sleep(min(.1, max(0, start - time.perf_counter())))
+    else:
+        started_at_utc = datetime.now(timezone.utc)
+        start = time.perf_counter()
     recorder.set_clock(start, started_at_utc)
     end = start + total
+    worker_offset = args.shard_index * args.concurrency
     gate = threading.Barrier(args.concurrency + 1)
     results = []
     pending = ValidationQueue(maxsize=args.concurrency * 2)
@@ -757,7 +829,7 @@ def main():
         with gil_switch_interval(args.gil_switch_interval_ms) as active_interval, \
                 GCPauseRecorder(prefix, start, started_at_utc, args.capture_gc_pauses), \
                 ThreadPoolExecutor(max_workers=args.concurrency) as pool:
-            futures = [pool.submit(worker, n, gate, end, bases[n % len(bases)], cookies, actors, pending)
+            futures = [pool.submit(worker, n + worker_offset, gate, end, bases[(n + worker_offset) % len(bases)], cookies, actors, pending)
                        for n in range(args.concurrency)]
             gate.wait(timeout=180)
             for future in futures:
@@ -781,6 +853,14 @@ def main():
                       args.formal_seconds == 600 and args.only_group is None and
                       actual_duration >= total)
     summary['kind'] = 'formal_window_candidate' if exact_protocol else 'diagnostic'
+    summary['shard_count'] = args.shard_count
+    summary['shard_index'] = args.shard_index
+    summary['worker_offset'] = worker_offset
+    summary['request_id_base'] = request_id_base
+    summary['common_clock_sha256'] = common_clock['sha256'] if common_clock else None
+    summary['common_start_monotonic'] = start
+    summary['fixture_database'] = private['manifest']['database']
+    summary['load_script_sha256'] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     summary['gc_pause_capture'] = args.capture_gc_pauses
     summary['gil_switch_interval_ms'] = active_interval * 1000
     if args.only_group:
@@ -795,7 +875,7 @@ def main():
                     'timestamps_utc_note': 'Mapped from the run-start UTC wall clock plus monotonic elapsed time; latency uses perf_counter.',
                     'tunnel_count': len(bases),
                     'target_endpoint_count': len(bases),
-                    'target_worker_assignments': target_worker_assignments(args.concurrency, len(bases)),
+                    'target_worker_assignments': target_worker_assignments(args.concurrency, len(bases), worker_offset),
                     'target_pool_sizes': {'guard': GUARD_TARGETS,
                                           'diagnosis_correction': DIAGNOSIS_TARGETS,
                                           'suggestion_adoption': ADOPTION_TARGETS},
