@@ -57,6 +57,36 @@ def module_at(name, path):
     return module
 
 
+def sample_client_processes(psutil, root_pids, cpu_last):
+    """Include venv launcher descendants; CPU is each lifetime's last observed total."""
+    candidates, errors, observed = [], [], {}
+    for pid in root_pids:
+        try:
+            process = psutil.Process(pid)
+            candidates.append(process)
+            candidates.extend(process.children(recursive=True))
+        except (psutil.NoSuchProcess, psutil.AccessDenied) as error:
+            errors.append({'pid': pid, 'error': type(error).__name__})
+    for process in candidates:
+        try:
+            birth = process.create_time()
+            identity = (process.pid, birth)
+            if identity in observed:
+                continue
+            rss = process.memory_info().rss
+            cpu = process.cpu_times()
+            cpu_last[identity] = cpu.user + cpu.system
+            observed[identity] = {'pid': process.pid, 'create_time': birth,
+                                  'rss_bytes': rss, 'cpu_seconds': cpu_last[identity]}
+        except (psutil.NoSuchProcess, psutil.AccessDenied) as error:
+            errors.append({'pid': process.pid, 'error': type(error).__name__})
+    return {'load_rss_bytes': sum(p['rss_bytes'] for p in observed.values()),
+            'load_cpu_seconds': sum(cpu_last.values()), 'load_process_count': len(observed),
+            'load_processes': sorted(observed.values(), key=lambda p: (p['pid'], p['create_time'])),
+            'load_resource_complete': not errors, 'load_resource_errors': errors,
+            'load_resource_scope': 'controller-and-descendants-v2'}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--private-accounts', type=Path, required=True)
@@ -115,20 +145,12 @@ def main():
             if now - last_sample < 1:
                 return
             last_sample = now
-            rss = 0
-            for pid in [parent.pid] + [p.pid for p in processes]:
-                try:
-                    process = driver.psutil.Process(pid)
-                    rss += process.memory_info().rss
-                    cpu = process.cpu_times()
-                    cpu_last[pid] = cpu.user + cpu.system
-                except driver.psutil.NoSuchProcess:
-                    pass
+            process_resources = sample_client_processes(
+                driver.psutil, [parent.pid] + [p.pid for p in processes], cpu_last)
             row = {'seconds': now - origin, 'timestamp_utc': driver.utc_at(utc, now - origin),
                    'host_cpu_percent': driver.psutil.cpu_percent(interval=None),
                    'host_memory_percent': driver.psutil.virtual_memory().percent,
-                   'load_rss_bytes': rss, 'load_cpu_seconds': sum(cpu_last.values()),
-                   'load_process_count': len(processes) + 1}
+                   **process_resources}
             resource_rows.append(row)
             resources.write(json.dumps(row) + '\n')
             resources.flush()
@@ -165,6 +187,8 @@ def main():
                    target_worker_assignments=[sum(v) for v in zip(*(r['target_worker_assignments'] for r in reports))],
                    resource_peaks={k: max((r[k] for r in resource_rows), default=None) for k in
                                    ('host_cpu_percent', 'host_memory_percent', 'load_rss_bytes')})
+    summary['resource_sampling_version'] = 2
+    summary['incomplete_resource_samples'] = sum(not r['load_resource_complete'] for r in resource_rows)
     for key in ('shard_index', 'worker_offset', 'request_id_base'):
         summary.pop(key, None)
     summary['kind'] = 'formal_window_candidate' if (args.concurrency == 360 and args.warmup_seconds == 300

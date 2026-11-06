@@ -1,0 +1,159 @@
+{
+  "scope": "local Windows synthetic HTTP plumbing; 4 sender shards / 8 total workers; 1s warmup + 8s measurement; old/new/new/old; no real business, cloud, or strict capacity acceptance",
+  "runs": [
+    {
+      "variant": "before",
+      "controller_sha256": "c72df3ee5f341f02f37fc65a23d355d0b85e77c7e479c96695bf481c263c9d1c",
+      "formal_requests": 25306,
+      "formal_failures": 0,
+      "resource_sampling_version": 1,
+      "peak_load_rss_bytes": 59547648,
+      "incomplete_resource_samples": null,
+      "run": "local-resource-tree8-20261106-233903",
+      "group_p95_ms": {
+        "clinical_export": 5.819500000143307,
+        "detail_export": 5.917999999837775,
+        "guard": 3.5212000002502464,
+        "query": 3.748699999960081,
+        "reception": 3.5863000002791523,
+        "summary_export": 4.443099999662081,
+        "write": 3.5200000002078013
+      },
+      "raw_sha256": {
+        "combined.summary.json": "53bf7ae3a99abb8c626a404cd9dc316876dac9891d0d571dcca750e6d0c6e955",
+        "combined.requests.jsonl": "6361a72e630dccd28f9b18c4e18bc8d6957e80596bd66fb8e93342741910d891",
+        "combined.resources.jsonl": "2a4dc06a2a0221820671e3396d4ba1f38b7a9b139134a43fd831cc9f5eeb698a"
+      }
+    },
+    {
+      "variant": "after",
+      "controller_sha256": "88e79c49e81349c0fd6f97fe9d8d1f2c0e65bdc29931c0b58b1152ed9a755efb",
+      "formal_requests": 24488,
+      "formal_failures": 0,
+      "resource_sampling_version": 2,
+      "peak_load_rss_bytes": 284753920,
+      "incomplete_resource_samples": 0,
+      "run": "local-resource-tree8-20261106-233959",
+      "group_p95_ms": {
+        "clinical_export": 6.26879999981611,
+        "detail_export": 5.93140000000858,
+        "guard": 3.512799999953131,
+        "query": 3.769399999328016,
+        "reception": 3.561700000318524,
+        "summary_export": 4.687399999966146,
+        "write": 3.676199999972596
+      },
+      "raw_sha256": {
+        "combined.summary.json": "4ee7e1518c8a88373cb271167af433e5107f81c3cc08fa7a1a094474f982d71b",
+        "combined.requests.jsonl": "1fe75c443e7e5803e7f354133ed28fa1e44458eccc41e13efd5655f2cb97eb0b",
+        "combined.resources.jsonl": "4ad220e97b3cff01ab04b3eafab1a3ad7e29578375b3a9e6a0f8de07d1eb0999"
+      }
+    },
+    {
+      "variant": "after",
+      "controller_sha256": "88e79c49e81349c0fd6f97fe9d8d1f2c0e65bdc29931c0b58b1152ed9a755efb",
+      "formal_requests": 24585,
+      "formal_failures": 0,
+      "resource_sampling_version": 2,
+      "peak_load_rss_bytes": 284708864,
+      "incomplete_resource_samples": 0,
+      "run": "local-resource-tree8-20261106-234055",
+      "group_p95_ms": {
+        "clinical_export": 5.989199999930861,
+        "detail_export": 6.0222000001886045,
+        "guard": 3.980599999522383,
+        "query": 3.7984000000506057,
+        "reception": 3.8079999994806712,
+        "summary_export": 4.5238000002427725,
+        "write": 3.791399999499845
+      },
+      "raw_sha256": {
+        "combined.summary.json": "20dc1e6c59f1ecc996141fda62bd9430a523d3d0854a881f1681ec218d043a5c",
+        "combined.requests.jsonl": "815ea5cbd9e96a523815553924e0db4765503ac26a634d0197903a21d5cb1d33",
+        "combined.resources.jsonl": "abcce82fb2b163c0fb3cdb2dc9f68e34f4cb52555539b2dad65985fa0d8ef4e1"
+      }
+    },
+    {
+      "variant": "before",
+      "controller_sha256": "c72df3ee5f341f02f37fc65a23d355d0b85e77c7e479c96695bf481c263c9d1c",
+      "formal_requests": 25179,
+      "formal_failures": 0,
+      "resource_sampling_version": 1,
+      "peak_load_rss_bytes": 59326464,
+      "incomplete_resource_samples": null,
+      "run": "local-resource-tree8-20261106-234151",
+      "group_p95_ms": {
+        "clinical_export": 5.578899999818532,
+        "detail_export": 5.60589999986405,
+        "guard": 3.5950000001321314,
+        "query": 3.7379999994300306,
+        "reception": 3.6162000005788286,
+        "summary_export": 4.288699999960954,
+        "write": 3.564100000403414
+      },
+      "raw_sha256": {
+        "combined.summary.json": "17a98727999e68ea1f2558dcfd733f24dc8aeecda768b6be3e122d6098dc2f1f",
+        "combined.requests.jsonl": "96a2f3b20900bc7c5f3f56333a4b5873b73ce5276d544f538a4bb8b106130487",
+        "combined.resources.jsonl": "a4115b6d84ac3399cc44edcd9a84d99d8dfa520fcd9a3c225877a49f4ede53f1"
+      }
+    }
+  ],
+  "notes": [
+    "Old root-only RSS/CPU is incomplete; increased RSS represents previously omitted processes, not proven memory regression",
+    "RSS sums shared pages across processes; CPU totals are cumulative lifetimes at last observation, not exact window deltas or final exited CPU",
+    "The sampler adds traversal overhead; measured request counts do not establish performance improvement",
+    "One prior 32-worker candidate run was rejected for a 697ms inflight-sample gap; preserved without modifying the 500ms completeness gate"
+  ],
+  "controller_source_sha256": "88e79c49e81349c0fd6f97fe9d8d1f2c0e65bdc29931c0b58b1152ed9a755efb",
+  "sampling_probe": {
+    "scope": "actual local Windows venv launcher + intermediate Python + allocated/busy nested worker; no HTTP or performance acceptance",
+    "controller_sha256": "88e79c49e81349c0fd6f97fe9d8d1f2c0e65bdc29931c0b58b1152ed9a755efb",
+    "root_pid": 16652,
+    "worker_pid": 34060,
+    "legacy_root_only_rss_bytes": 4390912,
+    "legacy_root_only_cpu_seconds": 0.015625,
+    "passed": true,
+    "sample_duration_ms_max": 7.6435000000856235,
+    "sample_count": 20,
+    "last_sample": {
+      "load_rss_bytes": 78270464,
+      "load_cpu_seconds": 0.375,
+      "load_process_count": 5,
+      "load_processes": [
+        {
+          "pid": 12308,
+          "create_time": 1793979215.4875655,
+          "rss_bytes": 7999488,
+          "cpu_seconds": 0.015625
+        },
+        {
+          "pid": 16652,
+          "create_time": 1793979215.4807143,
+          "rss_bytes": 4390912,
+          "cpu_seconds": 0.015625
+        },
+        {
+          "pid": 20596,
+          "create_time": 1793979215.506256,
+          "rss_bytes": 13991936,
+          "cpu_seconds": 0.03125
+        },
+        {
+          "pid": 28912,
+          "create_time": 1793979215.546207,
+          "rss_bytes": 4399104,
+          "cpu_seconds": 0.015625
+        },
+        {
+          "pid": 34060,
+          "create_time": 1793979215.5545163,
+          "rss_bytes": 47489024,
+          "cpu_seconds": 0.296875
+        }
+      ],
+      "load_resource_complete": true,
+      "load_resource_errors": [],
+      "load_resource_scope": "controller-and-descendants-v2"
+    }
+  }
+}
