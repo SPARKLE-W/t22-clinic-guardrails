@@ -37,7 +37,7 @@ def diagnosis(actor_id, mode, key, payload, ref):
         with transaction.atomic():
             actor = require(actor_id, WRITE, lock=True)
             operation_key = _uuid(key)
-            head = _policy_head_for_share(actor.store)
+            head = _policy_head_for_share(actor.store_id)
             row = _own(actor, ref, clinical=True, lock=True)
             allowed = ['diagnosis', 'examination', 'extra_fields']
             if mode == 'correct':
@@ -91,14 +91,13 @@ def diagnosis(actor_id, mode, key, payload, ref):
                     record = ClinicalRecord.objects.create(encounter=row, template=template_candidate)
                 else:
                     record.current_version += 1
-                    record.save(update_fields=['current_version'])
                 note_encounter_lock(record, row)
                 version = ClinicalRevision.objects.create(record=record, version=record.current_version, actor=actor,
                                                           reason=payload.get('reason', ''), extra_fields=extra_fields, **values)
                 check.record = record
                 check.result_version = version
                 check.save(update_fields=['record', 'result_version'])
-                refresh_projection(record, row, template_candidate, template)
+                refresh_projection(record, row, template_candidate, template, save_version=current is not None)
                 _audit(actor, WRITE, row, 'success', 'COMPLETED', record)
                 # Load through the same explicit, doctor-only serializer as reads.
                 row.clinicalrecord = record

@@ -86,15 +86,15 @@ def _template(candidate, store_id):
         raise DomainError('TEMPLATE_UNAVAILABLE', 503) from None
 
 
-def _policy_head_for_share(store):
+def _policy_head_for_share(store_id):
     if connection.vendor == 'mysql':
         table = connection.ops.quote_name(PolicyHead._meta.db_table)
         store_column = connection.ops.quote_name(PolicyHead._meta.get_field('store').column)
         rows = PolicyHead.objects.raw(
             f'SELECT * FROM {table} WHERE {store_column} = %s FOR SHARE',
-            [store.pk.hex])
+            [PolicyHead._meta.get_field('store').target_field.get_db_prep_value(store_id, connection)])
         return next(iter(rows), None)
-    return PolicyHead.objects.select_for_update().filter(store=store).first()
+    return PolicyHead.objects.select_for_update().filter(store_id=store_id).first()
 
 
 def _own(actor, ref, clinical=False, lock=False, join_read_templates=False):
@@ -184,7 +184,7 @@ def mutate(actor_id, mode, key, payload, encounter_ref=None):
                     raise DomainError('DOCTOR_UNAVAILABLE', 403) from None
                 if doctor.store_id != actor.store_id:
                     raise DomainError('DOCTOR_UNAVAILABLE', 403)
-                head = _policy_head_for_share(actor.store)
+                head = _policy_head_for_share(actor.store_id)
                 if not head or not head.candidate_id:
                     raise DomainError('TEMPLATE_UNAVAILABLE', 503)
                 candidate = Candidate.objects.get(pk=head.candidate_id)
@@ -196,14 +196,14 @@ def mutate(actor_id, mode, key, payload, encounter_ref=None):
                 _text(payload.get('pet_name', ''), 100, False)
                 pet_ref = _uuid(payload['pet_ref'])
                 if payload['pet_identity_choice'] == 'new':
-                    pet = PetIdentity.objects.create(pk=pet_ref, store=actor.store)
+                    pet = PetIdentity.objects.create(pk=pet_ref, store_id=actor.store_id)
                 elif payload['pet_identity_choice'] == 'known':
-                    pet = PetIdentity.objects.filter(pk=pet_ref, store=actor.store).first()
+                    pet = PetIdentity.objects.filter(pk=pet_ref, store_id=actor.store_id).first()
                     if not pet:
                         raise DomainError('PET_UNAVAILABLE', 403)
                 else:
                     raise DomainError('INPUT_INVALID', 422)
-                row = Encounter.objects.create(store=actor.store, pet=pet, receptionist=actor, doctor=doctor, template=candidate,
+                row = Encounter.objects.create(store_id=actor.store_id, pet=pet, receptionist=actor, doctor=doctor, template=candidate,
                                                species=payload['species'], complaint=payload['complaint'], pet_name=payload.get('pet_name', ''))
                 own_store = actor.store_id
             elif mode == 'correct':

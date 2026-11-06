@@ -17,7 +17,7 @@ def mutate(actor_id, mode, key, payload, ref):
         with transaction.atomic():
             actor = require(actor_id, PERMISSION, lock=True)
             operation_key = _uuid(key)
-            head = _policy_head_for_share(actor.store)
+            head = _policy_head_for_share(actor.store_id)
             row = _own(actor, ref, clinical=True, lock=True)
             _object(payload, ['drug', 'amount', 'unit'] + (['original_entry_ref', 'reason'] if mode == 'correct' else []))
             values = {field: _text(payload.get(field, ''), maximum, False) for field, maximum in [('drug',2000),('amount',256),('unit',100)]}

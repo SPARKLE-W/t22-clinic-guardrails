@@ -60,7 +60,7 @@ def mutate(actor_id, mode, key, payload, ref):
         with transaction.atomic():
             actor = require(actor_id, permission, lock=True)
             operation_key = _uuid(key)
-            head = _policy_head_for_share(actor.store) if mode == 'adopt' else None
+            head = _policy_head_for_share(actor.store_id) if mode == 'adopt' else None
             saved = Suggestion.objects.filter(pk=_uuid(ref)).only('encounter_id').first()
             if not saved:
                 raise DomainError('TARGET_UNAVAILABLE',403)
@@ -137,7 +137,6 @@ def mutate(actor_id, mode, key, payload, ref):
                 if current is None or set(adopted) & {'diagnosis','examination'} or adopted.get('extra_fields'):
                     if current:
                         record.current_version += 1
-                        record.save(update_fields=['current_version'])
                     version = ClinicalRevision.objects.create(record=record,version=record.current_version,actor=actor,
                                                               reason=reason,extra_fields=extra_fields,**values)
                 else:
@@ -149,7 +148,8 @@ def mutate(actor_id, mode, key, payload, ref):
             decision = SuggestionDecision.objects.create(suggestion=saved,outcome='adopted' if mode == 'adopt' else 'declined',actor=actor,
                 reason=reason,adopted_content=adopted,record=record,version=version,medication=medication,evaluation=check)
             if mode == 'adopt':
-                refresh_projection(record, row, template_candidate, template)
+                refresh_projection(record, row, template_candidate, template,
+                                   save_version=current is not None and version.pk != current.pk)
             _audit(actor,permission,row,'success','COMPLETED',record)
             result = {'saved_ref':str(decision.pk),'record_ref':str(record.pk) if record else None,
                 'version_ref':str(version.pk) if version else None,'operation_state':decision.outcome,
