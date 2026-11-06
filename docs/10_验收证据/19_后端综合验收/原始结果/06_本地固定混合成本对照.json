@@ -1,0 +1,421 @@
+{
+  "scope": "Local serial direct function and JSON-rendering comparison; fixed 400-request mix, each outer transaction rolled back; no sustained concurrency, outer commit or HTTP. App CPU measured in worker process only. Database CPU uses separate whole-child windows and must not be added to these app samples.",
+  "baseline": "38d9a2c9682af8a49f2dd97cbadfc3053f6cd9c8",
+  "candidate": "47a8b3c3f4afb800416680ba27ddbdec1a660cf2",
+  "fixture": {
+    "stores": 5,
+    "pets": 6000,
+    "clinical_records": 20000,
+    "export_projections": 20000
+  },
+  "results": [
+    {
+      "round": 1,
+      "baseline": {
+        "application_cpu_seconds": 3.03125,
+        "function_wall_ms": 4685.1790999826335,
+        "sql_count": 6620,
+        "groups": {
+          "query": {
+            "count": 120,
+            "median_ms": 6.367300000420073,
+            "p95_ms": 7.433800001308555,
+            "sql_count": 1320,
+            "body_bytes": 172282
+          },
+          "guard": {
+            "count": 60,
+            "median_ms": 13.456000000587665,
+            "p95_ms": 15.949500000715489,
+            "sql_count": 1500,
+            "body_bytes": 59600
+          },
+          "reception": {
+            "count": 60,
+            "median_ms": 6.0444000009738375,
+            "p95_ms": 7.401599999866448,
+            "sql_count": 900,
+            "body_bytes": 46228
+          },
+          "write": {
+            "count": 80,
+            "median_ms": 13.614899999083718,
+            "p95_ms": 18.771199996990617,
+            "sql_count": 2020,
+            "body_bytes": 36693
+          },
+          "clinical_export": {
+            "count": 40,
+            "median_ms": 7.859549999921001,
+            "p95_ms": 15.855599998758407,
+            "sql_count": 480,
+            "body_bytes": 2974151
+          },
+          "detail_export": {
+            "count": 20,
+            "median_ms": 7.032550000076299,
+            "p95_ms": 199.33619999937946,
+            "sql_count": 220,
+            "body_bytes": 876124
+          },
+          "summary_export": {
+            "count": 20,
+            "median_ms": 21.00944999801868,
+            "p95_ms": 35.82520000054501,
+            "sql_count": 180,
+            "body_bytes": 3040
+          }
+        }
+      },
+      "candidate": {
+        "application_cpu_seconds": 2.703125,
+        "function_wall_ms": 4293.64440001882,
+        "sql_count": 5960,
+        "groups": {
+          "query": {
+            "count": 120,
+            "median_ms": 4.879600001004292,
+            "p95_ms": 5.490300001838477,
+            "sql_count": 960,
+            "body_bytes": 172282
+          },
+          "guard": {
+            "count": 60,
+            "median_ms": 12.355650000245078,
+            "p95_ms": 13.75460000053863,
+            "sql_count": 1320,
+            "body_bytes": 59600
+          },
+          "reception": {
+            "count": 60,
+            "median_ms": 6.066749998353771,
+            "p95_ms": 6.949399998120498,
+            "sql_count": 900,
+            "body_bytes": 46228
+          },
+          "write": {
+            "count": 80,
+            "median_ms": 12.266450001334306,
+            "p95_ms": 16.349800000170944,
+            "sql_count": 1900,
+            "body_bytes": 36693
+          },
+          "clinical_export": {
+            "count": 40,
+            "median_ms": 8.331049999469542,
+            "p95_ms": 15.774100000271574,
+            "sql_count": 480,
+            "body_bytes": 2974151
+          },
+          "detail_export": {
+            "count": 20,
+            "median_ms": 6.880599998112302,
+            "p95_ms": 199.47259999753442,
+            "sql_count": 220,
+            "body_bytes": 876124
+          },
+          "summary_export": {
+            "count": 20,
+            "median_ms": 20.129250002355548,
+            "p95_ms": 36.18359999745735,
+            "sql_count": 180,
+            "body_bytes": 3040
+          }
+        }
+      }
+    },
+    {
+      "round": 2,
+      "baseline": {
+        "application_cpu_seconds": 2.9375,
+        "function_wall_ms": 4691.758400014805,
+        "sql_count": 6620,
+        "groups": {
+          "query": {
+            "count": 120,
+            "median_ms": 6.2880500008759554,
+            "p95_ms": 7.289699999091681,
+            "sql_count": 1320,
+            "body_bytes": 172282
+          },
+          "guard": {
+            "count": 60,
+            "median_ms": 13.60460000068997,
+            "p95_ms": 16.511199999513337,
+            "sql_count": 1500,
+            "body_bytes": 59600
+          },
+          "reception": {
+            "count": 60,
+            "median_ms": 5.946049999693059,
+            "p95_ms": 7.064400000672322,
+            "sql_count": 900,
+            "body_bytes": 46228
+          },
+          "write": {
+            "count": 80,
+            "median_ms": 13.32650000222202,
+            "p95_ms": 17.751100000168663,
+            "sql_count": 2020,
+            "body_bytes": 36693
+          },
+          "clinical_export": {
+            "count": 40,
+            "median_ms": 8.752600000661914,
+            "p95_ms": 16.197600001760293,
+            "sql_count": 480,
+            "body_bytes": 2974151
+          },
+          "detail_export": {
+            "count": 20,
+            "median_ms": 6.8254500001785345,
+            "p95_ms": 200.2557000014349,
+            "sql_count": 220,
+            "body_bytes": 876124
+          },
+          "summary_export": {
+            "count": 20,
+            "median_ms": 20.815999998376356,
+            "p95_ms": 36.66390000216779,
+            "sql_count": 180,
+            "body_bytes": 3040
+          }
+        }
+      },
+      "candidate": {
+        "application_cpu_seconds": 2.515625,
+        "function_wall_ms": 4280.550900020899,
+        "sql_count": 5960,
+        "groups": {
+          "query": {
+            "count": 120,
+            "median_ms": 4.85830000070564,
+            "p95_ms": 5.7630000010249205,
+            "sql_count": 960,
+            "body_bytes": 172282
+          },
+          "guard": {
+            "count": 60,
+            "median_ms": 11.922799998501432,
+            "p95_ms": 13.076999999611871,
+            "sql_count": 1320,
+            "body_bytes": 59600
+          },
+          "reception": {
+            "count": 60,
+            "median_ms": 6.033900001057191,
+            "p95_ms": 7.005600000411505,
+            "sql_count": 900,
+            "body_bytes": 46228
+          },
+          "write": {
+            "count": 80,
+            "median_ms": 12.178199998743366,
+            "p95_ms": 16.53509999960079,
+            "sql_count": 1900,
+            "body_bytes": 36693
+          },
+          "clinical_export": {
+            "count": 40,
+            "median_ms": 8.425600000919076,
+            "p95_ms": 16.185500000574393,
+            "sql_count": 480,
+            "body_bytes": 2974151
+          },
+          "detail_export": {
+            "count": 20,
+            "median_ms": 6.699850002405583,
+            "p95_ms": 198.6445000002277,
+            "sql_count": 220,
+            "body_bytes": 876124
+          },
+          "summary_export": {
+            "count": 20,
+            "median_ms": 20.440249998500803,
+            "p95_ms": 36.1732999990636,
+            "sql_count": 180,
+            "body_bytes": 3040
+          }
+        }
+      }
+    },
+    {
+      "round": 3,
+      "baseline": {
+        "application_cpu_seconds": 2.859375,
+        "function_wall_ms": 4656.306299973949,
+        "sql_count": 6620,
+        "groups": {
+          "query": {
+            "count": 120,
+            "median_ms": 6.347949998598779,
+            "p95_ms": 7.2832000005291775,
+            "sql_count": 1320,
+            "body_bytes": 172282
+          },
+          "guard": {
+            "count": 60,
+            "median_ms": 13.216650000686059,
+            "p95_ms": 16.613599997072015,
+            "sql_count": 1500,
+            "body_bytes": 59600
+          },
+          "reception": {
+            "count": 60,
+            "median_ms": 5.972299999484676,
+            "p95_ms": 7.719500001257984,
+            "sql_count": 900,
+            "body_bytes": 46228
+          },
+          "write": {
+            "count": 80,
+            "median_ms": 13.214800001151161,
+            "p95_ms": 17.735899997205706,
+            "sql_count": 2020,
+            "body_bytes": 36693
+          },
+          "clinical_export": {
+            "count": 40,
+            "median_ms": 8.042350000323495,
+            "p95_ms": 14.809000000241213,
+            "sql_count": 480,
+            "body_bytes": 2974151
+          },
+          "detail_export": {
+            "count": 20,
+            "median_ms": 6.586999999854015,
+            "p95_ms": 199.94690000021365,
+            "sql_count": 220,
+            "body_bytes": 876124
+          },
+          "summary_export": {
+            "count": 20,
+            "median_ms": 20.61400000093272,
+            "p95_ms": 35.771299997577444,
+            "sql_count": 180,
+            "body_bytes": 3040
+          }
+        }
+      },
+      "candidate": {
+        "application_cpu_seconds": 2.546875,
+        "function_wall_ms": 4304.554500045924,
+        "sql_count": 5960,
+        "groups": {
+          "query": {
+            "count": 120,
+            "median_ms": 4.881599999862374,
+            "p95_ms": 5.641499999910593,
+            "sql_count": 960,
+            "body_bytes": 172282
+          },
+          "guard": {
+            "count": 60,
+            "median_ms": 12.089450001440127,
+            "p95_ms": 13.473300001351163,
+            "sql_count": 1320,
+            "body_bytes": 59600
+          },
+          "reception": {
+            "count": 60,
+            "median_ms": 5.897200000617886,
+            "p95_ms": 6.960300001082942,
+            "sql_count": 900,
+            "body_bytes": 46228
+          },
+          "write": {
+            "count": 80,
+            "median_ms": 12.112449998312513,
+            "p95_ms": 16.296300000249175,
+            "sql_count": 1900,
+            "body_bytes": 36693
+          },
+          "clinical_export": {
+            "count": 40,
+            "median_ms": 8.342950000951532,
+            "p95_ms": 15.683600002375897,
+            "sql_count": 480,
+            "body_bytes": 2974151
+          },
+          "detail_export": {
+            "count": 20,
+            "median_ms": 8.307849999255268,
+            "p95_ms": 198.86789999873145,
+            "sql_count": 220,
+            "body_bytes": 876124
+          },
+          "summary_export": {
+            "count": 20,
+            "median_ms": 20.325599998614052,
+            "p95_ms": 37.4986999995599,
+            "sql_count": 180,
+            "body_bytes": 3040
+          }
+        }
+      }
+    }
+  ],
+  "mysql_cpu_windows": [
+    {
+      "round": 1,
+      "version": "baseline",
+      "mysql_cpu_before": 35.8125,
+      "mysql_cpu_after": 38.203125,
+      "mysql_cpu_seconds": 2.390625,
+      "mysql_pid": 20612,
+      "scope": "Whole child lifetime including setup, warmup and rollback, no concurrent user workload"
+    },
+    {
+      "round": 1,
+      "version": "candidate",
+      "mysql_cpu_before": 38.203125,
+      "mysql_cpu_after": 41.0625,
+      "mysql_cpu_seconds": 2.859375,
+      "mysql_pid": 20612,
+      "scope": "Whole child lifetime including setup, warmup and rollback, no concurrent user workload"
+    },
+    {
+      "round": 2,
+      "version": "candidate",
+      "mysql_cpu_before": 41.0625,
+      "mysql_cpu_after": 43.5,
+      "mysql_cpu_seconds": 2.4375,
+      "mysql_pid": 20612,
+      "scope": "Whole child lifetime including setup, warmup and rollback, no concurrent user workload"
+    },
+    {
+      "round": 2,
+      "version": "baseline",
+      "mysql_cpu_before": 43.5,
+      "mysql_cpu_after": 46.15625,
+      "mysql_cpu_seconds": 2.65625,
+      "mysql_pid": 20612,
+      "scope": "Whole child lifetime including setup, warmup and rollback, no concurrent user workload"
+    },
+    {
+      "round": 3,
+      "version": "baseline",
+      "mysql_cpu_before": 46.15625,
+      "mysql_cpu_after": 48.703125,
+      "mysql_cpu_seconds": 2.546875,
+      "mysql_pid": 20612,
+      "scope": "Whole child lifetime including setup, warmup and rollback, no concurrent user workload"
+    },
+    {
+      "round": 3,
+      "version": "candidate",
+      "mysql_cpu_before": 48.703125,
+      "mysql_cpu_after": 51.0,
+      "mysql_cpu_seconds": 2.296875,
+      "mysql_pid": 20612,
+      "scope": "Whole child lifetime including setup, warmup and rollback, no concurrent user workload"
+    }
+  ],
+  "limits": [
+    "single host, serial, fresh history; MySQL development settings",
+    "same direct workload and seed, not complete production entrypoint",
+    "three alternating version-order rounds, no cProfile in timing rounds",
+    "process CPU has Windows time granularity",
+    "no stable MySQL CPU improvement proven"
+  ]
+}
