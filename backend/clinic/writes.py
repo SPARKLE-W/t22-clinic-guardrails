@@ -79,10 +79,11 @@ def diagnosis(actor_id, mode, key, payload, ref):
                 _validated(policy_candidate, actor.store_id)
             extra_fields = _extra_values(template, payload.get('extra_fields', {}), current.extra_fields if current else None)
             checks, hits = evaluate(policy_candidate.envelope['payload']['demand'], template, values, mode)
-            check = ClinicalCheck.objects.create(encounter=row, record=record, original_version=current, actor=actor, mode=mode,
+            check = ClinicalCheck(encounter=row, record=record, original_version=current, actor=actor, mode=mode,
                          template=template_candidate, policy=policy_candidate, policy_digest=policy_candidate.digest,
                          status='blocked' if hits else 'passed', checks=checks)
             if hits:
+                check.save(force_insert=True)
                 _persist_guard_alerts(check, hits)
                 _audit(actor, WRITE, row, 'refused', 'GUARD_BLOCKED', record)
                 result = {'ok': False, 'error': {'code': 'GUARD_BLOCKED'}, 'event_ref': str(check.pk)}
@@ -96,7 +97,7 @@ def diagnosis(actor_id, mode, key, payload, ref):
                                                           reason=payload.get('reason', ''), extra_fields=extra_fields, **values)
                 check.record = record
                 check.result_version = version
-                check.save(update_fields=['record', 'result_version'])
+                check.save(force_insert=True)
                 prefix = refresh_projection(record, row, template_candidate, template, save_version=current is not None)
                 _audit(actor, WRITE, row, 'success', 'COMPLETED', record)
                 # Load through the same explicit, doctor-only serializer as reads.
