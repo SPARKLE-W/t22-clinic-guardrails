@@ -378,12 +378,13 @@ def guard(actor_id, permission, payload):
                 refs = [_uuid(ref) for ref in refs]
                 if len(set(refs)) != len(refs):
                     raise DomainError('INPUT_INVALID', 422)
-                found = Encounter.objects.filter(pk__in=refs, store_id=actor.store_id, doctor_id=actor.pk).count()
+                selected_refs = _clinical_id_selection(refs)
+                found = Encounter.objects.filter(pk__in=selected_refs, store_id=actor.store_id, doctor_id=actor.pk).count()
                 if found != len(refs):
                     error = DomainError('TARGET_UNAVAILABLE', 403)
                     error.export_targets = ('encounter', refs)
                     raise error
-                hits = hits.filter(evaluation__encounter_id__in=refs)
+                hits = hits.filter(evaluation__encounter_id__in=selected_refs)
         if 'time_range' in payload:
             start, end = _range(payload['time_range'])
             hits = hits.filter(evaluation__created_at__gte=start, evaluation__created_at__lt=end)

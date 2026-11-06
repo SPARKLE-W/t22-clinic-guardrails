@@ -391,6 +391,48 @@ class GuardExportTests(ClinicFixture):
         self.assertNotIn('合成主诉', response.content.decode('utf-8-sig'))
         self.assertEqual(1, ExportRequest.objects.filter(permission='export.guard_detail').count())
 
+    def test_large_detail_scope_preserves_csv_and_checks_missing_targets(self):
+        from django.test.utils import CaptureQueriesContext
+        from .models import GuardHit
+        original = Encounter.objects.get(pk=self.ref)
+        check = ClinicalCheck.objects.get(encounter=original)
+        hit = GuardHit.objects.get(evaluation=check)
+        encounters = [Encounter(store=self.a, pet=original.pet, receptionist=self.front,
+                                doctor=self.doctor, template=self.template,
+                                species='猫', complaint='大范围导出夹具') for _ in range(1999)]
+        Encounter.objects.bulk_create(encounters)
+        checks = [ClinicalCheck(encounter=row, actor=self.doctor, mode=check.mode,
+                                template=self.template, policy=check.policy,
+                                policy_digest=check.policy_digest, status=check.status,
+                                checks=check.checks) for row in encounters]
+        ClinicalCheck.objects.bulk_create(checks)
+        hits = [GuardHit(evaluation=row, rule_ref=hit.rule_ref, rule_version=hit.rule_version,
+                         field=hit.field, value=hit.value) for row in checks]
+        GuardHit.objects.bulk_create(hits)
+        Alert.objects.bulk_create([Alert(hit=row) for row in hits])
+        refs = [self.ref, *(str(row.pk) for row in encounters)]
+        payload = {'scope': {'encounter_refs': refs}}
+        with patch('clinic.exports._clinical_id_selection', side_effect=lambda values: values):
+            expected, _, expected_count = guard(self.doctor.pk, 'export.guard_detail', payload)
+        with CaptureQueriesContext(connection) as queries:
+            actual, export_ref, count = guard(self.doctor.pk, 'export.guard_detail', payload)
+        self.assertEqual(expected, actual)
+        self.assertEqual(2000, expected_count)
+        self.assertEqual(expected_count, count)
+        entry = ExportRequest.objects.get(pk=export_ref)
+        self.assertEqual(self.doctor.pk, entry.actor_id)
+        self.assertEqual(self.a.pk, entry.store_id)
+        self.assertEqual(payload, entry.scope)
+        if connection.vendor == 'mysql':
+            self.assertEqual(2, sum('JSON_TABLE' in query['sql'] for query in queries))
+        before = ExportRequest.objects.count()
+        for actor, selected in ((self.doctor2, refs), (self.foreign, refs),
+                                (self.doctor, [*refs[:-1], str(uuid.uuid4())])):
+            with self.subTest(actor=actor.pk), self.assertRaises(DomainError) as error:
+                guard(actor.pk, 'export.guard_detail', {'scope': {'encounter_refs': selected}})
+            self.assertEqual('TARGET_UNAVAILABLE', error.exception.code)
+        self.assertEqual(before, ExportRequest.objects.count())
+
     def test_detail_audit_uses_distinct_record_batch_and_rolls_back_on_failure(self):
         from .models import GuardHit
         record = self.record_fixture(self.ref)

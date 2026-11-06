@@ -1,0 +1,410 @@
+{
+  "scope": "local serial complete guard-detail export comparisons; commits, all CSV bytes and exact persistent audit targets verified; not HTTP/360-inflight or cloud acceptance",
+  "baseline_commit": "39d7585",
+  "candidate_exports_sha256": "badb11d7b02156a840a850eb3944b9889aef0988d3e4de5005309f4ca00dd3c2",
+  "change": "Reuse existing >=2000 UUID JSON_TABLE membership in both same-store/doctor encounter count and hit lookup. Smaller scopes and other DB vendors retain IN. Authorization, missing-target check, sort, CSV and audit unchanged.",
+  "runs": [
+    {
+      "run": "detail-json-selection-full-1.json",
+      "mysql_profile": "128MiB prototype",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 6.260200000724581,
+            "candidate": 6.556300000738702
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 16.722899999876972,
+            "candidate": 17.65530000011495
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 123.51459999990766,
+            "candidate": 102.8308000004472
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 222.38710000056017,
+            "candidate": 196.77630000023782
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "c505183241c3aefacd297b21a5a0dceb843296e7fe6f0fe1782c4585d2849ca8"
+    },
+    {
+      "run": "detail-json-selection-full-2.json",
+      "mysql_profile": "128MiB prototype",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 8.92640000074607,
+            "candidate": 8.854450001308578
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 25.28699999948003,
+            "candidate": 27.18674999960058
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 203.80744999965827,
+            "candidate": 195.45000000016444
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 437.14785000065604,
+            "candidate": 386.4291500003674
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "f4abd39311c59719084e7fb25c0f9dac06aee22f3de8a84117e707fd4e99b58e"
+    },
+    {
+      "run": "detail-json-selection-full-3.json",
+      "mysql_profile": "128MiB prototype",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 6.643949998760945,
+            "candidate": 6.444900000133202
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 19.63660000001255,
+            "candidate": 17.7896499990311
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 159.63914999974804,
+            "candidate": 141.84790000035719
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 263.5389499992016,
+            "candidate": 256.50820000009844
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "2a260ac5a0205cee212babc713072f8614d6132c38faeb5bfd8f6562950b978a"
+    },
+    {
+      "run": "detail-json-actual-full-1.json",
+      "mysql_profile": "128MiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 8.782499999142601,
+            "candidate": 9.47470000028261
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 28.292499999224674,
+            "candidate": 29.11275000042224
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 220.43585000028543,
+            "candidate": 184.92279999918537
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 406.85339999890857,
+            "candidate": 373.34479999935866
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "0cef02f0cef9dcb9921c6bd6ce8019070b325216c7a91c992f8cb8bb6bf5225f"
+    },
+    {
+      "run": "detail-json-actual-full-2.json",
+      "mysql_profile": "128MiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 10.048850000202947,
+            "candidate": 9.637000000111584
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 25.48595000007481,
+            "candidate": 28.340900000330294
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 208.61334999972314,
+            "candidate": 167.2249000002921
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 484.32510000020557,
+            "candidate": 417.1216499998991
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "622aa32efda60f8309369b58c6ac05254763dfb002261030b6c942fc1fb0a84f"
+    },
+    {
+      "run": "detail-json-actual-full-3.json",
+      "mysql_profile": "128MiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 9.222800000316056,
+            "candidate": 9.110999999393243
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 27.48909999991156,
+            "candidate": 27.480349999677856
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 232.31384999962756,
+            "candidate": 194.20680000075663
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 449.1436500002237,
+            "candidate": 420.58424999959243
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "4c6e5294a05309d682d5cc3e75f506a1e9fb123dc6d2b3f4a81c0e562006820b"
+    },
+    {
+      "run": "detail-json-actual-2gb-full-1.json",
+      "mysql_profile": "2GiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 5.748000000494358,
+            "candidate": 5.942599999798404
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 16.365999999834457,
+            "candidate": 16.477999999551685
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 130.26019999961136,
+            "candidate": 116.32505000034143
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 266.3900500001546,
+            "candidate": 233.73575000005076
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "c31906914a0e6c3dffdb479c563468412c17bb2713d26b3edd994b289ccf85d6"
+    },
+    {
+      "run": "detail-json-actual-2gb-full-2.json",
+      "mysql_profile": "2GiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 5.701349999981176,
+            "candidate": 5.643300000883755
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 15.375800000583695,
+            "candidate": 15.006450000328186
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 124.97170000006008,
+            "candidate": 99.91530000024795
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 276.201549999314,
+            "candidate": 231.1399000000165
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "6ab2c439ad8cf1b573abe3608d4a0b8d0fd01ca0aef2ee15128801d46a91ffb7"
+    },
+    {
+      "run": "detail-json-actual-2gb-full-3.json",
+      "mysql_profile": "2GiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 5.22610000007262,
+            "candidate": 5.47404999997525
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 15.473600000404986,
+            "candidate": 15.143099999477272
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 128.48515000041516,
+            "candidate": 103.42159999981959
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 284.54914999929315,
+            "candidate": 252.23710000045685
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "602eeb04404fd1b938fb69ccc6f7fbb09c2be663cdf5fb4c11a5f40ccd66b424"
+    }
+  ],
+  "mysql_budget_change": {
+    "scope": "owned local MySQL only, no cloud or Windows service changes; runtime global values reset on server restart",
+    "before_buffer_pool_bytes": 134217728,
+    "after_buffer_pool_bytes": 2147483648,
+    "before_max_connections": 151,
+    "after_max_connections": 512,
+    "reason": "working diagnostic schema audit index+data approx292MB exceeded old128MB pool; stabilize later local CPU comparisons",
+    "available_host_memory_after_bytes": 15733477376
+  },
+  "limits": [
+    "Compare alternating pairs within the same profile; do not combine absolute times from 128MiB and 2GiB runs",
+    "Large diagnostic audit indexes exceeded the old128MiB buffer, contributing to drift; source histories and business snapshot remained unchanged",
+    "Local implementation regression: 68 real MySQL export/projection/write-budget tests passed, including 2000 encounter CSV parity and missing/foreign/other-doctor rejection",
+    "Mixed HTTP and full CI remain separate gates; no strict pass claimed"
+  ]
+}
