@@ -21,6 +21,36 @@ $diskClass = Get-CimClass -Namespace root/cimv2 -ClassName Win32_PerfFormattedDa
 $processorClass = Get-CimClass -Namespace root/cimv2 -ClassName Win32_PerfFormattedData_PerfOS_Processor -ErrorAction Stop
 $memoryClass = Get-CimClass -Namespace root/cimv2 -ClassName Win32_PerfFormattedData_PerfOS_Memory -ErrorAction Stop
 
+function Get-ProcessCpuSnapshot($Processes) {
+    foreach ($process in $Processes) {
+        if ($process.Id -eq 0) { continue } # Idle time is not consumed CPU.
+        $row = [ordered]@{
+            pid = [int]$process.Id
+            name = $process.ProcessName
+            started_utc = $null
+            cpu_cumulative_seconds = $null
+            user_cpu_cumulative_seconds = $null
+            privileged_cpu_cumulative_seconds = $null
+            sampling_error = $null
+        }
+        try {
+            $total = $process.TotalProcessorTime
+            $user = $process.UserProcessorTime
+            $privileged = $process.PrivilegedProcessorTime
+            $started = $process.StartTime
+            if ($null -eq $total -or $null -eq $user -or $null -eq $privileged -or $null -eq $started) {
+                throw 'Process CPU counters or start time unavailable.'
+            }
+            $row.started_utc = $started.ToUniversalTime().ToString('o')
+            $row.cpu_cumulative_seconds = $total.TotalSeconds
+            $row.user_cpu_cumulative_seconds = $user.TotalSeconds
+            $row.privileged_cpu_cumulative_seconds = $privileged.TotalSeconds
+        }
+        catch { $row.sampling_error = $_.Exception.GetType().FullName }
+        $row
+    }
+}
+
 function Get-CounterDisplayName($class, [string]$propertyName) {
     $qualifier = $class.CimClassProperties[$propertyName].Qualifiers |
         Where-Object Name -eq 'DisplayName' | Select-Object -First 1
@@ -45,6 +75,8 @@ foreach ($definition in @(
     @{ class = $diskClass; property = 'CurrentDiskQueueLength'; field = 'queue_length'; source = 'disk' },
     @{ class = $diskClass; property = 'PercentDiskTime'; field = 'busy_percent'; source = 'disk' },
     @{ class = $processorClass; property = 'PercentProcessorTime'; field = 'host_cpu_percent'; source = 'cpu' },
+    @{ class = $processorClass; property = 'PercentUserTime'; field = 'host_user_cpu_percent'; source = 'cpu' },
+    @{ class = $processorClass; property = 'PercentPrivilegedTime'; field = 'host_privileged_cpu_percent'; source = 'cpu' },
     @{ class = $memoryClass; property = 'AvailableBytes'; field = 'available_memory_bytes'; source = 'memory' }
 )) {
     $setName = switch ($definition.class.CimClassName) {
@@ -81,13 +113,22 @@ try {
         $sample = [ordered]@{
             timestamp_utc = [DateTime]::UtcNow.ToString('o')
             elapsed_seconds = [Math]::Round($watch.Elapsed.TotalSeconds, 3)
+            sampling_started_utc = [DateTime]::UtcNow.ToString('o')
+            sampling_completed_utc = $null
+            sampling_duration_ms = $null
+            process_snapshot_started_utc = $null
+            process_snapshot_completed_utc = $null
+            all_process_cpu = @()
             sampling_error = $null
+            host_user_cpu_percent = $null
+            host_privileged_cpu_percent = $null
             host_cpu_percent = $null
             available_memory_bytes = $null
             physical_disks = @()
             processes = @()
         }
 
+        $sampleWatch = [System.Diagnostics.Stopwatch]::StartNew()
         try {
             if ($null -eq $latestSampleSet) {
                 $sampleSet = @(Get-Counter -Counter $counterPaths `
@@ -111,7 +152,7 @@ try {
                     $diskMap[$instance][$definition.field] = $value
                 }
                 elseif ($definition.source -eq 'cpu') {
-                    $sample.host_cpu_percent = $value
+                    $sample[$definition.field] = $value
                 }
                 elseif ($definition.source -eq 'memory') {
                     $sample.available_memory_bytes = [long]$value
@@ -120,7 +161,11 @@ try {
             $sample.physical_disks = @($diskMap.GetEnumerator() | ForEach-Object {
                 [ordered]@{ instance = $_.Key } + $_.Value
             })
-            $processes = Get-Process -ErrorAction Stop | Where-Object {
+            $sample.process_snapshot_started_utc = [DateTime]::UtcNow.ToString('o')
+            $allProcesses = @(Get-Process -ErrorAction Stop)
+            $sample.all_process_cpu = @(Get-ProcessCpuSnapshot $allProcesses)
+            $sample.process_snapshot_completed_utc = [DateTime]::UtcNow.ToString('o')
+            $processes = $allProcesses | Where-Object {
                 $_.ProcessName -in @('python', 'mysqld', 'caddy')
             }
 
@@ -138,6 +183,9 @@ try {
             $sample.sampling_error = $_.Exception.GetType().FullName
         }
 
+        $sampleWatch.Stop()
+        $sample.sampling_completed_utc = [DateTime]::UtcNow.ToString('o')
+        $sample.sampling_duration_ms = $sampleWatch.Elapsed.TotalMilliseconds
         $writer.WriteLine(($sample | ConvertTo-Json -Depth 6 -Compress))
         $writer.Flush()
         $sampleCount++
