@@ -507,9 +507,10 @@ def validate_capture(capture):
             declared_sha256 = headers['X-Content-SHA256']
             digest_match = (declared_bytes == len(body) == header_bytes and
                             hashlib.sha256(body).hexdigest() == declared_sha256)
-            reader = csv.DictReader(io.StringIO(body.decode('utf-8')))
-            first_row = next(reader, None)
-            rows = (1 + sum(1 for _ in reader)) if first_row else 0
+            reader = csv.reader(io.StringIO(body.decode('utf-8')))
+            fieldnames = next(reader, [])
+            first_values = next((values for values in reader if values), None)
+            rows = (1 + sum(1 for values in reader if values)) if first_values else 0
             record_count = int(headers['X-Record-Count'])
             result.update({'rows': rows, 'sha256_match': digest_match,
                            'content_length': declared_bytes, 'header_byte_count': header_bytes,
@@ -518,6 +519,7 @@ def validate_capture(capture):
             if kind in ('clinical_export', 'detail_export'):
                 valid = digest_match and record_count == expected and rows == expected
             else:
+                first_row = dict(zip(fieldnames, first_values or []))
                 valid = (digest_match and rows == 1 and record_count == expected and
                          first_row['rule_ref'] == 'SR-02' and
                          int(first_row['hit_count']) == expected and
