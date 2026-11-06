@@ -1,0 +1,289 @@
+{
+  "scope": "local shared-host real-business diagnostic, not cloud or strict acceptance; runtime candidate not adopted",
+  "configuration": {
+    "ports": 4,
+    "application_workers": 4,
+    "blocking_threads_per_worker": 24,
+    "sender_shards": 4,
+    "sender_workers": 64,
+    "warmup_seconds": 5,
+    "measurement_seconds": 15,
+    "conn_max_age": 60,
+    "conn_health_checks": true,
+    "waitress_output_spill_bytes": 8388608,
+    "granian_version": "2.7.9",
+    "granian_runtime_threads_per_worker": 1,
+    "granian_supervisor_processes": 4,
+    "granian_workers_per_port": 1
+  },
+  "primary_sources": [
+    "https://github.com/emmett-framework/granian/blob/master/README.md",
+    "https://github.com/emmett-framework/granian/blob/master/granian/server/common.py"
+  ],
+  "source_access_date": "2026-11-07",
+  "limits": [
+    "Scheduling-dependent request/size realization differs between runs; not an exact same-request speedup estimate",
+    "Shared wrapper measures through start_response; iterable and internal queue excluded; complete HTTP timing remains independent",
+    "Granian and click were installed only in repository-external candidate libs; product dependencies unchanged",
+    "Granian clinical export improved in both pairs, but first-pair other endpoints and overall throughput regressed; fixed-workload comparison still required"
+  ],
+  "shared_wrapper_sha256_recorded_after_runs": "077e805e6b88f3172d0c810b2ebe0f38be3b2fe2e9df5f2c0acf36f415f934fc",
+  "runs": [
+    {
+      "run": "local-business-http-runtime_granian_1",
+      "runtime": "granian",
+      "revision": "9db1711b85cc66c881735d2592d219eb0380274a",
+      "formal_requests": 4200,
+      "failures": 0,
+      "p95_ms": {
+        "clinical_export": 425.2168000002712,
+        "detail_export": 573.7668000001577,
+        "guard": 422.2855999996682,
+        "query": 221.89139999863983,
+        "reception": 322.22919999912847,
+        "summary_export": 269.6469000002253,
+        "write": 465.85790000062843
+      },
+      "large_clinical": {
+        "count": 40,
+        "p95_ms": 543.1176999991294,
+        "body_receive_p95_ms": 4.6771000015723985
+      },
+      "audit_verification": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1171,
+        "verified_record_targets": 261603,
+        "requests": 5883,
+        "passed": true
+      },
+      "files_sha256": {
+        "metadata.json": "060d710e1ebc7a59c6f0cf45a25f10e2a3d41fc0d60256f24dea6ecf972e7d73",
+        "combined.summary.json": "6e282d888f3bd1691be75465774ea3e92fa3749b8ecdcb1c524a58b3166075fc",
+        "combined.requests.jsonl": "907ce6739745a8b5ca80873a68b7df91b3c4719405446f52cc5b5571c2899851",
+        "export-audit-verification.json": "cec355e4d2749b19fa12539e8bbf6650678859d0a28e95d9ccc77a61fa306dc2"
+      }
+    },
+    {
+      "run": "local-business-http-runtime_waitress_1",
+      "runtime": "waitress",
+      "revision": "9db1711b85cc66c881735d2592d219eb0380274a",
+      "formal_requests": 5034,
+      "failures": 0,
+      "p95_ms": {
+        "clinical_export": 543.1775999986712,
+        "detail_export": 575.1349000001937,
+        "guard": 320.85209999968356,
+        "query": 197.57430000026943,
+        "reception": 265.6150000002526,
+        "summary_export": 240.704599998935,
+        "write": 371.06560000029276
+      },
+      "large_clinical": {
+        "count": 53,
+        "p95_ms": 891.042600000219,
+        "body_receive_p95_ms": 197.25300000027346
+      },
+      "audit_verification": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1380,
+        "verified_record_targets": 340749,
+        "requests": 6941,
+        "passed": true
+      },
+      "files_sha256": {
+        "metadata.json": "8e000235a789c2620859ccc7aebb91885a87cc8f9c6e18ec27a57c5b8f90dbda",
+        "combined.summary.json": "ca6a307f5f812e330174d2da2d62a2a292ee9202741e452b5e95d00670b6034a",
+        "combined.requests.jsonl": "cc7129b56af258db592c5c1aee356e781076a55bef759ab9cf5f2a9a9128d6d4",
+        "export-audit-verification.json": "63db10b823da5811c6f3a68457af0d74053a9ac538e64194bff1b1cb67c639c7"
+      }
+    },
+    {
+      "run": "local-business-http-runtime_waitress_2",
+      "runtime": "waitress",
+      "revision": "9db1711b85cc66c881735d2592d219eb0380274a",
+      "formal_requests": 4934,
+      "failures": 0,
+      "p95_ms": {
+        "clinical_export": 582.2331999988819,
+        "detail_export": 486.4588000000367,
+        "guard": 350.40049999952316,
+        "query": 202.12910000009288,
+        "reception": 284.3443000001571,
+        "summary_export": 235.3821999986394,
+        "write": 385.9001000000717
+      },
+      "large_clinical": {
+        "count": 48,
+        "p95_ms": 846.006200001284,
+        "body_receive_p95_ms": 236.45089999990887
+      },
+      "audit_verification": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1331,
+        "verified_record_targets": 294644,
+        "requests": 6674,
+        "passed": true
+      },
+      "files_sha256": {
+        "metadata.json": "9c07433ed3e8fced7019a36221de63cba996b8e401c0fd0790145ab708770ed4",
+        "combined.summary.json": "82504fc46a59b10c4979d8cb4e5b7485cc727e2b4428d285bd5328af52542876",
+        "combined.requests.jsonl": "f48a02cfdaf891e45b847acd39e7ef597f6b41df655813206fd3ed6100b6616a",
+        "export-audit-verification.json": "6a5f0a13dd519d070f8935df10f0ed880408edf505a45b05d71a943c25b9147e"
+      }
+    },
+    {
+      "run": "local-business-http-runtime_granian_2",
+      "runtime": "granian",
+      "revision": "9db1711b85cc66c881735d2592d219eb0380274a",
+      "formal_requests": 5245,
+      "failures": 0,
+      "p95_ms": {
+        "clinical_export": 301.1733000003005,
+        "detail_export": 475.38650000024063,
+        "guard": 313.47870000172406,
+        "query": 173.68220000025758,
+        "reception": 253.97380000140402,
+        "summary_export": 226.40529999989667,
+        "write": 372.3589000001084
+      },
+      "large_clinical": {
+        "count": 43,
+        "p95_ms": 452.45319999958156,
+        "body_receive_p95_ms": 3.8093000002845656
+      },
+      "audit_verification": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1424,
+        "verified_record_targets": 248516,
+        "requests": 7131,
+        "passed": true
+      },
+      "files_sha256": {
+        "metadata.json": "d21be6d30e82a34d79c6fe05ef8b5741b34d88c56b655f20b9bd8c6365147d11",
+        "combined.summary.json": "2375e4f9ce5fcf07a71e6804b8a00a23ba3b4de4fb750d0544c6c26c01a42b3c",
+        "combined.requests.jsonl": "d66100c386a474f1c382c5d3ffa057d7b6a6202777c4b77de16edf2c21dba4df",
+        "export-audit-verification.json": "923caced8116127844cfcd6e8b7459c1f8b07ffad1e35c8203557dab3a17ae63"
+      }
+    }
+  ],
+  "ordering_candidate": {
+    "adopted": false,
+    "reason": "Three alternating full-export trials show no stable improvement across sizes; every body SHA and exact durable audit target set matched",
+    "runs": [
+      {
+        "run": "clinical-python-order-full-1.json",
+        "sizes": {
+          "20": {
+            "median_ms": {
+              "original": 7.987100000718783,
+              "candidate": 8.190650000869937
+            },
+            "bytes": 10898,
+            "verified_exports": 20
+          },
+          "200": {
+            "median_ms": {
+              "original": 16.492799999468843,
+              "candidate": 16.052150001087284
+            },
+            "bytes": 111666,
+            "verified_exports": 20
+          },
+          "2000": {
+            "median_ms": {
+              "original": 82.24214999972901,
+              "candidate": 84.75610000004963
+            },
+            "bytes": 1106926,
+            "verified_exports": 20
+          },
+          "4000": {
+            "median_ms": {
+              "original": 166.89714999847638,
+              "candidate": 163.88255000038043
+            },
+            "bytes": 2223530,
+            "verified_exports": 20
+          }
+        },
+        "sha256": "2f03ede364460f807633566d3dd6abe2311a46e8a81b0ea7cda3d6f6a988c9af"
+      },
+      {
+        "run": "clinical-python-order-full-2.json",
+        "sizes": {
+          "20": {
+            "median_ms": {
+              "original": 7.7690500002063345,
+              "candidate": 7.440999998834741
+            },
+            "bytes": 10898,
+            "verified_exports": 20
+          },
+          "200": {
+            "median_ms": {
+              "original": 15.134049999687704,
+              "candidate": 15.159399999902234
+            },
+            "bytes": 111666,
+            "verified_exports": 20
+          },
+          "2000": {
+            "median_ms": {
+              "original": 84.84254999984842,
+              "candidate": 83.18020000024262
+            },
+            "bytes": 1106926,
+            "verified_exports": 20
+          },
+          "4000": {
+            "median_ms": {
+              "original": 167.6096499995765,
+              "candidate": 169.275350001044
+            },
+            "bytes": 2223530,
+            "verified_exports": 20
+          }
+        },
+        "sha256": "4485322bdf4f6648e8b43f29d7ff51c48023bfed8ffc530357a682157f5f5b21"
+      },
+      {
+        "run": "clinical-python-order-full-3.json",
+        "sizes": {
+          "20": {
+            "median_ms": {
+              "original": 7.599849999678554,
+              "candidate": 7.784150000588852
+            },
+            "bytes": 10898,
+            "verified_exports": 20
+          },
+          "200": {
+            "median_ms": {
+              "original": 15.22114999988844,
+              "candidate": 15.209649999633257
+            },
+            "bytes": 111666,
+            "verified_exports": 20
+          },
+          "2000": {
+            "median_ms": {
+              "original": 84.05425000000832,
+              "candidate": 85.48725000036939
+            },
+            "bytes": 1106926,
+            "verified_exports": 20
+          },
+          "4000": {
+            "median_ms": {
+              "original": 167.84594999990077,
+              "candidate": 167.07134999978734
+            },
+            "bytes": 2223530,
+            "verified_exports": 20
+          }
+        },
+        "sha256": "d141653d7f19696b4170cf4a8ccd071eb9f82d54ce3a7277167f000f469dade7"
+      }
+    ]
+  }
+}
