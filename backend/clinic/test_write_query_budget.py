@@ -1,7 +1,8 @@
 import uuid
-from django.db import connection
+from unittest.mock import patch
+from django.db import DatabaseError, connection
 from django.test.utils import CaptureQueriesContext
-from .models import ClinicalRecord, ClinicalRevision, Encounter, PetIdentity, Suggestion
+from .models import ClinicalCheck, ClinicalRecord, ClinicalRevision, Encounter, PetIdentity, Suggestion
 from .tests import ClinicFixture
 from .writes import diagnosis
 from .medications import mutate as medication
@@ -9,6 +10,36 @@ from .suggestions import mutate as adoption
 
 
 class WriteStoreQueryTests(ClinicFixture):
+    def test_passed_diagnosis_check_is_inserted_once_with_result_version(self):
+        for mode in ('record', 'correct'):
+            ref = self.create()['encounter_ref']
+            payload = {'diagnosis': '合成通过诊断'}
+            if mode == 'correct':
+                record = self.record_fixture(ref)
+                version = ClinicalRevision.objects.get(record=record, version=1)
+                payload.update(original_content_ref=str(record.pk), original_version_ref=str(version.pk), reason='合成更正')
+            with CaptureQueriesContext(connection) as queries:
+                result = diagnosis(self.doctor.pk, mode, str(uuid.uuid4()), payload, ref)
+            writes = [item['sql'] for item in queries if 'clinic_clinicalcheck' in item['sql'].lower()
+                      and item['sql'].lstrip().upper().startswith(('INSERT', 'UPDATE'))]
+            self.assertEqual(1, len(writes), writes)
+            self.assertTrue(writes[0].lstrip().upper().startswith('INSERT'))
+            saved = ClinicalCheck.objects.get(result_version_id=result['clinical_versions'][-1]['version_ref'])
+            self.assertEqual('passed', saved.status)
+            self.assertIsNotNone(saved.record_id)
+
+    def test_check_insert_failure_rolls_back_new_diagnosis_version(self):
+        from governance.models import AuditEvent, Operation
+        ref = self.create()['encounter_ref']
+        models = (ClinicalRecord, ClinicalRevision, ClinicalCheck, AuditEvent, Operation)
+        before = [model.objects.count() for model in models]
+        with patch.object(ClinicalRevision.objects, 'create', wraps=ClinicalRevision.objects.create) as revision, \
+                patch.object(ClinicalCheck, 'save', side_effect=DatabaseError('synthetic check insert')):
+            with self.assertRaises(DatabaseError):
+                diagnosis(self.doctor.pk, 'record', str(uuid.uuid4()), {'diagnosis': '合成诊断'}, ref)
+            self.assertTrue(revision.called)
+        self.assertEqual(before, [model.objects.count() for model in models])
+
     def without_store_read(self, operation):
         with CaptureQueriesContext(connection) as captured:
             result = operation()
