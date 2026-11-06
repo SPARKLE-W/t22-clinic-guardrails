@@ -316,6 +316,29 @@ class LoadCaptureTests(unittest.TestCase):
         headers['X-T22-DB-Connect-Error-Code'] = 'private error text'
         self.assertNotIn('db_connect_error_code', load.parse_server_profile(headers))
 
+    def test_csv_count_preserves_quoted_newlines_unicode_and_blank_record_handling(self):
+        body = 'record_ref,note\r\n1,"first\r\n第二行"\r\n\r\n2,last\r\n'.encode('utf-8')
+        headers = {'Content-Length': str(len(body)), 'X-Byte-Count': str(len(body)),
+                   'X-Content-SHA256': hashlib.sha256(body).hexdigest(), 'X-Record-Count': '2'}
+        row = {'kind': 'clinical_export', 'status': 200, 'expected_count': 2,
+               'started': 1.0, 'ended': 1.1}
+        result = load.validate_capture((row, body, headers, None))
+        self.assertTrue(result['ok'])
+        self.assertEqual(2, result['rows'])
+        self.assertEqual(1.1, result['ended'])
+
+    def test_csv_count_still_rejects_wrong_digest_and_wrong_logical_row_count(self):
+        body = b'record_ref,note\r\n1,"first\r\nsecond"\r\n'
+        correct = {'Content-Length': str(len(body)), 'X-Byte-Count': str(len(body)),
+                   'X-Content-SHA256': hashlib.sha256(body).hexdigest(), 'X-Record-Count': '1'}
+        for expected, digest in [(1, '0' * 64), (2, correct['X-Content-SHA256'])]:
+            row = {'kind': 'clinical_export', 'status': 200, 'expected_count': expected,
+                   'started': 1.0, 'ended': 1.1}
+            result = load.validate_capture((row, body, {**correct, 'X-Content-SHA256': digest}, None))
+            self.assertFalse(result['ok'])
+            self.assertEqual(1, result['rows'])
+            self.assertEqual(1.1, result['ended'])
+
     def test_export_validation_checks_complete_bytes_after_http_timing(self):
         body = b'event_ref,record_ref\r\na,b\r\n'
         digest = hashlib.sha256(body).hexdigest()
