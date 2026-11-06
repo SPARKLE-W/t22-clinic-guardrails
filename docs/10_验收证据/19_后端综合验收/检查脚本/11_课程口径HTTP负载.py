@@ -116,7 +116,11 @@ def request_spec(account, number, rng, pools):
                    'purpose': '合成课程口径负载验证'}
         return kind, 'POST', '/api/exports/clinical-records', payload, tier, size
     payload = {'scope': {'encounter_refs': [ref('encounter', shop, target) for target in targets]}}
-    return kind, 'POST', '/api/exports/alert-hits', payload, tier, size
+    # The fixed fixture has one seeded hit per selected encounter in store 1,
+    # and only even-numbered encounters in other stores. Accepted corrections
+    # in this workload add no hits; the selected encounter count is not a hit count.
+    expected_hits = sum(shop == 0 or target % 2 == 0 for target in targets)
+    return kind, 'POST', '/api/exports/alert-hits', payload, tier, expected_hits
 
 
 def request_one(session, account, base, number, rng, pools, worker_id):
@@ -327,7 +331,7 @@ def main():
     summary = summarize(results, start, args.warmup_seconds, args.formal_seconds, unique_sessions,
                         len({person['username'] for person in people}))
     summary['target_offset'] = args.target_offset
-    summary['protocol_version'] = 'course-v1.1.2'
+    summary['protocol_version'] = 'course-v1.1.3'
     summary['tunnel_count'] = len(bases)
     summary['tunnel_bases'] = bases
     if args.target_offset:

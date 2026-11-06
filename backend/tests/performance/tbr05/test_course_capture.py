@@ -15,14 +15,13 @@ with patch.dict(sys.modules, {'requests': types.ModuleType('requests'), 'psutil'
 
 
 class CourseExportEvidenceTests(unittest.TestCase):
-    def capture(self, kind='detail_export', record_count='1', reference='f56bdb04-97ba-421b-815e-4196830cbad9'):
-        body = b'column\r\nvalue\r\n'
+    def capture(self, kind='detail_export', record_count='1', reference='f56bdb04-97ba-421b-815e-4196830cbad9', expected=1, body=b'column\r\nvalue\r\n'):
         headers = {'Content-Length': str(len(body)), 'X-Byte-Count': str(len(body)),
                    'X-Content-SHA256': hashlib.sha256(body).hexdigest(),
                    'X-Record-Count': record_count, 'X-Export-Ref': reference}
         response = types.SimpleNamespace(status_code=200, headers=headers, iter_content=lambda **kw: [body])
         session = types.SimpleNamespace(cookies={'csrftoken': 'synthetic'}, request=lambda *a, **kw: response)
-        spec = (kind, 'POST', '/synthetic', {}, '1-20', 1)
+        spec = (kind, 'POST', '/synthetic', {}, '1-20', expected)
         with patch.object(load, 'request_spec', return_value=spec):
             return load.request_one(session, {}, 'http://synthetic', 1, None, {}, 0)
 
@@ -34,8 +33,23 @@ class CourseExportEvidenceTests(unittest.TestCase):
         self.assertEqual(1, row['expected_count'])
         self.assertEqual(row['bytes'], row['content_length'])
 
+    def test_empty_detail_is_valid_only_when_no_hits_expected(self):
+        self.assertTrue(self.capture(record_count='0', expected=0, body=b'column\r\n')['ok'])
+        self.assertFalse(self.capture(record_count='0', expected=1, body=b'column\r\n')['ok'])
+
     def test_detail_count_mismatch_rejected_despite_valid_digest(self):
         self.assertFalse(self.capture(record_count='2')['ok'])
+
+    def test_detail_expected_count_follows_seeded_hits_not_encounter_count(self):
+        for shop, doctor, number, expected in [(0, 0, 1, 1), (1, 1, 1, 0), (1, 0, 2, 1)]:
+            username = f'load_{shop + 1}_doctor_{doctor + 1}'
+            rng = types.SimpleNamespace(choices=lambda *a, **kw: ['detail_export'],
+                                        randrange=lambda n: 0, randint=lambda *a: 1,
+                                        sample=lambda choices, size: [number])
+            with self.subTest(shop=shop, doctor=doctor):
+                result = load.request_spec({'username': username, 'role': 'doctor'}, 0, rng,
+                                           {username: {'all': [number]}})
+                self.assertEqual(expected, result[-1])
 
     def test_missing_or_invalid_export_reference_rejected(self):
         for reference in ('', 'not-a-uuid'):
