@@ -509,6 +509,8 @@ def run_one(session, base, cookies, actors, number, kind, rng):
                   'started': started, 'first': first, 'ended': ended, 'bytes': len(body),
                   'expected_count': expected_count if 'export' in kind else None,
                   'server_ref': response.headers.get('X-Export-Ref'), **preparation}
+        if response.headers.get('Content-Encoding', '').strip().lower() == 'gzip':
+            result['wire_bytes'] = response.raw.tell()
         profile = parse_server_profile(response.headers)
         if profile:
             result['server_profile'] = profile
@@ -550,7 +552,10 @@ def validate_capture(capture):
             declared_bytes = int(headers['Content-Length'])
             header_bytes = int(headers['X-Byte-Count'])
             declared_sha256 = headers['X-Content-SHA256']
-            digest_match = (declared_bytes == len(body) == header_bytes and
+            encoding = headers.get('Content-Encoding', 'identity').strip().lower()
+            wire_bytes = result.get('wire_bytes') if encoding == 'gzip' else len(body)
+            digest_match = (encoding in ('identity', 'gzip') and declared_bytes == wire_bytes and
+                            len(body) == header_bytes and
                             hashlib.sha256(body).hexdigest() == declared_sha256)
             # Preserve StringIO's LF line semantics without a whole-body Unicode copy.
             with io.TextIOWrapper(io.BytesIO(body), encoding='utf-8', newline='\n') as text:
@@ -560,6 +565,7 @@ def validate_capture(capture):
                 rows = (1 + sum(1 for values in reader if values)) if first_values else 0
             record_count = int(headers['X-Record-Count'])
             result.update({'rows': rows, 'sha256_match': digest_match,
+                           'content_encoding': encoding,
                            'content_length': declared_bytes, 'header_byte_count': header_bytes,
                            'declared_sha256': declared_sha256, 'record_count': record_count})
             expected = result['expected_count']

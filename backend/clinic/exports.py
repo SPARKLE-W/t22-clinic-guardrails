@@ -16,6 +16,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.gzip import gzip_page
 from governance.models import Candidate
 from governance.services import DomainError, _uuid, require, write_audit
 from governance.views import _body, protected
@@ -344,6 +345,7 @@ def clinical(actor_id, payload, timings=None):
     return body, entry.pk, len(target_refs)
 
 
+@gzip_page
 @protected(CLINICAL, ['POST'], database_preflight=False)
 @csrf_protect
 def clinical_records(request):
@@ -455,6 +457,7 @@ def guard(actor_id, permission, payload):
     return body, entry.pk, entry.record_count
 
 
+@gzip_page
 @protected(DETAIL, ['POST'], database_preflight=False)
 @csrf_protect
 def alert_hits(request):
@@ -468,6 +471,7 @@ def alert_hits(request):
         raise
 
 
+@gzip_page
 @protected(SUMMARY, ['POST'], database_preflight=False)
 @csrf_protect
 def alert_summary(request):

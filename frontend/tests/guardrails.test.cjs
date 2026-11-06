@@ -293,6 +293,9 @@ const session = (c, role, store, username) => {
     assert.equal(JSON.parse(run(c, `JSON.stringify(exportRangeFromValues('', '2026-10-23'))`)).ok, false);
     assert.equal(JSON.parse(run(c, `JSON.stringify(exportRangeFromValues('2026-10-23', '2026-10-23'))`)).ok, true);
     const sha = 'a'.repeat(64);
+    assert.equal(run(c, `exportVerifyHeaders({get:(k)=>(({ 'content-encoding':'gzip','content-length':'2','x-byte-count':'3','x-content-sha256':'${sha}' })[k])}, 3)`), sha);
+    assert.throws(() => run(c, `exportVerifyHeaders({get:(k)=>(({ 'content-encoding':'gzip','content-length':'2','x-byte-count':'4','x-content-sha256':'${sha}' })[k])}, 3)`), /未完整接收/);
+    assert.throws(() => run(c, `exportVerifyHeaders({get:(k)=>(({ 'content-encoding':'unknown','content-length':'3','x-byte-count':'3','x-content-sha256':'${sha}' })[k])}, 3)`), /未完整接收/);
     assert.equal(run(c, `exportVerifyHeaders({get:(k)=>(({ 'content-length':'3','x-byte-count':'3','x-content-sha256':'${sha}' })[k])}, 3)`), sha);
     assert.throws(() => run(c, `exportVerifyHeaders({get:()=>null}, 3)`), /未完整接收/);
     assert.throws(() => run(c, `exportVerifyHeaders({get:(k)=>(({ 'content-length':'3','x-byte-count':'4','x-content-sha256':'${sha}' })[k])}, 3)`), /未完整接收/);

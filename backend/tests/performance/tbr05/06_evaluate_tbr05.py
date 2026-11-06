@@ -225,6 +225,8 @@ def evaluate(summary, request_rows, inflight_rows, *, allow_handoff_tolerance=Fa
             actual_bytes = row.get('bytes')
             content_length = row.get('content_length')
             header_bytes = row.get('header_byte_count')
+            encoding = row.get('content_encoding', 'identity')
+            wire_bytes = row.get('wire_bytes') if encoding == 'gzip' else actual_bytes
             declared_sha256 = row.get('declared_sha256')
             if (row.get('status') != 200 or row.get('ok') is not True or
                     row.get('sha256_match') is not True or
@@ -232,7 +234,8 @@ def evaluate(summary, request_rows, inflight_rows, *, allow_handoff_tolerance=Fa
                     row.get('record_count') != expected_count or
                     row.get('rows') != expected_rows or
                     not isinstance(actual_bytes, int) or actual_bytes < 0 or
-                    content_length != actual_bytes or header_bytes != actual_bytes or
+                    encoding not in ('identity', 'gzip') or type(wire_bytes) is not int or wire_bytes < 0 or
+                    content_length != wire_bytes or header_bytes != actual_bytes or
                     not isinstance(declared_sha256, str) or
                     re.fullmatch(r'[0-9a-f]{64}', declared_sha256) is None):
                 failures.append(f'export_incomplete:{row.get("request_id", "unknown")}:{kind}')

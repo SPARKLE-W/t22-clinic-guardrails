@@ -1,11 +1,61 @@
 import csv
 import hashlib
+import gzip
+import random
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from unittest.mock import patch
 import io
 import unittest
 from test_load_capture import load
 
 
 class CsvStreamValidationTests(unittest.TestCase):
+    def test_real_gzip_http_capture_and_truncation(self):
+        import requests
+        body = self.encoded([['record_ref', 'note'], ['one', '中文' * 1000]])
+        encoded = gzip.compress(body)
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_GET(self):
+                self.send_response(200)
+                for key, value in {'Content-Encoding': 'gzip', 'Content-Length': str(len(encoded)),
+                                   'X-Byte-Count': str(len(body)), 'X-Record-Count': '1',
+                                   'X-Content-SHA256': hashlib.sha256(body).hexdigest()}.items():
+                    self.send_header(key, value)
+                self.end_headers()
+                self.wfile.write(encoded[:-10] if self.path == '/truncated' else encoded)
+        server = HTTPServer(('127.0.0.1', 0), Handler)
+        thread = threading.Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            with requests.Session() as session:
+                for path, expected in (('/', True), ('/truncated', False)):
+                    selected = ('actor', 'GET', path, None, '1-20', 1)
+                    with patch.object(load, 'select_request', return_value=selected):
+                        capture = load.run_one(session, f'http://127.0.0.1:{server.server_port}',
+                                               {'actor': {}}, {}, 1, 'clinical_export', random.Random(1))
+                    self.assertEqual(expected, load.validate_capture(capture)['ok'])
+                    if expected:
+                        self.assertEqual(len(encoded), capture[0]['wire_bytes'])
+                        self.assertEqual(body, capture[1])
+        finally:
+            server.shutdown()
+            thread.join()
+            server.server_close()
+
+    def test_gzip_capture_checks_wire_length_and_decoded_digest(self):
+        body = self.encoded([['record_ref'], ['one']])
+        capture = self.capture(body, 1, overrides={'Content-Encoding': 'gzip', 'Content-Length': '10'})
+        capture[0]['wire_bytes'] = 10
+        self.assertTrue(load.validate_capture(capture)['ok'])
+        capture[0]['wire_bytes'] = 9
+        self.assertFalse(load.validate_capture(capture)['ok'])
+        capture[0].pop('wire_bytes')
+        self.assertFalse(load.validate_capture(capture)['ok'])
+
     def capture(self, body, count, kind='clinical_export', expected=None, overrides=None):
         row = {'kind': kind, 'status': 200, 'expected_count': count if expected is None else expected}
         headers = {'Content-Length': str(len(body)), 'X-Byte-Count': str(len(body)),

@@ -41,6 +41,18 @@ def evidence():
 
 
 class Tbr05EvaluatorTests(unittest.TestCase):
+    def test_gzip_evidence_requires_actual_wire_bytes(self):
+        data = evidence()
+        for row in data[1]:
+            if row['kind'] in evaluator.EXPORT_KINDS:
+                row.update(content_encoding='gzip', content_length=100, wire_bytes=100)
+        report = evaluator.evaluate(*data)
+        self.assertFalse(any('export_incomplete' in value for value in report['failures']))
+        export = next(row for row in data[1] if row['kind'] in evaluator.EXPORT_KINDS)
+        export.pop('wire_bytes')
+        report = evaluator.evaluate(*data)
+        self.assertTrue(any('export_incomplete' in value for value in report['failures']))
+
     def test_reports_other_gates_but_rejects_incomplete_interval_evidence(self):
         report = evaluator.evaluate(*evidence())
         self.assertFalse(report['passed'])

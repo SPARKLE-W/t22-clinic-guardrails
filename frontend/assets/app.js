@@ -400,10 +400,12 @@ function exportVerifyHeaders(headers, byteLength) {
   const length = Number(headers.get('content-length'));
   const byteCount = Number(headers.get('x-byte-count'));
   const expected = (headers.get('x-content-sha256') || '').toLowerCase();
+  const encoding = (headers.get('content-encoding') || 'identity').trim().toLowerCase();
   if (!Number.isSafeInteger(length) || length <= 0 || !Number.isSafeInteger(byteCount) || byteCount <= 0) {
     throw new ApiError('EXPORT_INCOMPLETE', 200, null);
   }
-  if (byteCount !== length || byteLength !== length || !/^[0-9a-f]{64}$/.test(expected)) {
+  if (!['identity', 'gzip'].includes(encoding) || byteLength !== byteCount ||
+      (encoding === 'identity' && byteCount !== length) || !/^[0-9a-f]{64}$/.test(expected)) {
     throw new ApiError('EXPORT_INCOMPLETE', 200, null);
   }
   return expected;

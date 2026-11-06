@@ -1,5 +1,6 @@
 import csv
 import hashlib
+import gzip
 import io
 import json
 import uuid
@@ -26,6 +27,21 @@ class ClinicalExportTests(ClinicFixture):
 
     def download(self, payload):
         return self.client.post(self.url, json.dumps(payload), content_type='application/json')
+
+    def test_gzip_download_preserves_artifact_digest_and_audit_size(self):
+        payload = {'scope': {'record_refs': [str(self.record.pk)]}, 'purpose': 'compression'}
+        plain = self.download(payload)
+        response = self.client.post(self.url, json.dumps(payload), content_type='application/json',
+                                    HTTP_ACCEPT_ENCODING='gzip')
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('gzip', response['Content-Encoding'])
+        self.assertEqual(plain.content, gzip.decompress(response.content))
+        self.assertEqual(len(response.content), int(response['Content-Length']))
+        self.assertEqual(len(plain.content), int(response['X-Byte-Count']))
+        self.assertEqual(hashlib.sha256(plain.content).hexdigest(), response['X-Content-SHA256'])
+        entry = ExportRequest.objects.get(pk=response['X-Export-Ref'])
+        self.assertEqual(len(plain.content), entry.byte_count)
+        self.assertIn('Accept-Encoding', response['Vary'])
 
     def rows(self, response):
         self.assertEqual(200, response.status_code, response.content[:300])

@@ -98,7 +98,12 @@
               }
             },
             "headers": {
+              "Content-Encoding": {
+                "description": "Optional negotiated gzip; integrity metadata describes decoded CSV.",
+                "schema": { "type": "string", "enum": ["gzip"] }
+              },
               "Content-Length": {
+                "description": "HTTP representation length in transmitted bytes; gzip may differ from X-Byte-Count.",
                 "schema": {
                   "type": "integer"
                 }
@@ -226,7 +231,12 @@
               }
             },
             "headers": {
+              "Content-Encoding": {
+                "description": "Optional negotiated gzip; integrity metadata describes decoded CSV.",
+                "schema": { "type": "string", "enum": ["gzip"] }
+              },
               "Content-Length": {
+                "description": "HTTP representation length in transmitted bytes; gzip may differ from X-Byte-Count.",
                 "schema": {
                   "type": "integer"
                 }
@@ -342,7 +352,12 @@
               }
             },
             "headers": {
+              "Content-Encoding": {
+                "description": "Optional negotiated gzip; integrity metadata describes decoded CSV.",
+                "schema": { "type": "string", "enum": ["gzip"] }
+              },
               "Content-Length": {
+                "description": "HTTP representation length in transmitted bytes; gzip may differ from X-Byte-Count.",
                 "schema": {
                   "type": "integer"
                 }
