@@ -79,7 +79,7 @@ def normalize_bind_host(value):
     return str(address)
 
 
-def serve_profiled(port, threads, host):
+def serve_profiled(port, threads, host, outbuf_overflow=1048576):
     from waitress.channel import HTTPChannel
     from waitress.server import create_server
     from waitress.task import ThreadedTaskDispatcher
@@ -162,7 +162,8 @@ def serve_profiled(port, threads, host):
     dispatcher.set_thread_count(threads)
     server = create_server(TimedApplication(get_wsgi_application()), host=host,
                            port=port, threads=threads, connection_limit=512,
-                           backlog=1024, channel_timeout=60, _dispatcher=dispatcher)
+                           backlog=1024, channel_timeout=60, outbuf_overflow=outbuf_overflow,
+                           _dispatcher=dispatcher)
     server.channel_class = TimedChannel
     server.run()
 
@@ -178,16 +179,21 @@ if __name__ == '__main__':
                         help='optional process-local scheduling candidate; default preserves interpreter setting')
     parser.add_argument('--profile', action='store_true',
                         help='emit per-request queue, WSGI app, SQL and commit timing headers')
+    parser.add_argument('--outbuf-overflow-bytes', type=int, default=1048576,
+                        help='Waitress output threshold for spilling to a temporary file; default 1 MiB')
     args = parser.parse_args()
+    if args.outbuf_overflow_bytes <= 0:
+        parser.error('--outbuf-overflow-bytes must be positive')
     try:
         host = normalize_bind_host(args.host)
     except ValueError as error:
         parser.error(str(error))
     with gil_switch_interval(args.gil_switch_interval_ms) as active:
         print(f'GIL_SWITCH_INTERVAL_MS={active}', flush=True)
+        print(f'OUTBUF_OVERFLOW_BYTES={args.outbuf_overflow_bytes}', flush=True)
         if args.profile:
-            serve_profiled(args.port, args.threads, host)
+            serve_profiled(args.port, args.threads, host, outbuf_overflow=args.outbuf_overflow_bytes)
         else:
             serve(get_wsgi_application(), host=host, port=args.port,
                   threads=args.threads, connection_limit=512, backlog=1024,
-                  channel_timeout=60)
+                  channel_timeout=60, outbuf_overflow=args.outbuf_overflow_bytes)

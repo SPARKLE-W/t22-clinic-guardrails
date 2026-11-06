@@ -3,6 +3,7 @@
     [string]$BindAddress,
     [string]$CandidatePath,
     [string]$PythonExe = $env:T22_APP_PYTHON,
+    [ValidateRange(1,2147483647)][int]$OutbufOverflowBytes = 1048576,
     [string]$StateDirectory = 'C:\ProgramData\T22\formal-load'
 )
 
@@ -149,6 +150,7 @@ $state = [ordered]@{
     log_directory = $logDirectory
     candidate_path = $CandidatePath; candidate_sha256 = (Get-FileHash -LiteralPath $CandidatePath -Algorithm SHA256).Hash
     process_count = $processCount; threads_per_process = $threadCount
+    outbuf_overflow_bytes = $OutbufOverflowBytes
     started_at_utc = [DateTime]::UtcNow.ToString('o'); processes = @()
 }
 Write-State $state
@@ -159,7 +161,7 @@ try {
         $stdout = Join-Path $logDirectory "waitress-$port.stdout.log"
         $stderr = Join-Path $logDirectory "waitress-$port.stderr.log"
         $child = Start-Process -FilePath $PythonExe `
-            -ArgumentList @('-B', "`"$servicePath`"", '--profile', '--host', $BindAddress, '--port', "$port", '--threads', "$threadCount") `
+            -ArgumentList @('-B', "`"$servicePath`"", '--profile', '--host', $BindAddress, '--port', "$port", '--threads', "$threadCount", '--outbuf-overflow-bytes', "$OutbufOverflowBytes") `
             -WorkingDirectory $backendRoot -WindowStyle Hidden -PassThru `
             -RedirectStandardOutput $stdout -RedirectStandardError $stderr
         $entry = [ordered]@{ pid = $child.Id; port = $port; python = $PythonExe; start_utc_ticks = (Get-Process -Id $child.Id).StartTime.ToUniversalTime().Ticks }

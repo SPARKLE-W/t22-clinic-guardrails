@@ -1,0 +1,157 @@
+{
+  "scope": "local shared-host diagnostic only; 4 app processes x 24 threads, 4 sender processes x 16 workers, 5s warmup + 15s formal, fresh 5-store/6000-pet/20000-record seeded schema per run; not cloud or strict acceptance",
+  "comparison": "alternating default 1 MiB / candidate 8 MiB / default / candidate; current2 and current3-5 backend source equivalent (git diff 69c0234 810521b -- backend empty); candidate configured by external startup adapter before native CLI was added",
+  "limitations": [
+    "Short windows, shared host, scheduling-dependent workload realization; no exact causal speedup estimate or cloud extrapolation",
+    "Separate P95 values must not be added or subtracted as stage decomposition",
+    "Local Windows sharded controller sampled venv launcher PIDs; sender RSS/CPU totals are incomplete and excluded from capacity claims",
+    "App timing stops at start_response and excludes response iterable; HTTP timing includes complete reception",
+    "No final 360-inflight or handoff tolerance acceptance claimed"
+  ],
+  "runs": [
+    {
+      "run": "local-business-http-current2",
+      "revision": "69c02341d6f8b69afc2751c08be57156a35166c2",
+      "outbuf_overflow_bytes": 1048576,
+      "formal_requests": 5719,
+      "formal_failures": 0,
+      "full_response_p95_ms": {
+        "clinical_export": 637.2126000001117,
+        "detail_export": 390.589799999816,
+        "guard": 283.91739999983656,
+        "query": 173.4331000000111,
+        "reception": 225.69380000004458,
+        "summary_export": 201.1480000001029,
+        "write": 314.22509999993053
+      },
+      "large_clinical": {
+        "samples": 49,
+        "full_response_p95_ms": 1065.1742000000013,
+        "first_chunk_to_complete_p95_ms": 495.9146999999575,
+        "app_p95_ms": 411.6508,
+        "snapshot_p95_ms": 231.7841
+      },
+      "audit_verification": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1524,
+        "verified_record_targets": 318408,
+        "requests": 7652,
+        "passed": true
+      },
+      "files_sha256": {
+        "metadata.json": "491726d6eeb6c3e7191584bec6c4e8f4c54185c66ac846288186982908c64e79",
+        "combined.summary.json": "0b9e9452e3a689f8ade62679cf70060257ca553be395af084fc6678318fb3698",
+        "combined.requests.jsonl": "aa7223104e793591b9ee91b4388665f35561df2b69d8c461de8b5ffe47ad6367",
+        "export-audit-verification.json": "02f8d620041b713262ce4c635af3e48942aa7968f0ed2bcf39efbabb0fa5e470"
+      }
+    },
+    {
+      "run": "local-business-http-current3",
+      "revision": "810521b539ac471bffc45db82e15f0546a95d63b",
+      "outbuf_overflow_bytes": 8388608,
+      "formal_requests": 5819,
+      "formal_failures": 0,
+      "full_response_p95_ms": {
+        "clinical_export": 421.31300000028205,
+        "detail_export": 436.058199999934,
+        "guard": 277.382100000068,
+        "query": 166.09099999959653,
+        "reception": 223.83330000002388,
+        "summary_export": 196.2098999997579,
+        "write": 305.92159999969226
+      },
+      "large_clinical": {
+        "samples": 50,
+        "full_response_p95_ms": 715.6368999999358,
+        "first_chunk_to_complete_p95_ms": 180.1818999997522,
+        "app_p95_ms": 372.5176,
+        "snapshot_p95_ms": 219.6546
+      },
+      "audit_verification": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1552,
+        "verified_record_targets": 295760,
+        "requests": 7781,
+        "passed": true
+      },
+      "files_sha256": {
+        "metadata.json": "6a91c99f2763cd372c339c1bba3409cdd38c38f8653cadc5a33e7373aef312dd",
+        "combined.summary.json": "37a7eaa8ac911875bf66b1a81c7f8adeef4332a42c448e0636cb71fda005e4c5",
+        "combined.requests.jsonl": "1b6399c8640df833e8d1d0cb97a202f9cfdb96c34decfdfe508e9a288c587b94",
+        "export-audit-verification.json": "84ec2107334c4901d9d0c7fae9368724fd4e2dcac8bde0227ac75b4475aae8bd"
+      }
+    },
+    {
+      "run": "local-business-http-current4",
+      "revision": "810521b539ac471bffc45db82e15f0546a95d63b",
+      "outbuf_overflow_bytes": 1048576,
+      "formal_requests": 4744,
+      "formal_failures": 0,
+      "full_response_p95_ms": {
+        "clinical_export": 891.4319999994404,
+        "detail_export": 546.8301000000793,
+        "guard": 334.81860000028973,
+        "query": 201.7986999999266,
+        "reception": 270.62950000072306,
+        "summary_export": 254.12729999970907,
+        "write": 391.46269999946526
+      },
+      "large_clinical": {
+        "samples": 61,
+        "full_response_p95_ms": 1213.0311999999321,
+        "first_chunk_to_complete_p95_ms": 505.34719999996014,
+        "app_p95_ms": 471.0212,
+        "snapshot_p95_ms": 279.9157
+      },
+      "audit_verification": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1288,
+        "verified_record_targets": 352300,
+        "requests": 6476,
+        "passed": true
+      },
+      "files_sha256": {
+        "metadata.json": "6460d2a52458db9395339c161fb70fc3eb1ee07d04b1f659b285654079eb8a12",
+        "combined.summary.json": "38b52e93a5e0a75f39c90db28e1728bad2dcaf62c44c2c8aa96fbc7ce1ba01bd",
+        "combined.requests.jsonl": "e5b12979c6826ec4728f4419098c0426a8651a8e211782b1c5730e6a817820ce",
+        "export-audit-verification.json": "199d2ea9e093fe11d2eb0027ec83a4e4196c4fa16aa99b19777394c4bf3260bf"
+      }
+    },
+    {
+      "run": "local-business-http-current5",
+      "revision": "810521b539ac471bffc45db82e15f0546a95d63b",
+      "outbuf_overflow_bytes": 8388608,
+      "formal_requests": 5157,
+      "formal_failures": 0,
+      "full_response_p95_ms": {
+        "clinical_export": 540.5176000003848,
+        "detail_export": 405.7906999996703,
+        "guard": 334.6377999996548,
+        "query": 194.75250000050437,
+        "reception": 251.90479999946547,
+        "summary_export": 229.83449999992445,
+        "write": 368.90219999986584
+      },
+      "large_clinical": {
+        "samples": 47,
+        "full_response_p95_ms": 796.2526999999682,
+        "first_chunk_to_complete_p95_ms": 229.34329999952752,
+        "app_p95_ms": 448.8058,
+        "snapshot_p95_ms": 250.0377
+      },
+      "audit_verification": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1399,
+        "verified_record_targets": 304909,
+        "requests": 7006,
+        "passed": true
+      },
+      "files_sha256": {
+        "metadata.json": "476aeb741e07a7fc4b8b8631bce5fb3d748f4103dff0049c07714e6cce5d428d",
+        "combined.summary.json": "447661ca204bdbedbef275637aeb865d4146e74e3744f4cfef3fe111765f2a6f",
+        "combined.requests.jsonl": "5e7f383e8ff5468243c85dd1c6550e3e0bdbe9975d28d6a0e7411c929cee3968",
+        "export-audit-verification.json": "fd95c4f4e2fd4ca5cb169f3c87a92966255c21042871dd631fbe7e181a40b18a"
+      }
+    }
+  ]
+}

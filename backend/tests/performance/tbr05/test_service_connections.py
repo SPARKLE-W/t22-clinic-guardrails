@@ -67,6 +67,45 @@ class SchedulingCandidateTests(unittest.TestCase):
         self.assertEqual(original, sys.getswitchinterval())
 
 
+class OutputBufferTests(unittest.TestCase):
+    def run_entry(self, extra):
+        observed = []
+        fake_waitress = types.ModuleType('waitress')
+        fake_waitress.serve = lambda *a, **kw: observed.append(kw)
+        with patch.dict('os.environ', {'T22_FORMAL_LOAD': '1'}), patch.dict(
+                sys.modules, {'django.core.wsgi': wsgi, 'waitress': fake_waitress}), patch.object(
+                sys, 'argv', ['service', *extra]), redirect_stdout(io.StringIO()):
+            runpy.run_path(str(Path(__file__).with_name('02_formal_service.py')), run_name='__main__')
+        return observed
+
+    def test_default_and_candidate_reach_server_configuration(self):
+        for extra, expected in [([], 1048576), (['--outbuf-overflow-bytes', '8388608'], 8388608)]:
+            with self.subTest(extra=extra):
+                self.assertEqual(expected, self.run_entry(extra)[0]['outbuf_overflow'])
+
+    def test_profiled_server_uses_the_same_candidate(self):
+        captured = {}
+        dispatcher = type('Dispatcher', (), {'set_thread_count': lambda self, count: None})
+
+        def create_server(app, **kwargs):
+            captured.update(kwargs)
+            return types.SimpleNamespace(run=lambda: None)
+
+        modules = {
+            'django.db': types.SimpleNamespace(connections={}),
+            'waitress.channel': types.SimpleNamespace(HTTPChannel=object),
+            'waitress.server': types.SimpleNamespace(create_server=create_server),
+            'waitress.task': types.SimpleNamespace(ThreadedTaskDispatcher=dispatcher)}
+        with patch.dict(sys.modules, modules):
+            service.serve_profiled(18930, 48, '127.0.0.1', outbuf_overflow=8388608)
+        self.assertEqual(8388608, captured['outbuf_overflow'])
+
+    def test_nonpositive_threshold_is_rejected_before_serving(self):
+        for value in ('0', '-1'):
+            with self.subTest(value=value), self.assertRaises(SystemExit):
+                self.run_entry(['--outbuf-overflow-bytes', value])
+
+
 class ConnectionProfilingTests(unittest.TestCase):
     def test_success_counts_attempt_and_restores_method(self):
         database, counters = Database(), {}
