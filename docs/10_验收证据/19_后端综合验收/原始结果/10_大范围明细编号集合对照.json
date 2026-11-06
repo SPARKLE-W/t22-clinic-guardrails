@@ -1,0 +1,607 @@
+{
+  "scope": "local serial complete guard-detail export comparisons; commits, all CSV bytes and exact persistent audit targets verified; not HTTP/360-inflight or cloud acceptance",
+  "baseline_commit": "39d7585",
+  "runs": [
+    {
+      "run": "detail-json-selection-full-1.json",
+      "mysql_profile": "128MiB prototype",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 6.260200000724581,
+            "candidate": 6.556300000738702
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 16.722899999876972,
+            "candidate": 17.65530000011495
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 123.51459999990766,
+            "candidate": 102.8308000004472
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 222.38710000056017,
+            "candidate": 196.77630000023782
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "c505183241c3aefacd297b21a5a0dceb843296e7fe6f0fe1782c4585d2849ca8"
+    },
+    {
+      "run": "detail-json-selection-full-2.json",
+      "mysql_profile": "128MiB prototype",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 8.92640000074607,
+            "candidate": 8.854450001308578
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 25.28699999948003,
+            "candidate": 27.18674999960058
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 203.80744999965827,
+            "candidate": 195.45000000016444
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 437.14785000065604,
+            "candidate": 386.4291500003674
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "f4abd39311c59719084e7fb25c0f9dac06aee22f3de8a84117e707fd4e99b58e"
+    },
+    {
+      "run": "detail-json-selection-full-3.json",
+      "mysql_profile": "128MiB prototype",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 6.643949998760945,
+            "candidate": 6.444900000133202
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 19.63660000001255,
+            "candidate": 17.7896499990311
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 159.63914999974804,
+            "candidate": 141.84790000035719
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 263.5389499992016,
+            "candidate": 256.50820000009844
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "2a260ac5a0205cee212babc713072f8614d6132c38faeb5bfd8f6562950b978a"
+    },
+    {
+      "run": "detail-json-actual-full-1.json",
+      "mysql_profile": "128MiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 8.782499999142601,
+            "candidate": 9.47470000028261
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 28.292499999224674,
+            "candidate": 29.11275000042224
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 220.43585000028543,
+            "candidate": 184.92279999918537
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 406.85339999890857,
+            "candidate": 373.34479999935866
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "0cef02f0cef9dcb9921c6bd6ce8019070b325216c7a91c992f8cb8bb6bf5225f"
+    },
+    {
+      "run": "detail-json-actual-full-2.json",
+      "mysql_profile": "128MiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 10.048850000202947,
+            "candidate": 9.637000000111584
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 25.48595000007481,
+            "candidate": 28.340900000330294
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 208.61334999972314,
+            "candidate": 167.2249000002921
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 484.32510000020557,
+            "candidate": 417.1216499998991
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "622aa32efda60f8309369b58c6ac05254763dfb002261030b6c942fc1fb0a84f"
+    },
+    {
+      "run": "detail-json-actual-full-3.json",
+      "mysql_profile": "128MiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 9.222800000316056,
+            "candidate": 9.110999999393243
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 27.48909999991156,
+            "candidate": 27.480349999677856
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 232.31384999962756,
+            "candidate": 194.20680000075663
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 449.1436500002237,
+            "candidate": 420.58424999959243
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "4c6e5294a05309d682d5cc3e75f506a1e9fb123dc6d2b3f4a81c0e562006820b"
+    },
+    {
+      "run": "detail-json-actual-2gb-full-1.json",
+      "mysql_profile": "2GiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 5.748000000494358,
+            "candidate": 5.942599999798404
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 16.365999999834457,
+            "candidate": 16.477999999551685
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 130.26019999961136,
+            "candidate": 116.32505000034143
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 266.3900500001546,
+            "candidate": 233.73575000005076
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "c31906914a0e6c3dffdb479c563468412c17bb2713d26b3edd994b289ccf85d6"
+    },
+    {
+      "run": "detail-json-actual-2gb-full-2.json",
+      "mysql_profile": "2GiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 5.701349999981176,
+            "candidate": 5.643300000883755
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 15.375800000583695,
+            "candidate": 15.006450000328186
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 124.97170000006008,
+            "candidate": 99.91530000024795
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 276.201549999314,
+            "candidate": 231.1399000000165
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "6ab2c439ad8cf1b573abe3608d4a0b8d0fd01ca0aef2ee15128801d46a91ffb7"
+    },
+    {
+      "run": "detail-json-actual-2gb-full-3.json",
+      "mysql_profile": "2GiB actual implementation",
+      "sizes": {
+        "20": {
+          "median_ms": {
+            "original": 5.22610000007262,
+            "candidate": 5.47404999997525
+          },
+          "bytes": 2175,
+          "verified_exports": 16,
+          "csv_sha256": "f3ce8cf8c6a271730bf13f823a9b2daa1d63b824086d1888d73a90a62d0bc56e"
+        },
+        "200": {
+          "median_ms": {
+            "original": 15.473600000404986,
+            "candidate": 15.143099999477272
+          },
+          "bytes": 20895,
+          "verified_exports": 16,
+          "csv_sha256": "15aaf805636bf3355c05693e6c46aed46b36b5db75f5fab8ec08482c253dceac"
+        },
+        "2000": {
+          "median_ms": {
+            "original": 128.48515000041516,
+            "candidate": 103.42159999981959
+          },
+          "bytes": 208095,
+          "verified_exports": 16,
+          "csv_sha256": "b8845a8a9a65d77e8cd9b694867c9d23973871d5f780921c72b7113a332e0ce8"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 284.54914999929315,
+            "candidate": 252.23710000045685
+          },
+          "bytes": 416095,
+          "verified_exports": 16,
+          "csv_sha256": "5679a2f963e957d35ad35f301f67fc3efeb72d9ed9bb950af415ec1cfd595eee"
+        }
+      },
+      "file_sha256": "602eeb04404fd1b938fb69ccc6f7fbb09c2be663cdf5fb4c11a5f40ccd66b424"
+    }
+  ],
+  "mysql_budget_change": {
+    "scope": "owned local MySQL only, no cloud or Windows service changes; runtime global values reset on server restart",
+    "before_buffer_pool_bytes": 134217728,
+    "after_buffer_pool_bytes": 2147483648,
+    "before_max_connections": 151,
+    "after_max_connections": 512,
+    "reason": "working diagnostic schema audit index+data approx292MB exceeded old128MB pool; stabilize later local CPU comparisons",
+    "available_host_memory_after_bytes": 15733477376
+  },
+  "limits": [
+    "Compare alternating pairs within the same profile; do not combine absolute times from 128MiB and 2GiB runs",
+    "Large diagnostic audit indexes exceeded the old128MiB buffer, contributing to drift; source histories and business snapshot remained unchanged",
+    "Local implementation regression: 68 real MySQL export/projection/write-budget tests passed, including 2000 encounter CSV parity and missing/foreign/other-doctor rejection",
+    "Mixed HTTP and full CI remain separate gates; no strict pass claimed",
+    "Materialized candidate: 68 local MySQL tests and source44985f6 full CI passed; current9 completed local64-thread HTTP integration. No cloud/360-inflight/280ms acceptance follows. Documentation-only final commit must still meet repository CI."
+  ],
+  "flat_candidate_exports_sha256": "badb11d7b02156a840a850eb3944b9889aef0988d3e4de5005309f4ca00dd3c2",
+  "flat_candidate_change": "Reuse existing >=2000 UUID JSON_TABLE membership in both same-store/doctor encounter count and hit lookup. Smaller scopes and other DB vendors retain IN. Authorization, missing-target check, sort, CSV and audit unchanged.",
+  "flat_candidate_adopted": false,
+  "materialized_candidate_exports_sha256": "e6f08bc6cc75ca68090b10101d4e072566adb0ee941442deb15917c0f533a6f1",
+  "final_candidate_change": "Keep authorized encounter count using bounded UUID selection; materialize DISTINCT ClinicalCheck IDs inside the hit SELECT before joining hits. Preserve all ownership filters, target completeness, ordering and audit.",
+  "flat_candidate_mixed_failure": {
+    "run": "local-business-http-current7",
+    "formal_requests": 3340,
+    "formal_failures": 16,
+    "all_failed_exports": 18,
+    "http_503": 13,
+    "read_timeouts": 5,
+    "successful_export_audit": {
+      "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+      "verified_exports": 950,
+      "verified_record_targets": 148269,
+      "requests": 4865,
+      "passed": false,
+      "successful_exports_verified": true,
+      "failed_exports": 18
+    },
+    "statement_error_count": 18,
+    "plan_estimated_intermediate_rows": 28400000,
+    "notes": [
+      "Loader exit0 means artifacts generated, not acceptance",
+      "Global temporary-file write error counter increased; no per-request error-code history was enabled",
+      "Statement SUM_LOCK_TIME=0 does not exclude every kind of row-lock wait"
+    ],
+    "files_sha256": {
+      "metadata.json": "017ec91f5b8c4d28bdfd03387c909060a6712587701fd3f99301485c3293635e",
+      "combined.summary.json": "d3074f45ade6018d02044854c250bd21cec7dcdfc8b23d002a230b187da8b23e",
+      "combined.requests.jsonl": "1ba5a3cede73f733b91358bcbe2ebafcdc4ae3487e9b1a911a7e1295dbf277d1",
+      "partial-export-audit-verification.json": "5acc1d5df08aa869ae5357cf009176654495fe5a8e8f0ecb982a8e00056a79a9"
+    }
+  },
+  "materialized_candidate_full_export_trials": [
+    {
+      "run": "detail-materialized-full-1.json",
+      "sizes": {
+        "2000": {
+          "median_ms": {
+            "original": 122.1524499997031,
+            "candidate": 121.26845000057074
+          },
+          "bytes": 208095,
+          "verified_exports": 12,
+          "csv_sha256": "4fda9e788c4fd5c99776d7d53f5be8de69089022706be204a7f0e8de3320eba2"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 253.71614999949088,
+            "candidate": 202.89914999921166
+          },
+          "bytes": 416095,
+          "verified_exports": 12,
+          "csv_sha256": "edc6abf99be9b7ffa798dc3d6ccc499b022b4ea9090dac6e75a992ce5f75f27f"
+        }
+      },
+      "file_sha256": "154d56a48c18b0f3021c786fe463dd437e865341e4b44a12472e1f8543afa2d0"
+    },
+    {
+      "run": "detail-materialized-full-2.json",
+      "sizes": {
+        "2000": {
+          "median_ms": {
+            "original": 145.89574999990873,
+            "candidate": 123.69560000024649
+          },
+          "bytes": 208095,
+          "verified_exports": 12,
+          "csv_sha256": "4fda9e788c4fd5c99776d7d53f5be8de69089022706be204a7f0e8de3320eba2"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 245.58369999977003,
+            "candidate": 207.6203999995414
+          },
+          "bytes": 416095,
+          "verified_exports": 12,
+          "csv_sha256": "edc6abf99be9b7ffa798dc3d6ccc499b022b4ea9090dac6e75a992ce5f75f27f"
+        }
+      },
+      "file_sha256": "26e19e06abd3e22b4afd9ade08b06a6511199ab54284ab28f4e01034a084f405"
+    },
+    {
+      "run": "detail-materialized-full-3.json",
+      "sizes": {
+        "2000": {
+          "median_ms": {
+            "original": 132.68430000061926,
+            "candidate": 132.6780499994129
+          },
+          "bytes": 208095,
+          "verified_exports": 12,
+          "csv_sha256": "4fda9e788c4fd5c99776d7d53f5be8de69089022706be204a7f0e8de3320eba2"
+        },
+        "4000": {
+          "median_ms": {
+            "original": 286.5004499990391,
+            "candidate": 223.57610000017303
+          },
+          "bytes": 416095,
+          "verified_exports": 12,
+          "csv_sha256": "edc6abf99be9b7ffa798dc3d6ccc499b022b4ea9090dac6e75a992ce5f75f27f"
+        }
+      },
+      "file_sha256": "849064ed139caa9281aef31fe37f3510b99f7dcdbc6723e1fdd544f5e0a1849b"
+    }
+  ],
+  "materialized_candidate_bounded_reproduction": {
+    "scope": "bounded local read-only reproduction on failed mixed-run dataset; max SELECT execution 2000ms; no sustained acceptance",
+    "rows": 3666,
+    "samples_ms": {
+      "legacy_in": [
+        110.79739999877347,
+        118.16800000087824,
+        94.54229999937525,
+        103.7118999993254,
+        106.10079999969457,
+        103.27539999889268,
+        108.4179999998014,
+        98.78449999996519
+      ],
+      "materialized_checks": [
+        88.39369999986957,
+        89.78879999995115,
+        90.59630000047036,
+        71.37859999966167,
+        80.35879999988538,
+        87.34129999902507,
+        77.88609999988694,
+        85.67589999984193
+      ]
+    },
+    "median_ms": {
+      "legacy_in": 104.90634999950998,
+      "materialized_checks": 86.5085999994335
+    },
+    "plan": "-> Sort row IDs: clinic_clinicalcheck.created_at, clinic_guardhit.id\n    -> Table scan on <temporary>  (cost=7570..7584 rows=936)\n        -> Temporary table  (cost=7570..7570 rows=936)\n            -> Nested loop inner join  (cost=7476 rows=936)\n                -> Nested loop inner join  (cost=7284 rows=989)\n                    -> Nested loop inner join  (cost=5118 rows=6187)\n                        -> Nested loop left join  (cost=2953 rows=6187)\n                            -> Index lookup on clinic_guardhit using guard_hit_store_rule_idx (store_id='d9e8f55580a25e1baf112c022e4babd9'), with index condition: (clinic_guardhit.store_id = 'd9e8f55580a25e1baf112c022e4babd9')  (cost=787 rows=6187)\n                            -> Single-row index lookup on clinic_alert using hit_id (hit_id=clinic_guardhit.id)  (cost=0.25 rows=1)\n                        -> Single-row index lookup on clinic_clinicalcheck using PRIMARY (id=clinic_guardhit.evaluation_id)  (cost=0.25 rows=1)\n                    -> Filter: ((clinic_encounter.store_id = 'd9e8f55580a25e1baf112c022e4babd9') and (clinic_encounter.doctor_id = 3))  (cost=0.25 rows=0.16)\n                        -> Single-row index lookup on clinic_encounter using PRIMARY (id=clinic_clinicalcheck.encounter_id)  (cost=0.25 rows=1)\n                -> Single-row index lookup on <subquery2> using <auto_distinct_key> (id=clinic_guardhit.evaluation_id)  (cost=8775..8775 rows=1)\n                    -> Materialize with deduplication  (cost=8775..8775 rows=0.947)\n                        -> Table scan on scoped  (cost=8775..8775 rows=0.947)\n                            -> Materialize  (cost=8772..8772 rows=0.947)\n                                -> Group (no aggregates)  (cost=8772 rows=0.947)\n                                    -> Nested loop inner join  (cost=5899 rows=28732)\n                                        -> Index scan on clinic_clinicalcheck using PRIMARY  (cost=1589 rows=14366)\n                                        -> Single-row index lookup on <subquery4> using <auto_distinct_key> (id=clinic_clinicalcheck.encounter_id)  (cost=721..721 rows=1)\n                                            -> Materialize with deduplication  (cost=2.93..2.93 rows=2)\n                                                -> Filter: (selected.id is not null)  (cost=2.73 rows=2)\n                                                    -> Materialize table function  (cost=2.73 rows=2)\n"
+  },
+  "materialized_http_checks": {
+    "source_revision": "44985f65a4647c688679813e101ef86d46859c49",
+    "configuration": "4 app workers x24 threads, 64 sender workers/4 shards, 5s warmup+15s measurement, 2GiB local MySQL buffer/512 connections, 8MiB Waitress output buffer; shared Windows host",
+    "current8": {
+      "overall_run_accepted": false,
+      "reason": "inflight samples had 0.598-0.627s gaps; original0.5s completeness gate unchanged",
+      "business_status": {
+        "scope": "Business request/export verification only. Overall diagnostic rejected by inflight sample completeness; no concurrency/window pass claimed.",
+        "requests": 6247,
+        "business_failures": 0,
+        "overall_run_accepted": false
+      },
+      "business_export_audit": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1245,
+        "verified_record_targets": 334022,
+        "requests": 6247,
+        "passed": false,
+        "business_exports_verified": true,
+        "overall_run_accepted": false
+      },
+      "files_sha256": {
+        "metadata.json": "b7d389f094c060fa8c5b5fc009680da141abcfdc18a30af25f235c44b74cf6cf",
+        "business-only.requests.jsonl": "260202cb40190bb99dd7c48fdb36edc24854fc9fabfb4ba3fa4ac723830a7e59",
+        "business-only-audit-verification.json": "023e5b221934aba5e582c4ff658a88ab45ae988322047a77e24fda0dbf8d6601"
+      }
+    },
+    "current9": {
+      "integration_completed": true,
+      "strict_acceptance_claimed": false,
+      "all_requests": 6445,
+      "formal_requests": 4771,
+      "formal_failures": 0,
+      "p95_ms": {
+        "clinical_export": 575.6858000004286,
+        "detail_export": 539.7921999992832,
+        "guard": 345.90190000017174,
+        "query": 205.29979999992065,
+        "reception": 275.7235999997647,
+        "summary_export": 232.55929999868385,
+        "write": 374.4298000001436
+      },
+      "export_audit": {
+        "scope": "all successful exports including warmup; replay per-worker seeded selection, durable actor/store/size/count and exact record audit targets",
+        "verified_exports": 1284,
+        "verified_record_targets": 281049,
+        "requests": 6445,
+        "passed": true
+      },
+      "incomplete_resource_samples": 0,
+      "files_sha256": {
+        "metadata.json": "1528be434dc307e7a70d402ab01d606620e25cc8969b8068bb5d6bbd6867537c",
+        "combined.summary.json": "460b4bfc7b75b4e00ba2e9c27bd9d9b71a75b5e7e75c7ebf5d039b695c940bb1",
+        "combined.requests.jsonl": "93cd310b28ed542742a598e786519c6c5c0d1960405515eec59c9ae1533568bd",
+        "export-audit-verification.json": "9572f179c18aab67a0361129c519dca56f0202c78fceade7b9a69d8f0c0d57f1"
+      }
+    }
+  }
+}
