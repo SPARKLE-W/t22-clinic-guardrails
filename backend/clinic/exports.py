@@ -11,6 +11,7 @@ import orjson
 from django.db import DatabaseError, connection, transaction
 from django.db.models import CharField, Count, Q
 from django.db.models.functions import Cast
+from django.db.models.expressions import RawSQL
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -176,6 +177,17 @@ def _record_values(queryset):
     return rows
 
 
+def _clinical_id_selection(refs):
+    # Large IN lists spend CPU compiling and parsing thousands of parameters.
+    # IDs have already passed UUID validation and duplicate rejection.
+    if connection.vendor == 'mysql' and len(refs) >= 2000:
+        return RawSQL(
+            "SELECT selected.id FROM JSON_TABLE(%s, '$[*]' "
+            "COLUMNS (id CHAR(32) PATH '$')) AS selected",
+            [json.dumps([ref.hex for ref in refs])])
+    return refs
+
+
 def _load_histories(record_ids):
     revisions, medications, adoptions = defaultdict(list), defaultdict(list), defaultdict(list)
     for item in _detail_values(
@@ -284,7 +296,7 @@ def clinical(actor_id, payload, timings=None):
             refs = [_uuid(ref) for ref in refs]
             if len(set(refs)) != len(refs):
                 raise DomainError('INPUT_INVALID', 422)
-            rows = rows.filter(pk__in=refs)
+            rows = rows.filter(pk__in=_clinical_id_selection(refs))
         else:
             start, end = _range(scope['time_range'])
             rows = rows.filter(encounter__created_at__gte=start, encounter__created_at__lt=end)

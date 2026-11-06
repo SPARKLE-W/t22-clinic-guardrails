@@ -11,7 +11,7 @@ from django.test import skipUnlessDBFeature
 from django.test.utils import CaptureQueriesContext
 from governance.models import Operation, Review
 from governance.services import DomainError
-from .exports import clinical
+from .exports import clinical, _clinical_id_selection, _record_values
 from .export_projection import rebuild_projections
 from .models import (AuditTarget, ClinicalExportProjection, ClinicalRecord, ClinicalRevision,
                      Encounter, ExportRequest, Suggestion)
@@ -82,6 +82,23 @@ class ExportProjectionTests(ClinicFixture):
         with patch('clinic.services.write_audit', side_effect=DatabaseError('synthetic failure')):
             with self.assertRaises(DatabaseError):
                 read(self.doctor.pk, clinical=True, ref=self.ref)
+
+    def test_large_id_selection_preserves_rows_and_authorization(self):
+        refs = [self.record.pk, *(uuid.uuid4() for _ in range(1999))]
+        scoped = ClinicalRecord.objects.filter(encounter__store_id=self.a.pk,
+                                               encounter__doctor_id=self.doctor.pk)
+        expected = _record_values(scoped.filter(pk__in=refs))
+        with CaptureQueriesContext(connection) as queries:
+            actual = _record_values(scoped.filter(pk__in=_clinical_id_selection(refs)))
+        self.assertEqual(expected, actual)
+        if connection.vendor == 'mysql':
+            self.assertTrue(any('JSON_TABLE' in item['sql'] for item in queries))
+        with self.assertRaises(DomainError) as error:
+            clinical(self.doctor.pk, {'scope': {'record_refs': [str(ref) for ref in refs]},
+                                      'purpose': 'missing targets'})
+        self.assertEqual('TARGET_UNAVAILABLE', error.exception.code)
+        foreign = ClinicalRecord.objects.filter(encounter__doctor_id=self.foreign.pk)
+        self.assertEqual([], _record_values(foreign.filter(pk__in=_clinical_id_selection(refs))))
 
     def test_live_projection_matches_source_without_history_queries(self):
         self.assertEqual(1, self.record.export_generation)
