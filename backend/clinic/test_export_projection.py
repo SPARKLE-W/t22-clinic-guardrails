@@ -71,6 +71,15 @@ class ExportProjectionTests(ClinicFixture):
         ClinicalExportProjection.objects.filter(record=self.record).update(prefix=b'broken')
         self.assertEqual(expected, read(self.doctor.pk, clinical=True, ref=self.ref))
 
+    def test_single_read_validates_shared_template_once_per_request(self):
+        from . import services
+        for corrupt in (False, True):
+            if corrupt:
+                ClinicalExportProjection.objects.filter(record=self.record).update(prefix=b'broken')
+            with patch('clinic.services._template', wraps=services._template) as validate:
+                read(self.doctor.pk, clinical=True, ref=self.ref)
+            self.assertEqual(1, validate.call_count)
+
     def test_single_read_checks_owner_before_loading_projection(self):
         for actor in (self.doctor2, self.foreign):
             with patch('clinic.services._projected_clinical') as cached:

@@ -285,7 +285,7 @@ def _clinical(row, templates, field_meanings_cache=None):
                           for item in sorted(_related_rows(record, 'suggestion_decisions', 'prefetched_adopted_suggestions'),key=lambda item:(item.created_at,str(item.pk))) if item.outcome == 'adopted']}
 
 
-def _projected_clinical(row):
+def _projected_clinical(row, templates):
     """Reuse the transactional export snapshot for an authorized single read."""
     from .export_projection import validated_prefix
 
@@ -304,6 +304,7 @@ def _projected_clinical(row):
                   'export_projection__source_signature': projection.source_signature})
     candidate = row.template if row.template_id == row.clinicalrecord.template_id else row.clinicalrecord.template
     template = _template(candidate, row.store_id)
+    templates[record.template_id] = template
     prefix = validated_prefix(value, candidate.digest)
     if prefix is None:
         return None
@@ -377,7 +378,8 @@ def read(actor_id, clinical=False, ref=None, query=None):
                     raise DomainError('INPUT_INVALID', 422)
                 total = values.count()
                 rows = list(values[(page-1)*50:page*50])
-            projected = _projected_clinical(rows[0]) if clinical and explicit_ref else None
+            items, targets, templates, field_meanings = [], [], {}, {}
+            projected = _projected_clinical(rows[0], templates) if clinical and explicit_ref else None
             relations = ['template', 'receptionrevision_set']
             if clinical and projected is None:
                 if not explicit_ref:
@@ -386,7 +388,6 @@ def read(actor_id, clinical=False, ref=None, query=None):
                               Prefetch('clinicalrecord__medicationentry_set', to_attr='prefetched_medication_entries'),
                               _adopted_suggestion_prefetch('clinicalrecord__suggestion_decisions')]
             prefetch_related_objects(rows, *relations)
-            items, targets, templates, field_meanings = [], [], {}, {}
             for row in rows:
                 if row.template_id not in templates:
                     templates[row.template_id] = _template(row.template, row.store_id)
