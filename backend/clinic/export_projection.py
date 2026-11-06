@@ -62,11 +62,12 @@ def note_encounter_lock(record, encounter):
     record._export_lock_token = (connection.alias, connection.atomic_blocks[0], encounter.pk)
 
 
-def refresh_projection(record, encounter, candidate, template):
+def refresh_projection(record, encounter, candidate, template, *, save_version=False):
+    """Persist the generation and any diagnosis version already advanced by the caller."""
     if not connection.in_atomic_block:
         raise RuntimeError('Refresh the export projection inside the clinical write transaction')
     record.export_generation += 1
-    record.save(update_fields=['export_generation'])
+    record.save(update_fields=['current_version', 'export_generation'] if save_version else ['export_generation'])
     row = {'id': record.pk, 'encounter_id': encounter.pk, 'template_id': record.template_id,
            'current_version': record.current_version, 'export_generation': record.export_generation,
            'encounter__store_id': encounter.store_id, 'encounter__template_id': encounter.template_id,
