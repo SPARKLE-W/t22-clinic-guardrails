@@ -495,7 +495,7 @@ def run_one(session, base, cookies, actors, number, kind, rng):
         response = session.request(method, base + path, json=payload if method == 'POST' else None,
                                    cookies=request_cookies, headers=headers, timeout=120, stream=True)
         pieces = []
-        for piece in response.iter_content(chunk_size=1048576):
+        for piece in response.iter_content(chunk_size=65536):
             if piece:
                 if first is None:
                     first = time.perf_counter()
