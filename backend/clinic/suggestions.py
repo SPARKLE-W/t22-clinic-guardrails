@@ -111,20 +111,21 @@ def mutate(actor_id, mode, key, payload, ref):
                 elif 'original_version_ref' in adopted:
                     raise DomainError('STATE_OR_VERSION_CONFLICT')
                 values = {field:adopted.get(field,getattr(current,field,'') if current else '') for field in ['diagnosis','examination']}
-                if not head or not head.candidate:
+                if not head or not head.candidate_id:
                     raise DomainError('POLICY_UNAVAILABLE',503)
                 template_candidate = record.template if record else row.template
                 template = _validated(template_candidate,actor.store_id)
-                if head.candidate_id != template_candidate.pk:
-                    _validated(head.candidate,actor.store_id)
+                policy_candidate = template_candidate if head.candidate_id == template_candidate.pk else head.candidate
+                if policy_candidate.pk != template_candidate.pk:
+                    _validated(policy_candidate,actor.store_id)
                 extra_fields = _extra_values(template,adopted.get('extra_fields',{}),current.extra_fields if current else None)
                 if saved.source.get('type') != 'demo' or not saved.source.get('label') or saved.source.get('version') != saved.source_version:
                     raise DomainError('SUGGESTION_SOURCE_UNAVAILABLE',503)
-                checks,hits = evaluate(head.candidate.envelope['payload']['demand'],template,values,'adopt',
+                checks,hits = evaluate(policy_candidate.envelope['payload']['demand'],template,values,'adopt',
                     medication={'values':med_values,'original_valid':True,'reason_valid':True} if med_values is not None else None,
                     suggestion={'reason_valid':bool(reason.strip()),'reason':reason})
                 check = ClinicalCheck.objects.create(encounter=row,record=record,original_version=current,actor=actor,mode='suggestion.adopt',
-                    template=template_candidate,policy=head.candidate,policy_digest=head.candidate.digest,status='blocked' if hits else 'passed',checks=checks)
+                    template=template_candidate,policy=policy_candidate,policy_digest=policy_candidate.digest,status='blocked' if hits else 'passed',checks=checks)
                 if hits:
                     _persist_guard_alerts(check, hits)
                     _audit(actor,permission,row,'refused','GUARD_BLOCKED',record)

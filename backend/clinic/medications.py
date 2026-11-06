@@ -39,20 +39,22 @@ def mutate(actor_id, mode, key, payload, ref):
                         raise DomainError('TARGET_UNAVAILABLE',403)
                 if row.error_mark and not original:
                     raise DomainError('STATE_CONFLICT')
-            if not head or not head.candidate:
+            if not head or not head.candidate_id:
                 raise DomainError('POLICY_UNAVAILABLE',503)
-            template = _validated(record.template,actor.store_id)
-            if head.candidate_id != record.template_id:
-                _validated(head.candidate,actor.store_id)
+            template_candidate = record.template
+            template = _validated(template_candidate,actor.store_id)
+            policy_candidate = template_candidate if head.candidate_id == template_candidate.pk else head.candidate
+            if policy_candidate.pk != template_candidate.pk:
+                _validated(policy_candidate,actor.store_id)
             current = ClinicalRevision.objects.filter(record=record,version=record.current_version).first()
             if not current:
                 raise DomainError('RECORD_UNAVAILABLE',503)
-            checks,hits = evaluate(head.candidate.envelope['payload']['demand'],template,
+            checks,hits = evaluate(policy_candidate.envelope['payload']['demand'],template,
                 {'diagnosis':current.diagnosis,'examination':current.examination},mode,
                 medication={'values':values,'original_valid':mode == 'append' or original is not None,
                             'reason_valid':mode == 'append' or bool(reason.strip())})
             evaluation = ClinicalCheck.objects.create(encounter=row,record=record,actor=actor,mode='medication.'+mode,
-                template=record.template,policy=head.candidate,policy_digest=head.candidate.digest,
+                template=template_candidate,policy=policy_candidate,policy_digest=policy_candidate.digest,
                 original_version=current,status='blocked' if hits else 'passed',checks=checks)
             if hits:
                 _persist_guard_alerts(evaluation, hits)
@@ -62,7 +64,7 @@ def mutate(actor_id, mode, key, payload, ref):
                 note_encounter_lock(record, row)
                 entry = MedicationEntry.objects.create(record=record,original=original,evaluation=evaluation,
                                                        actor=actor,reason=reason,**values)
-                refresh_projection(record, row, record.template, template)
+                refresh_projection(record, row, template_candidate, template)
                 _audit(actor,PERMISSION,row,'success','COMPLETED',record)
                 result = {'saved_ref':str(entry.pk),'record_ref':str(record.pk),'operation_state':'saved',
                           'original_entry_ref':str(original.pk) if original else None,
