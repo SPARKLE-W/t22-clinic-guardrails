@@ -1,0 +1,217 @@
+{
+  "kind": "diagnostic_summary_not_formal_acceptance",
+  "source_commit": "43e762606f2a96c7784c279251c6ea798cf91e86",
+  "application_main_equivalent": "874d626",
+  "receiver_logical_cpus": 32,
+  "sender_cpus": 4,
+  "web_thread_budget": 384,
+  "mysql_max_connections": 512,
+  "runs": {
+    "r20": {
+      "layout": "16x24",
+      "warmup_seconds": 60,
+      "formal_seconds": 120,
+      "formal_started_at_utc": "2026-11-06T04:58:57.635Z",
+      "formal_ended_at_utc": "2026-11-06T05:00:57.635Z",
+      "requests": 120962,
+      "failures": 0,
+      "p95_ms": {
+        "clinical_export": 1567.4658589996397,
+        "detail_export": 953.1481419999182,
+        "guard": 625.5995230003464,
+        "query": 361.9718380014092,
+        "reception": 440.2717049997591,
+        "summary_export": 369.3176800006768,
+        "write": 651.1392490010621
+      },
+      "minutes": [
+        {
+          "minute": 1,
+          "completed": 60366,
+          "success": 60366,
+          "failures": 0
+        },
+        {
+          "minute": 2,
+          "completed": 60596,
+          "success": 60596,
+          "failures": 0
+        }
+      ],
+      "target_worker_assignments": [
+        23,
+        23,
+        23,
+        23,
+        23,
+        23,
+        23,
+        23,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22
+      ],
+      "interval": {
+        "minimum": 351,
+        "maximum": 360,
+        "exact_360_for_entire_window": false,
+        "below_360_seconds": 24.85600570805036,
+        "longest_below_360_seconds": 0.047636339000746375,
+        "mean_inflight": 359.75619163758006,
+        "queue_full_count": 0
+      },
+      "handoff_p95_ms": 0.6114139996498125,
+      "max_handoff_ms": 35.48907499862253,
+      "handoffs_over_5ms": 282,
+      "tolerance": {
+        "passed": false,
+        "reason": "worker_handoff_over_5ms"
+      },
+      "resources": {
+        "samples": 29,
+        "host_cpu_mean_percent": 87.85508543261332,
+        "app_cpu_cores": 16.728701681380045,
+        "new_mysql_cpu_cores": 10.885278813279397,
+        "old_mysql_cpu_cores": 0.00373143222739505,
+        "minimum_available_memory_bytes": 48622448640,
+        "data_disk_mean": {
+          "read_iops": 1.6992661806071434,
+          "write_iops": 6166.001196418723,
+          "average_latency_ms": 0.3730059507430861,
+          "queue_length": 0.7931034482758621,
+          "write_bytes_per_second": 131782033.87558877
+        }
+      },
+      "sender_resources": {
+        "formal_samples": 120,
+        "mean_host_cpu_percent": 49.659166666666664,
+        "formal_peak_summed_rss": 3994918912,
+        "all_peak_summed_rss": 3994918912,
+        "cgroup_memory_peak": 3056443392,
+        "last_formal_summed_rss": 3994918912,
+        "note": "RSS sum double-counts shared pages; cgroup peak separately observed via systemctl before stop. Short run does not prove 900s capacity."
+      },
+      "exports": {
+        "export_responses_checked": 36595,
+        "audit_targets_checked": 8150292,
+        "result": "passed",
+        "scope": "all recorded successful export responses including warmup; exact scope targets and persisted counts/bytes/actor/store/action"
+      },
+      "invocation_id": "533fded9d92243c0bc902168328de7e8",
+      "sender_archive_sha256": "3c678cca4559221cd0aa04bf6333d5cd951a85f52179630dbf5aba3e2c89c063",
+      "app_archive_sha256": "856184ab27550febdccaef47ca0c2c059ceee45ad2f1e96b10700ebe1d5bbbcc"
+    },
+    "r21": {
+      "layout": "24x16",
+      "warmup_seconds": 60,
+      "formal_seconds": 120,
+      "formal_started_at_utc": "2026-11-06T05:10:08.677Z",
+      "formal_ended_at_utc": "2026-11-06T05:12:08.677Z",
+      "requests": 130679,
+      "failures": 0,
+      "p95_ms": {
+        "clinical_export": 1265.0725359999342,
+        "detail_export": 801.511286999812,
+        "guard": 628.7423800004035,
+        "query": 367.6602079995064,
+        "reception": 444.6448720009357,
+        "summary_export": 378.3960829987336,
+        "write": 649.3413530006364
+      },
+      "minutes": [
+        {
+          "minute": 1,
+          "completed": 65971,
+          "success": 65971,
+          "failures": 0
+        },
+        {
+          "minute": 2,
+          "completed": 64708,
+          "success": 64708,
+          "failures": 0
+        }
+      ],
+      "target_worker_assignments": [
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15
+      ],
+      "interval": {
+        "minimum": 350,
+        "maximum": 360,
+        "exact_360_for_entire_window": false,
+        "below_360_seconds": 28.31840474198907,
+        "longest_below_360_seconds": 0.06777764300022682,
+        "mean_inflight": 359.70668674320825,
+        "queue_full_count": 0
+      },
+      "handoff_p95_ms": 0.7604079983138945,
+      "max_handoff_ms": 58.649618998970254,
+      "handoffs_over_5ms": 488,
+      "tolerance": {
+        "passed": false,
+        "reason": "worker_handoff_over_5ms"
+      },
+      "resources": {
+        "samples": 28,
+        "host_cpu_mean_percent": 99.96964613633715,
+        "app_cpu_cores": 19.175692478893303,
+        "new_mysql_cpu_cores": 12.321918658517077,
+        "old_mysql_cpu_cores": 0.0004154809541935151,
+        "minimum_available_memory_bytes": 47848943616,
+        "data_disk_mean": {
+          "read_iops": 3.890667584946371,
+          "write_iops": 7313.820462939174,
+          "average_latency_ms": 0.33525672347407454,
+          "queue_length": 5.964285714285714,
+          "write_bytes_per_second": 144578482.80207434
+        }
+      },
+      "sender_resources": {
+        "formal_samples": 120,
+        "mean_host_cpu_percent": 54.27,
+        "formal_peak_summed_rss": 4219314176,
+        "all_peak_summed_rss": 4258025472,
+        "cgroup_memory_peak": 3947311104,
+        "last_formal_summed_rss": 4219314176,
+        "note": "RSS sum double-counts shared pages; cgroup peak separately observed via systemctl before stop. Short run does not prove 900s capacity."
+      },
+      "exports": {
+        "export_responses_checked": 39406,
+        "audit_targets_checked": 8749338,
+        "result": "passed",
+        "scope": "all recorded successful export responses including warmup; exact scope targets and persisted counts/bytes/actor/store/action"
+      },
+      "invocation_id": "665bfc44fce342b4a3ada3b872dbed5a",
+      "sender_archive_sha256": "1fbc6262d81a423082e5fb87412e95864f7b33229d670c6942eda2082dcf7a54",
+      "app_archive_sha256": "47186af070bd420ec9a694e070dca489b7145fc499384d54b9a32c0c8910a05d"
+    }
+  }
+}
