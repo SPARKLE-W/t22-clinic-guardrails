@@ -552,10 +552,12 @@ def validate_capture(capture):
             declared_sha256 = headers['X-Content-SHA256']
             digest_match = (declared_bytes == len(body) == header_bytes and
                             hashlib.sha256(body).hexdigest() == declared_sha256)
-            reader = csv.reader(io.StringIO(body.decode('utf-8')))
-            fieldnames = next(reader, [])
-            first_values = next((values for values in reader if values), None)
-            rows = (1 + sum(1 for values in reader if values)) if first_values else 0
+            # Preserve StringIO's LF line semantics without a whole-body Unicode copy.
+            with io.TextIOWrapper(io.BytesIO(body), encoding='utf-8', newline='\n') as text:
+                reader = csv.reader(text)
+                fieldnames = next(reader, [])
+                first_values = next((values for values in reader if values), None)
+                rows = (1 + sum(1 for values in reader if values)) if first_values else 0
             record_count = int(headers['X-Record-Count'])
             result.update({'rows': rows, 'sha256_match': digest_match,
                            'content_length': declared_bytes, 'header_byte_count': header_bytes,

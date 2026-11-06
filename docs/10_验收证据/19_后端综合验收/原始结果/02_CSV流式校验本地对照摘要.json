@@ -1,0 +1,40 @@
+{
+  "kind": "local_tool_verification_not_cloud_acceptance",
+  "benchmark": {
+    "scope": "local full CSV validation; body allocated before tracing; exact old/new result dictionaries equal; no HTTP/cloud/900s acceptance claim",
+    "python": "3.12.7",
+    "baseline_commit": "19fe1e1",
+    "candidate_driver_sha256": "be22952d88d4c7c483a385032eabab83d797dfd99127de36cea22c324c5f546d",
+    "rows": 4000,
+    "bytes": 6527007,
+    "sha256": "85b6e482efcfd39de94a897b5ca4c059e9fa34b83fc6d65cca551ed81f96a480",
+    "median_ms": {
+      "baseline": 31.841899999562884,
+      "candidate": 31.15320000142674
+    },
+    "python_allocation_peak_bytes": {
+      "baseline": 35034556,
+      "candidate": 70667
+    },
+    "eight_validator_python_peak_bytes": {
+      "baseline": 175374126,
+      "candidate": 322270
+    }
+  },
+  "integration": {
+    "scope": "local stub transport pipeline, not business/cloud acceptance",
+    "controller_exit_code": 0,
+    "requests": 12548,
+    "all_requests_valid": true,
+    "merged_records_equal_original_shards": true,
+    "legacy_summary_fields_equal": [
+      "formal_requests_started",
+      "formal_failures",
+      "groups",
+      "minutes",
+      "actual_mix"
+    ],
+    "all_child_formal_failures_zero": true,
+    "merged_requests_sha256": "11b270d49c5047cf2b262df5fd41bbbef9026d5a140d06148e7b6d4e09d7b78a"
+  }
+}
