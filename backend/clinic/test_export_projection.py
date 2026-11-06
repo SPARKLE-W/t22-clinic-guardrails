@@ -61,6 +61,13 @@ class ExportProjectionTests(ClinicFixture):
         self.assertEqual(2, AuditTarget.objects.filter(target=self.record.pk,
                                                       event__action='export.clinical').count())
 
+    def test_cached_rows_reuse_empty_link_tail_without_csv_writer_per_record(self):
+        for marked in (False, True):
+            Encounter.objects.filter(pk=self.ref).update(error_mark=marked)
+            expected = self.body(source=True)
+            with patch('clinic.exports._csv_line', side_effect=AssertionError('per-record CSV tail')):
+                self.assertEqual(expected, self.body())
+
     def test_text_metadata_identifiers_match_normal_uuid_read(self):
         from . import exports
         def reference(queryset):
