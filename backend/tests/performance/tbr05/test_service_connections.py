@@ -1,8 +1,10 @@
 import importlib.util
+import io
+import runpy
 import sys
 import types
 import unittest
-from contextlib import nullcontext
+from contextlib import nullcontext, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -22,6 +24,47 @@ with patch.dict('os.environ', {'T22_FORMAL_LOAD': '1'}), patch.dict(
 class Database:
     def get_new_connection(self, params):
         return params['result']
+
+
+class SchedulingCandidateTests(unittest.TestCase):
+    def test_candidate_applies_and_restores_on_failure(self):
+        original = sys.getswitchinterval()
+        with self.assertRaisesRegex(RuntimeError, 'synthetic'):
+            with service.gil_switch_interval(.1) as active:
+                self.assertAlmostEqual(.1, active)
+                self.assertAlmostEqual(.0001, sys.getswitchinterval())
+                raise RuntimeError('synthetic')
+        self.assertEqual(original, sys.getswitchinterval())
+
+    def test_default_does_not_change_interpreter(self):
+        original = sys.getswitchinterval()
+        with patch.object(sys, 'setswitchinterval', side_effect=AssertionError('default changed')):
+            with service.gil_switch_interval(None) as active:
+                self.assertAlmostEqual(original * 1000, active)
+
+    def test_service_entry_uses_environment_and_cli_override_only_while_serving(self):
+        original = sys.getswitchinterval()
+        for extra, expected in [([], .2), (['--gil-switch-interval-ms', '.1'], .1)]:
+            observed = []
+            fake_waitress = types.ModuleType('waitress')
+            fake_waitress.serve = lambda *a, **kw: observed.append(sys.getswitchinterval() * 1000)
+            output = io.StringIO()
+            with self.subTest(extra=extra), patch.dict('os.environ', {
+                    'T22_FORMAL_LOAD': '1', 'T22_SERVER_GIL_SWITCH_INTERVAL_MS': '.2'}), patch.dict(
+                    sys.modules, {'django.core.wsgi': wsgi, 'waitress': fake_waitress}), patch.object(
+                    sys, 'argv', ['service', *extra]), redirect_stdout(output):
+                runpy.run_path(str(Path(__file__).with_name('02_formal_service.py')), run_name='__main__')
+            self.assertAlmostEqual(expected, observed[0])
+            self.assertIn('GIL_SWITCH_INTERVAL_MS=', output.getvalue())
+            self.assertEqual(original, sys.getswitchinterval())
+
+    def test_invalid_candidate_rejected_before_serving(self):
+        original = sys.getswitchinterval()
+        for value in (0, -1, float('nan'), float('inf')):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                with service.gil_switch_interval(value):
+                    self.fail('invalid value accepted')
+        self.assertEqual(original, sys.getswitchinterval())
 
 
 class ConnectionProfilingTests(unittest.TestCase):

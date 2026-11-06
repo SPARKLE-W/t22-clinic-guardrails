@@ -1,6 +1,7 @@
 """Fixed WSGI serving profile for the isolated formal-load run."""
 import argparse
 import ipaddress
+import math
 import os
 import sys
 import threading
@@ -20,6 +21,20 @@ from waitress import serve
 
 
 local = threading.local()
+
+
+@contextmanager
+def gil_switch_interval(milliseconds):
+    original = sys.getswitchinterval()
+    if milliseconds is not None:
+        if not math.isfinite(milliseconds) or milliseconds <= 0:
+            raise ValueError('GIL switch interval must be finite and positive')
+        sys.setswitchinterval(milliseconds / 1000)
+    try:
+        yield sys.getswitchinterval() * 1000
+    finally:
+        if milliseconds is not None:
+            sys.setswitchinterval(original)
 
 
 @contextmanager
@@ -158,6 +173,9 @@ if __name__ == '__main__':
     parser.add_argument('--threads', type=int, default=120)
     parser.add_argument('--host', default='127.0.0.1',
                         help='loopback or a private IPv4 address for an isolated VPC load sender')
+    parser.add_argument('--gil-switch-interval-ms', type=float,
+                        default=os.environ.get('T22_SERVER_GIL_SWITCH_INTERVAL_MS'),
+                        help='optional process-local scheduling candidate; default preserves interpreter setting')
     parser.add_argument('--profile', action='store_true',
                         help='emit per-request queue, WSGI app, SQL and commit timing headers')
     args = parser.parse_args()
@@ -165,9 +183,11 @@ if __name__ == '__main__':
         host = normalize_bind_host(args.host)
     except ValueError as error:
         parser.error(str(error))
-    if args.profile:
-        serve_profiled(args.port, args.threads, host)
-    else:
-        serve(get_wsgi_application(), host=host, port=args.port,
-              threads=args.threads, connection_limit=512, backlog=1024,
-              channel_timeout=60)
+    with gil_switch_interval(args.gil_switch_interval_ms) as active:
+        print(f'GIL_SWITCH_INTERVAL_MS={active}', flush=True)
+        if args.profile:
+            serve_profiled(args.port, args.threads, host)
+        else:
+            serve(get_wsgi_application(), host=host, port=args.port,
+                  threads=args.threads, connection_limit=512, backlog=1024,
+                  channel_timeout=60)
