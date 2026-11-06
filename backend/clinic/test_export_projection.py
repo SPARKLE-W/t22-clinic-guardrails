@@ -74,9 +74,16 @@ class ExportProjectionTests(ClinicFixture):
     def test_single_read_checks_owner_before_loading_projection(self):
         for actor in (self.doctor2, self.foreign):
             with patch('clinic.services._projected_clinical') as cached:
-                with self.assertRaises(DomainError):
-                    read(actor.pk, clinical=True, ref=self.ref)
+                with CaptureQueriesContext(connection) as queries:
+                    with self.assertRaises(DomainError):
+                        read(actor.pk, clinical=True, ref=self.ref)
                 cached.assert_not_called()
+                joined = [item['sql'].lower() for item in queries
+                          if 'join' in item['sql'].lower() and 'clinic_clinicalexportprojection' in item['sql']]
+                self.assertEqual(1, len(joined))
+                predicate = joined[0].split('where', 1)[1]
+                self.assertIn('doctor_id', predicate)
+                self.assertIn('store_id', predicate)
 
     def test_single_read_audit_failure_does_not_return_projection(self):
         with patch('clinic.services.write_audit', side_effect=DatabaseError('synthetic failure')):

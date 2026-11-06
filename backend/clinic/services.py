@@ -107,12 +107,11 @@ def _own(actor, ref, clinical=False, lock=False, join_read_templates=False):
         related = ('template', 'clinicalrecord__export_projection') if clinical else ('template',)
         rows = rows.select_related(*related)
     rows = rows.select_for_update() if lock else rows
-    row = rows.filter(pk=_uuid(ref)).first()
-    owner = row.doctor_id if clinical and row else row.receptionist_id if row else None
-    if not row or row.store_id != actor.store_id or owner != actor.pk:
+    owner = 'doctor_id' if clinical else 'receptionist_id'
+    row = rows.filter(pk=_uuid(ref), store_id=actor.store_id, **{owner: actor.pk}).first()
+    if not row:
         error = DomainError('TARGET_UNAVAILABLE', 403)
-        if row:
-            error.event_store = actor.store_id  # L or X11, never the foreign target store.
+        error.event_store = actor.store_id  # L or X11, never the foreign target store.
         raise error
     return row
 
