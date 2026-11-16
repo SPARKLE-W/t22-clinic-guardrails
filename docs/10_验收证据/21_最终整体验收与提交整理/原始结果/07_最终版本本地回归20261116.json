@@ -34,6 +34,26 @@
     {
       "name": "final-closeout-20261116-production-coverage.json",
       "sha256": "d699ce9fb9b1adc78081aaf321732bf06a19d94fe87d3fa44a81ef7e7623d19a"
+    },
+    {
+      "name": "final-closeout-20261116-all-production-coverage.json",
+      "sha256": "9609f4bad9b099cd969a71be7fd052e67b15a6a913a8413b7c60d51892629039"
+    },
+    {
+      "name": "final-closeout-20261116-all-production-tests.log",
+      "sha256": "4d7914001c2b4ab0de562bd902bf9af2391819cd7bb4f7e9e620f50568c2cfac"
     }
-  ]
+  ],
+  "all_production_coverage": {
+    "covered_lines": 2681,
+    "num_statements": 2980,
+    "percent_covered": 89.96644295302013,
+    "percent_covered_display": "90",
+    "missing_lines": 299,
+    "excluded_lines": 0,
+    "percent_statements_covered": 89.96644295302013,
+    "percent_statements_covered_display": "90"
+  },
+  "all_production_scope": "governance, clinic, vetapp, vetcontrols; excludes tests, migrations, mq_test_tools",
+  "all_production_tests": 275
 }
