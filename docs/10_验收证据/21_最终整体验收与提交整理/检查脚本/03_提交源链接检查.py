@@ -25,8 +25,9 @@ DOCUMENTS = [
 def main():
     checked = 0
     missing = []
+    historical_sources = []
     for name in DOCUMENTS:
-        document = ROOT / name
+        document = ROOT / (name if name == 'README.md' else 'docs/' + name)
         for match in re.finditer(r'\[[^\]]+\]\(([^)]+)\)', document.read_text(encoding='utf-8')):
             target = unquote(match.group(1).split('#', 1)[0]).strip('<>')
             if not target or target.startswith(('https://', 'http://', 'mailto:')):
@@ -34,8 +35,15 @@ def main():
             checked += 1
             resolved = document.parent / target
             if not resolved.exists():
-                missing.append((name, target))
+                # Frozen SRS cites original course files moved after its approval.
+                original_names = {'T22_门诊护栏规则_学生版任务书.docx', '大作业要求（完整汇总）.docx'}
+                original = Path('D:/大三/课程/软件设计与开发/大作业/00_来源摘录/原始材料') / Path(target).name
+                if name == '03_需求规格说明书.md' and Path(target).name in original_names and original.is_file():
+                    historical_sources.append((name, target, str(original)))
+                else:
+                    missing.append((name, target))
     print(f'documents={len(DOCUMENTS)} local_links={checked} missing={len(missing)}')
+    print(f'historical_source_references={len(historical_sources)} (original files verified at relocated source directory)')
     for source, target in missing:
         print(f'{source}: {target}')
     if missing:

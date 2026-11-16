@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 ROOT = Path(__file__).resolve().parents[4]
-OUT = ROOT / '04_设计与控制文件' / '23_报告插图'
+OUT = ROOT / 'docs' / '04_设计与控制文件' / '23_报告插图'
 OUT.mkdir(parents=True, exist_ok=True)
 FONT = Path('C:/Windows/Fonts/msyh.ttc')
 BOLD = Path('C:/Windows/Fonts/msyhbd.ttc')
