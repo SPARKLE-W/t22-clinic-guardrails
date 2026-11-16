@@ -155,6 +155,8 @@ def selected_files(tracked):
     files.update(name for name in tracked if any(name.startswith('docs/' + prefix)
                  for prefix in EXTRA_PREFIXES) and '历史_修正前/' not in name)
     files.add('AGENTS.md')
+    files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/08_最终版本代码规模20261116.json')
+    files.add('docs/10_验收证据/19_后端综合验收/检查脚本/01_代码规模.py')
     files.update('docs/10_验收证据/05_需求基线与首轮设计/图源/' + name for name in ('02_三角色目标总览_v1.0.png', '03_共用与条件关系_v1.0.png'))
     files.add(Path(__file__).relative_to(ROOT).as_posix())
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/检查脚本/03_提交源链接检查.py')

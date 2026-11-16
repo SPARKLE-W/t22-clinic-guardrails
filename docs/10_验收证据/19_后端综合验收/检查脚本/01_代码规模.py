@@ -21,10 +21,10 @@ python = [path for path in CODE.rglob('*.py')
           if 'migrations' not in path.parts and 'tests' not in path.parts and path.name != 'tests.py'
           and not path.name.startswith('test_') and path.name != 'mq_test_tools.py']
 migrations = [path for path in CODE.rglob('*.py') if 'migrations' in path.parts and path.name != '__init__.py']
-javascript = list((CODE / 'frontend').rglob('*.js'))
+javascript = list((ROOT / 'frontend').rglob('*.js'))
 javascript = [path for path in javascript if 'tests' not in path.parts]
-html = list((CODE / 'frontend').rglob('*.html'))
-css = list((CODE / 'frontend').rglob('*.css'))
+html = list((ROOT / 'frontend').rglob('*.html'))
+css = list((ROOT / 'frontend').rglob('*.css'))
 report = {'method': 'physical nonblank lines, excluding whole-line Python # and JS // comments',
           'excluded': 'tests, mq_test_tools.py, binary files; backend_python excludes migrations, which are reported separately',
           'backend_python': total(python), 'frontend_javascript': total(javascript),
