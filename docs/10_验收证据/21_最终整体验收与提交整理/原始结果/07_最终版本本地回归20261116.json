@@ -1,0 +1,39 @@
+{
+  "source_commit": "dc97a7f",
+  "date": "2026-11-16",
+  "backend_tests": 275,
+  "frontend_guardrails": 14,
+  "load_tool_tests": 92,
+  "framework_check": "passed",
+  "migration_check": "no changes",
+  "coverage": {
+    "covered_lines": 2430,
+    "num_statements": 2645,
+    "percent_covered": 91.87145557655954,
+    "percent_covered_display": "92",
+    "missing_lines": 215,
+    "excluded_lines": 0,
+    "percent_statements_covered": 91.87145557655954,
+    "percent_statements_covered_display": "92"
+  },
+  "coverage_scope": "governance/clinic/vetapp; excludes tests, migrations, mq_test_tools",
+  "cloud_test_run": false,
+  "files": [
+    {
+      "name": "final-closeout-20261116-regression.log",
+      "sha256": "3a8bdd766e90067437197c914bf605f9af771ff93f1e8eef722dec489ca427de"
+    },
+    {
+      "name": "final-closeout-20261116-load-tools.log",
+      "sha256": "d140c2299dc9e62e31a20a8bc45971005c67cc391a3b1899f2b1d30665d91369"
+    },
+    {
+      "name": "final-closeout-20261116-coverage-tests.log",
+      "sha256": "b14a600a49beb9729cb07b1e97693018c15d355b3790f3cec995a77d409918ce"
+    },
+    {
+      "name": "final-closeout-20261116-production-coverage.json",
+      "sha256": "d699ce9fb9b1adc78081aaf321732bf06a19d94fe87d3fa44a81ef7e7623d19a"
+    }
+  ]
+}
