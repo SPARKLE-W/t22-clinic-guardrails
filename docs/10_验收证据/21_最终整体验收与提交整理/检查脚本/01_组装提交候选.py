@@ -100,6 +100,11 @@ def portable_markdown(name, original, bundled_names):
         target = raw_target.split('#', 1)[0].strip('<>')
         if not target or target.startswith(('https:', 'http:', 'mailto:')):
             return match.group(0)
+        if image and '/10_验收证据/' in target:
+            relocated = 'docs/10_验收证据/' + target.split('/10_验收证据/', 1)[1]
+            if relocated in bundled_names:
+                count['machine'] += 1
+                return f'![{label}]({posixpath.relpath(relocated, posixpath.dirname(name))})'
         if re.match(r'^[A-Za-z]:[/\\]', target) or target.startswith('file:'):
             count['machine'] += 1
             source_name = Path(target.replace('\\', '/')).name
@@ -150,6 +155,7 @@ def selected_files(tracked):
     files.update(name for name in tracked if any(name.startswith('docs/' + prefix)
                  for prefix in EXTRA_PREFIXES) and '历史_修正前/' not in name)
     files.add('AGENTS.md')
+    files.update('docs/10_验收证据/05_需求基线与首轮设计/图源/' + name for name in ('02_三角色目标总览_v1.0.png', '03_共用与条件关系_v1.0.png'))
     files.add(Path(__file__).relative_to(ROOT).as_posix())
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/检查脚本/03_提交源链接检查.py')
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/07_最终版本本地回归20261116.json')
