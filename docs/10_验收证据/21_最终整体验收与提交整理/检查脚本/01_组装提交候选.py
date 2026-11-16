@@ -1,6 +1,6 @@
 """Build a review-only T22 bundle from a merged, clean Git revision."""
 import hashlib
-import io
+import argparse
 import json
 import os
 import posixpath
@@ -10,12 +10,9 @@ import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote
-from lxml import etree
 
 
 ROOT = Path(__file__).resolve().parents[4]
-PRIVATE = Path(os.environ.get('T22_FINAL_RAW_DIR', Path.home() / '.cache/t22-runtime/private'))
-OUTPUT = ROOT / 'docs' / '11_最终提交候选' / '包体'
 EXTRAS = [
     'README.md', '00_作业导航.md', '.github/workflows/ci.yml',
     '03_需求规格说明书.md', '03_需求规格说明书.docx',
@@ -78,12 +75,12 @@ EXTRA_PREFIXES = [
     '04_设计与控制文件/控制文件/07_',
     '10_验收证据/14_前端界面与浏览器验证/03_流程截图/',
 ]
-RAW = {
-    'course-formal-20261025-02.requests.jsonl': '52479A6E5581F1948E755B99BEE8B80E5C7A948CB2A1011CA41A26C16035C802',
-    'course-formal-20261025-02.summary.json': '0D5079DCE4E3B5517BB248276CC56E53C445EC6C33A6724927173F193487368D',
-    'course-formal-20261025-02.inflight.jsonl': 'BA42B7A8929C6555FF43C89D19542A780015BF5DB38D5DC67B8787475D58A4FA',
-    'course-formal-20261025-02.resources.jsonl': '45460B80D6914C1D5183A843C23AA8EFF0DB56FA9FA225D62E1609A3134934C1',
-}
+REPORTS = [
+    '03_需求规格说明书', '06_测试与实测报告', '08_个人研究分析报告',
+    '09_运行与提交说明', '04_设计与控制文件/21_AI可执行规格提交索引与说明',
+    '04_设计与控制文件/22_系统设计报告',
+]
+
 
 
 def git(*args):
@@ -92,47 +89,6 @@ def git(*args):
 
 def sha(data):
     return hashlib.sha256(data).hexdigest().upper()
-
-
-def portable_srs_word(original):
-    """Keep frozen SRS content/images; unlink machine-local D: hyperlinks in bundle copy."""
-    source = io.BytesIO(original)
-    output = io.BytesIO()
-    with zipfile.ZipFile(source) as old:
-        rels_name = 'word/_rels/document.xml.rels'
-        document_name = 'word/document.xml'
-        rels = etree.fromstring(old.read(rels_name))
-        document = etree.fromstring(old.read(document_name))
-        ids = set()
-        for relationship in list(rels):
-            target = relationship.get('Target', '')
-            if relationship.get('TargetMode') == 'External' and target.lower().startswith('file:'):
-                ids.add(relationship.get('Id'))
-                rels.remove(relationship)
-        r_id = '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id'
-        link_name = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hyperlink'
-        removed_links = 0
-        for link in document.iter(link_name):
-            if link.get(r_id) not in ids:
-                continue
-            parent = link.getparent()
-            position = parent.index(link)
-            for child in list(link):
-                parent.insert(position, child)
-                position += 1
-            parent.remove(link)
-            removed_links += 1
-        if not ids or removed_links == 0:
-            raise ValueError('Expected machine-local hyperlinks were not found in frozen SRS Word.')
-        with zipfile.ZipFile(output, 'w') as new:
-            for entry in old.infolist():
-                content = old.read(entry.filename)
-                if entry.filename == rels_name:
-                    content = etree.tostring(rels, xml_declaration=True, encoding='UTF-8', standalone=True)
-                elif entry.filename == document_name:
-                    content = etree.tostring(document, xml_declaration=True, encoding='UTF-8', standalone=True)
-                new.writestr(entry, content)
-    return output.getvalue(), removed_links
 
 
 def portable_markdown(name, original, bundled_names):
@@ -186,78 +142,91 @@ def check_bundled_markdown_links(entries):
     return count
 
 
+def selected_files(tracked):
+    """Keep canonical repository paths; generated Word never serves as source."""
+    files = {name if name in {'README.md', '.github/workflows/ci.yml'} else 'docs/' + name
+             for name in EXTRAS if not name.endswith('.docx')}
+    files.update(name for name in tracked if name.startswith(('backend/', 'frontend/')))
+    files.update(name for name in tracked if any(name.startswith('docs/' + prefix)
+                 for prefix in EXTRA_PREFIXES) and '历史_修正前/' not in name)
+    files.add('AGENTS.md')
+    files.add(Path(__file__).relative_to(ROOT).as_posix())
+    files.add('docs/10_验收证据/21_最终整体验收与提交整理/检查脚本/03_提交源链接检查.py')
+    files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/07_最终版本本地回归20261116.json')
+    return files
+
+
 def main():
-    if git('status', '--porcelain').strip():
-        raise SystemExit('Commit and merge changes before creating the candidate bundle.')
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true', help='Validate selection without generating files')
+    parser.add_argument('--preview', action='store_true', help='Build a clearly marked branch preview')
+    parser.add_argument('--output-dir', type=Path)
+    args = parser.parse_args()
     commit = git('rev-parse', 'HEAD').decode().strip()
     branch = git('branch', '--show-current').decode().strip()
-    if branch != 'main':
-        raise SystemExit('Build only from the merged main branch.')
     tracked = set(git('ls-files', '-z').decode().rstrip('\0').split('\0'))
-    files = set(EXTRAS)
-    files.update(name for name in tracked if name.startswith('backend/'))
-    files.update(name for name in tracked if name.startswith('frontend/'))
-    files.update(name[5:] for name in tracked if any(name.startswith('docs/' + prefix)
-                                                     for prefix in EXTRA_PREFIXES)
-                 and '历史_修正前/' not in name)
-    sources = {name: (name if name in {'README.md', '.github/workflows/ci.yml'}
-                      else 'docs/' + name) for name in files}
-    missing = {source for source in sources.values()
-               if source not in tracked and not (ROOT / source).is_file()}
+    files = selected_files(tracked)
+    missing = sorted(name for name in files if name not in tracked or not (ROOT / name).is_file())
     if missing:
-        raise SystemExit(f'Untracked or missing selected files: {sorted(missing)}')
-    entries = {}
-    for name in sorted(files):
-        path = ROOT / sources[name]
-        if not path.is_file():
-            raise SystemExit(f'Missing file: {name}')
-        entries[name] = path.read_bytes()
-    srs_source_hash = sha(entries['03_需求规格说明书.docx'])
-    entries['03_需求规格说明书.docx'], local_links = portable_srs_word(
-        entries['03_需求规格说明书.docx'])
-    for name, expected in RAW.items():
-        data = (PRIVATE / name).read_bytes()
-        if sha(data) != expected:
-            raise SystemExit(f'Raw load result changed: {name}')
-        entries[f'10_验收证据/21_最终整体验收与提交整理/负载原始结果/{name}'] = data
-    markdown_changes = []
-    bundled_names = set(entries)
+        raise SystemExit(f'Missing tracked sources: {missing}')
+    entries = {name: (ROOT / name).read_bytes() for name in sorted(files)}
+    changes = []
     for name in sorted(entries):
-        if not name.endswith('.md'):
-            continue
-        original = entries[name]
-        entries[name], counts = portable_markdown(name, original, bundled_names)
-        if any(counts.values()):
-            markdown_changes.append({'path': name, 'source_sha256': sha(original), **counts})
+        if name.endswith('.md'):
+            original = entries[name]
+            entries[name], counts = portable_markdown(name, original, set(entries))
+            if any(counts.values()):
+                changes.append({'path': name, 'source_sha256': sha(original), **counts})
     working_links = check_bundled_markdown_links(entries)
-    manifest = {
-        'purpose': 'T22 review candidate; personal report requires the student final sign-off',
-        'git_commit': commit,
-        'created_at_utc': datetime.now(timezone.utc).isoformat(),
-        'srs_word_portability': {'source_sha256': srs_source_hash,
-                                 'machine_local_links_changed_to_plain_text': local_links,
-                                 'source_baseline_unchanged': True},
-        'markdown_portability': {'source_files_unchanged': True,
-                                 'working_local_links': working_links,
-                                 'links_to_unbundled_repository_files': sum(
-                                     item['repository'] for item in markdown_changes),
-                                 'machine_local_source_links': sum(
-                                     item['machine'] for item in markdown_changes),
-                                 'changed_files': markdown_changes},
-        'files': [{'path': name, 'bytes': len(data), 'sha256': sha(data)}
-                  for name, data in sorted(entries.items())],
-    }
-    entries['manifest.json'] = (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
-    OUTPUT.mkdir(parents=True, exist_ok=True)
-    target = OUTPUT / f'T22_提交候选_{commit[:7]}_请本人审定.zip'
-    if target.exists():
-        raise SystemExit(f'Candidate bundle already exists: {target}')
+    if args.check:
+        print(json.dumps({'files': len(files), 'working_local_links': working_links,
+                          'reports': len(REPORTS), 'git_commit': commit}, ensure_ascii=False))
+        return
+    if git('status', '--porcelain', '--', *sorted(files)).strip():
+        raise SystemExit('Commit selected sources before building.')
+    if branch != 'main' and not args.preview:
+        raise SystemExit('Final candidates require merged main; use --preview for a branch draft.')
+    if args.output_dir is None or args.output_dir.resolve().drive.lower() not in ('d:', 'e:'):
+        raise SystemExit('Specify --output-dir on D: or E:, outside the source repository.')
+    output = args.output_dir.resolve()
+    if output.is_relative_to(ROOT):
+        raise SystemExit('Generated bundles must stay outside the source repository.')
+    tag = ('预览' if args.preview else '提交候选') + '_' + commit[:7]
+    stage = output / tag
+    if stage.exists() or (output / (tag + '.zip')).exists():
+        raise SystemExit('Output already exists; evidence is never overwritten.')
+    stage.mkdir(parents=True)
+    for name, data in entries.items():
+        target = stage / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+    for report in REPORTS:
+        source = stage / 'docs' / (report + '.md')
+        target = source.with_suffix('.docx')
+        subprocess.run(['pandoc', str(source), '-f', 'gfm', '-t', 'docx', '--standalone',
+                        '--resource-path=' + str(source.parent), '-o', str(target)], check=True, cwd=stage)
+        with zipfile.ZipFile(target) as archive:
+            if archive.testzip() or 'word/document.xml' not in archive.namelist():
+                raise RuntimeError('Invalid generated Word: ' + report)
+        entries[target.relative_to(stage).as_posix()] = target.read_bytes()
+    manifest = {'purpose': 'Review preview' if args.preview else 'Student acceptance candidate',
+                'git_commit': commit, 'branch': branch, 'preview': args.preview,
+                'created_at_utc': datetime.now(timezone.utc).isoformat(),
+                'markdown_portability': changes, 'working_local_links': working_links,
+                'word_source': 'Same bundled Markdown, generated by pandoc; no historical Word reused',
+                'files': [{'path': name, 'bytes': len(data), 'sha256': sha(data)}
+                          for name, data in sorted(entries.items())]}
+    data = (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
+    entries['manifest.json'] = data
+    (stage / 'manifest.json').write_bytes(data)
+    target = output / (tag + '.zip')
     with zipfile.ZipFile(target, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
         for name, data in sorted(entries.items()):
-            archive.writestr(f'T22_提交候选/{name}', data)
+            archive.writestr('T22/' + name, data)
     with zipfile.ZipFile(target) as archive:
         assert archive.testzip() is None
-        assert len(archive.namelist()) == len(entries)
+        for name, data in entries.items():
+            assert sha(archive.read('T22/' + name)) == sha(data)
     print(json.dumps({'path': str(target), 'git_commit': commit, 'files': len(entries),
                       'bytes': target.stat().st_size, 'sha256': sha(target.read_bytes())}, ensure_ascii=False))
 
