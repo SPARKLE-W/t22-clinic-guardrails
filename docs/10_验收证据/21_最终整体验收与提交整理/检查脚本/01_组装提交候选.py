@@ -149,8 +149,8 @@ def check_bundled_markdown_links(entries):
     return count
 
 
-def add_report_cover(path, title):
-    """Add only the required blank identity fields; never invent student details."""
+def add_report_cover(path, title, identity):
+    """Use supplied identity fields or blank placeholders; never invent details."""
     namespace = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
     def tag(name):
         return '{' + namespace + '}' + name
@@ -158,9 +158,11 @@ def add_report_cover(path, title):
         document = ET.fromstring(old.read('word/document.xml'))
         body = document.find(tag('body'))
         lines = ['课程实验报告', title, '课程名称：软件设计与开发实验',
-                 '专业班级：________________', '学号：________________',
-                 '姓名：________________', '指导教师：________________',
-                 '报告日期：____年__月__日']
+                 '专业班级：' + identity.get('class', '________________'),
+                 '学号：' + identity.get('student_id', '________________'),
+                 '姓名：' + identity.get('name', '________________'),
+                 '指导教师：' + identity.get('teacher', '________________'),
+                 '报告日期：' + identity.get('date', '____年__月__日')]
         for index, text in enumerate(lines):
             paragraph = ET.Element(tag('p'))
             run = ET.SubElement(paragraph, tag('r'))
@@ -203,8 +205,12 @@ def main():
     parser.add_argument('--check', action='store_true', help='Validate selection without generating files')
     parser.add_argument('--preview', action='store_true', help='Build a clearly marked branch preview')
     parser.add_argument('--output-dir', type=Path)
+    parser.add_argument('--identity-file', type=Path, help='External JSON with student-supplied cover fields')
     parser.add_argument('--evidence-dir', type=Path, help='Verified final course raw evidence directory')
     args = parser.parse_args()
+    identity = json.loads(args.identity_file.read_text(encoding='utf-8-sig')) if args.identity_file else {}
+    if not isinstance(identity, dict) or any(not isinstance(v, str) or not v.strip() for v in identity.values()):
+        raise SystemExit('Cover identity must be a JSON object of nonempty text fields.')
     commit = git('rev-parse', 'HEAD').decode().strip()
     branch = git('branch', '--show-current').decode().strip()
     tracked = set(git('ls-files', '-z').decode().rstrip('\0').split('\0'))
@@ -256,21 +262,57 @@ def main():
         target = stage / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
-    for report in REPORTS:
-        source = stage / 'docs' / (report + '.md')
-        target = source.with_suffix('.docx')
-        subprocess.run(['pandoc', str(source), '-f', 'gfm', '-t', 'docx', '--standalone',
-                        '--resource-path=' + str(source.parent), '-o', str(target)], check=True, cwd=stage)
-        add_report_cover(target, report.rsplit('/', 1)[-1])
-        with zipfile.ZipFile(target) as archive:
-            if archive.testzip() or 'word/document.xml' not in archive.namelist():
-                raise RuntimeError('Invalid generated Word: ' + report)
-        entries[target.relative_to(stage).as_posix()] = target.read_bytes()
+    # One personal analysis report followed by the required technical materials.
+    sections = [
+        ('正文：AI时代软件开发研究分析', '08_个人研究分析报告'),
+        ('附录A：需求规格说明书', '03_需求规格说明书'),
+        ('附录B：系统设计报告', '04_设计与控制文件/22_系统设计报告'),
+        ('附录C：AI可执行规格说明', '04_设计与控制文件/21_AI可执行规格提交索引与说明'),
+        ('附录D：测试与实测报告', '06_测试与实测报告'),
+        ('附录E：运行与提交说明', '09_运行与提交说明'),
+    ]
+    combined = ['# T22 社区宠物医院门诊病历控制文件与护栏规则引擎\n',
+                '本报告正文为个人研究分析，附录保留需求、设计、AI规格、测试及运行材料。\n']
+    for title, report in sections:
+        source_name = 'docs/' + report + '.md'
+        text = entries[source_name].decode('utf-8')
+        def relocate(match):
+            image, label, target = match.groups()
+            path, separator, anchor = target.strip('<>').partition('#')
+            if not path or re.match(r'^[A-Za-z][A-Za-z0-9+.-]*:', path):
+                return match.group(0)
+            resolved = posixpath.normpath(posixpath.join(posixpath.dirname(source_name), unquote(path)))
+            relative = posixpath.relpath(resolved, 'docs')
+            return f'{image}[{label}]({relative}{separator}{anchor})'
+        text = re.sub(r'(!?)\[([^\]]+)\]\(([^)]+)\)', relocate, text)
+        lines = []
+        fenced = False
+        for line in text.splitlines():
+            if line.lstrip().startswith(('```', '~~~')):
+                fenced = not fenced
+            if not fenced and re.match(r'^#{1,5} ', line):
+                line = '#' + line
+            lines.append(line)
+        combined.extend(['\n## ' + title + '\n', '\n'.join(lines), '\n'])
+    combined_name = 'docs/T22_课程实验报告.md'
+    entries[combined_name] = '\n'.join(combined).encode('utf-8')
+    source = stage / combined_name
+    source.write_bytes(entries[combined_name])
+    target = source.with_suffix('.docx')
+    subprocess.run(['pandoc', str(source), '-f', 'gfm', '-t', 'docx', '--standalone', '--toc',
+                    '--toc-depth=3', '--resource-path=' + str(source.parent), '-o', str(target)], check=True, cwd=stage)
+    add_report_cover(target, 'T22社区宠物医院门诊病历控制文件与护栏规则引擎', identity)
+    with zipfile.ZipFile(target) as archive:
+        if archive.testzip() or 'word/document.xml' not in archive.namelist():
+            raise RuntimeError('Invalid integrated Word report')
+    entries[target.relative_to(stage).as_posix()] = target.read_bytes()
+    working_links = check_bundled_markdown_links(entries)
     manifest = {'purpose': 'Review preview' if args.preview else 'Student acceptance candidate',
                 'git_commit': commit, 'branch': branch, 'preview': args.preview,
                 'created_at_utc': datetime.now(timezone.utc).isoformat(),
                 'markdown_portability': changes, 'working_local_links': working_links,
-                'word_source': 'Same bundled Markdown, generated by pandoc with blank course identity cover; no historical Word reused',
+                'cover_fields_supplied': bool(identity),
+                'word_source': 'One integrated Word: research analysis body plus technical appendices from bundled Markdown; separately supplied identity cover; no historical Word reused',
                 'files': [{'path': name, 'bytes': len(data), 'sha256': sha(data)}
                           for name, data in sorted(entries.items())]}
     data = (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
