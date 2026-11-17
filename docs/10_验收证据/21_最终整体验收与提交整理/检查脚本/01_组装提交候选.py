@@ -1,6 +1,7 @@
 """Build a review-only T22 bundle from a merged, clean Git revision."""
 import hashlib
 import argparse
+import base64
 import io
 import xml.etree.ElementTree as ET
 import json
@@ -181,6 +182,32 @@ def add_report_cover(path, title, identity):
     path.write_bytes(buffer.getvalue())
 
 
+def refresh_word_fields(path):
+    """Finalize only this generated report in a hidden Word instance."""
+    target = str(path.resolve()).replace("'", "''")
+    script = """$ErrorActionPreference='Stop';
+$word=New-Object -ComObject Word.Application;
+$word.Visible=$false; $word.DisplayAlerts=0; $word.AutomationSecurity=3;
+try {
+ $doc=$word.Documents.Open('""" + target + """',$false,$false);
+ try {
+  $doc.Sections.Item(1).PageSetup.DifferentFirstPageHeaderFooter=-1;
+  foreach($section in $doc.Sections) {
+   $footer=$section.Footers.Item(1).Range;
+   $footer.Text=''; $footer.ParagraphFormat.Alignment=1;
+   $null=$footer.Fields.Add($footer,33);
+  }
+  $doc.Repaginate();
+  foreach($toc in $doc.TablesOfContents){$toc.Update()};
+  $null=$doc.Fields.Update(); $doc.Save();
+ } finally {$doc.Close(0)}
+} finally {$word.Quit(); [void][Runtime.InteropServices.Marshal]::ReleaseComObject($word)}
+"""
+    encoded = base64.b64encode(script.encode('utf-16-le')).decode('ascii')
+    subprocess.run(['powershell', '-NoProfile', '-EncodedCommand', encoded],
+                   check=True, timeout=180, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
 def selected_files(tracked):
     """Keep canonical repository paths; generated Word never serves as source."""
     files = {name if name in {'README.md', '.github/workflows/ci.yml'} else 'docs/' + name
@@ -189,11 +216,13 @@ def selected_files(tracked):
     files.update(name for name in tracked if any(name.startswith('docs/' + prefix)
                  for prefix in EXTRA_PREFIXES) and '历史_修正前/' not in name)
     files.add('AGENTS.md')
+    files.update(name for name in tracked if name.startswith('docs/07_AI使用留痕/') and name.endswith('.md'))
+    files.update('docs/10_验收证据/19_后端综合验收/' + name for name in ('16_端点专有错误码与拒绝审计增量.md', '18_安全红线负例与凭据持久化修复.md'))
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/09_最终课程活跃会话20261117.json')
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/检查脚本/05_课程窗口独立复算.py')
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/08_最终版本代码规模20261116.json')
     files.add('docs/10_验收证据/19_后端综合验收/检查脚本/01_代码规模.py')
-    files.update('docs/10_验收证据/05_需求基线与首轮设计/图源/' + name for name in ('02_三角色目标总览_v1.0.png', '03_共用与条件关系_v1.0.png'))
+    files.update('docs/10_验收证据/05_需求基线与首轮设计/图源/' + name for name in ('02_三角色目标总览_v1.0.png', '03_共用与条件关系_v1.0.png', '07_业务上下文_v1.0.png', '08_审批启用状态_v1.0.png', '09_AI建议状态_v1.0.png', '10_告警两维状态_v1.0.png'))
     files.add(Path(__file__).relative_to(ROOT).as_posix())
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/检查脚本/03_提交源链接检查.py')
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/07_最终版本本地回归20261116.json')
@@ -204,6 +233,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true', help='Validate selection without generating files')
     parser.add_argument('--preview', action='store_true', help='Build a clearly marked branch preview')
+    parser.add_argument('--refresh-word-fields', action='store_true', help='Use installed Windows Word to cache TOC and page numbers')
     parser.add_argument('--output-dir', type=Path)
     parser.add_argument('--identity-file', type=Path, help='External JSON with student-supplied cover fields')
     parser.add_argument('--evidence-dir', type=Path, help='Verified final course raw evidence directory')
@@ -242,7 +272,7 @@ def main():
     working_links = check_bundled_markdown_links(entries)
     if args.check:
         print(json.dumps({'files': len(files), 'working_local_links': working_links,
-                          'reports': len(REPORTS), 'git_commit': commit}, ensure_ascii=False))
+                          'report_sources': len(REPORTS), 'word_reports': 1, 'git_commit': commit}, ensure_ascii=False))
         return
     if git('status', '--porcelain', '--', *sorted(files)).strip():
         raise SystemExit('Commit selected sources before building.')
@@ -276,6 +306,16 @@ def main():
     for title, report in sections:
         source_name = 'docs/' + report + '.md'
         text = entries[source_name].decode('utf-8')
+        if report == '03_需求规格说明书':
+            figures = iter(['07_业务上下文_v1.0.png', '08_审批启用状态_v1.0.png',
+                            '09_AI建议状态_v1.0.png', '10_告警两维状态_v1.0.png'])
+            def requirement_figure(match):
+                name = next(figures)
+                return '![' + name.removesuffix('.png') + '](10_验收证据/05_需求基线与首轮设计/图源/' + name + ')\n\n图源保留在随包需求Markdown；本图为原冻结版本的配套示意图。'
+            text, converted = re.subn(r'```mermaid\r?\n.*?\r?\n```', requirement_figure, text, flags=re.S)
+            if converted != 4:
+                raise SystemExit('Expected four frozen requirement diagram blocks.')
+            text = re.sub(r'```plantuml\r?\n.*?\r?\n```', '用例图源见随包冻结需规Markdown，正文使用其配套图像。', text, flags=re.S)
         def relocate(match):
             image, label, target = match.groups()
             path, separator, anchor = target.strip('<>').partition('#')
@@ -302,6 +342,8 @@ def main():
     subprocess.run(['pandoc', str(source), '-f', 'gfm', '-t', 'docx', '--standalone', '--toc',
                     '--toc-depth=3', '--resource-path=' + str(source.parent), '-o', str(target)], check=True, cwd=stage)
     add_report_cover(target, 'T22社区宠物医院门诊病历控制文件与护栏规则引擎', identity)
+    if args.refresh_word_fields:
+        refresh_word_fields(target)
     with zipfile.ZipFile(target) as archive:
         if archive.testzip() or 'word/document.xml' not in archive.namelist():
             raise RuntimeError('Invalid integrated Word report')
@@ -312,6 +354,7 @@ def main():
                 'created_at_utc': datetime.now(timezone.utc).isoformat(),
                 'markdown_portability': changes, 'working_local_links': working_links,
                 'cover_fields_supplied': bool(identity),
+                'word_fields_refreshed': args.refresh_word_fields,
                 'word_source': 'One integrated Word: research analysis body plus technical appendices from bundled Markdown; separately supplied identity cover; no historical Word reused',
                 'files': [{'path': name, 'bytes': len(data), 'sha256': sha(data)}
                           for name, data in sorted(entries.items())]}
