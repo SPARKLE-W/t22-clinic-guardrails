@@ -1,7 +1,7 @@
 """Reproducible Chinese course-report layout, applied to generated Word only."""
 from copy import deepcopy
 from docx import Document
-from docx.shared import Cm, Pt
+from docx.shared import Cm, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -17,6 +17,7 @@ def element(name, **attrs):
 def font(style, size, chinese='宋体', latin='Times New Roman'):
     style.font.name = latin
     style.font.size = Pt(size)
+    style.font.color.rgb = RGBColor(0,0,0)
     style.element.get_or_add_rPr().append(element('rFonts', eastAsia=chinese, ascii=latin, hAnsi=latin))
 
 
@@ -53,7 +54,10 @@ def format_report(path, title, identity):
     # Remove the redundant assembled document title and explanatory line.
     for para in list(doc.paragraphs)[:2]:
         para._element.getparent().remove(para._element)
-    for para in doc.paragraphs:
+    for para in list(doc.paragraphs):
+        if para.text in ('课程名称：软件设计与开发实验','个人身份信息见总报告封面。','指导教师及报告日期见总报告封面。'):
+            para._element.getparent().remove(para._element)
+            continue
         if para.style.name.startswith('Heading'):
             if para.text.startswith(('正文：','附录')):
                 para.style=doc.styles['Heading 1']
@@ -109,7 +113,8 @@ def format_report(path, title, identity):
         return p
     add('软件设计与开发实验',18,True,40,32)
     add('课程实验报告',26,True,20,30)
-    add(title,18,True,0,65)
+    add('T22 社区宠物医院门诊病历',18,True,0,8)
+    add('控制文件与护栏规则引擎',18,True,0,52)
     for label,key in [('学院班级','class'),('姓　　名','name'),('学　　号','student_id'),('指导教师','teacher')]:
         add(label+'：'+identity.get(key,'________________'),14,False,0,16)
     add(identity.get('date','____年__月__日'),14,False,38,0)

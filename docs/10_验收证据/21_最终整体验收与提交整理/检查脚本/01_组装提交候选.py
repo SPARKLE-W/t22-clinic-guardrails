@@ -289,6 +289,7 @@ def main():
     for title, report in sections:
         source_name = 'docs/' + report + '.md'
         text = entries[source_name].decode('utf-8')
+        text = re.sub(r'\A# [^\r\n]+\r?\n', '', text, count=1)
         if report == '03_需求规格说明书':
             figures = iter(['07_业务上下文_v1.0.png', '08_审批启用状态_v1.0.png',
                             '09_AI建议状态_v1.0.png', '10_告警两维状态_v1.0.png'])
