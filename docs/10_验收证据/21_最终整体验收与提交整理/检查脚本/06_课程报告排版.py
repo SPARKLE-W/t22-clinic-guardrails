@@ -127,6 +127,6 @@ def format_report(path, title, identity):
     toc._p.get_or_add_pPr().append(deepcopy(sect))
     # Remove any Pandoc TOC to avoid duplication.
     for child in list(doc._element.body):
-        if child.tag==qn('w:sdt') and child.xpath('.//w:instrText'):
+        if child.tag==qn('w:sdt') and list(child.iter(qn('w:instrText'))):
             child.getparent().remove(child)
     doc.save(path)
