@@ -70,6 +70,9 @@ def format_report(path, title, identity):
             elif para.style.name == 'Heading 3' and para.text.startswith(('T22 ', 'T22_', '个人研究分析报告', '系统设计报告', '测试与实测报告', '运行与提交说明')):
                 # Keep content; hide duplicate source-document titles from TOC.
                 para.style=doc.styles['Subtitle']
+        if re.match(r'^表[0-9B]+[-－][0-9]+', para.text):
+            para.paragraph_format.keep_with_next=True
+            para.paragraph_format.first_line_indent=Pt(0)
         if para.style.name in ('Source Code',):
             para.paragraph_format.first_line_indent=Pt(0)
             para.paragraph_format.line_spacing=1
@@ -137,6 +140,10 @@ def format_report(path, title, identity):
     for label,value in [('课程名称','软件设计与开发实验'),('专业班级',identity.get('class','')),('学    号',identity.get('student_id','')),('姓    名',identity.get('name','')),('指导教师',identity.get('teacher','')),('报告日期',identity.get('date',''))]:
         cells=table.add_row().cells
         cells[0].text=label+'：'; cells[1].text=value
+        for cell in cells:
+            borders=element('tcBorders')
+            for edge in ('top','left','bottom','right','insideH','insideV'): borders.append(element(edge,val='nil'))
+            cell._tc.get_or_add_tcPr().append(borders)
         for cell in cells:
             for p in cell.paragraphs:
                 p.paragraph_format.first_line_indent=Pt(0)
