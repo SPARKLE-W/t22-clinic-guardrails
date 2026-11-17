@@ -151,35 +151,10 @@ def check_bundled_markdown_links(entries):
 
 
 def add_report_cover(path, title, identity):
-    """Use supplied identity fields or blank placeholders; never invent details."""
-    namespace = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
-    def tag(name):
-        return '{' + namespace + '}' + name
-    with zipfile.ZipFile(path) as old:
-        document = ET.fromstring(old.read('word/document.xml'))
-        body = document.find(tag('body'))
-        lines = ['课程实验报告', title, '课程名称：软件设计与开发实验',
-                 '专业班级：' + identity.get('class', '________________'),
-                 '学号：' + identity.get('student_id', '________________'),
-                 '姓名：' + identity.get('name', '________________'),
-                 '指导教师：' + identity.get('teacher', '________________'),
-                 '报告日期：' + identity.get('date', '____年__月__日')]
-        for index, text in enumerate(lines):
-            paragraph = ET.Element(tag('p'))
-            run = ET.SubElement(paragraph, tag('r'))
-            ET.SubElement(run, tag('t')).text = text
-            body.insert(index, paragraph)
-        paragraph = ET.Element(tag('p'))
-        run = ET.SubElement(paragraph, tag('r'))
-        ET.SubElement(run, tag('br'), {tag('type'): 'page'})
-        body.insert(len(lines), paragraph)
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, 'w') as result:
-            for entry in old.infolist():
-                content = (ET.tostring(document, encoding='utf-8', xml_declaration=True)
-                           if entry.filename == 'word/document.xml' else old.read(entry.filename))
-                result.writestr(entry, content)
-    path.write_bytes(buffer.getvalue())
+    """Apply reusable layout to the generated report."""
+    import runpy
+    runpy.run_path(str(Path(__file__).with_name('06_课程报告排版.py')))['format_report'](path, title, identity)
+
 
 
 def refresh_word_fields(path):
@@ -191,15 +166,22 @@ $word.Visible=$false; $word.DisplayAlerts=0; $word.AutomationSecurity=3;
 try {
  $doc=$word.Documents.Open('""" + target + """',$false,$false);
  try {
-  $doc.Sections.Item(1).PageSetup.DifferentFirstPageHeaderFooter=-1;
-  foreach($section in $doc.Sections) {
+  for($i=1;$i -le $doc.Sections.Count;$i++) {
+   $section=$doc.Sections.Item($i);
+   $section.PageSetup.DifferentFirstPageHeaderFooter=0;
+   $section.Footers.Item(1).LinkToPrevious=$false;
    $footer=$section.Footers.Item(1).Range;
    $footer.Text=''; $footer.ParagraphFormat.Alignment=1;
-   $null=$footer.Fields.Add($footer,33);
+   if($i -eq 3){
+    $section.Footers.Item(1).PageNumbers.RestartNumberingAtSection=$true;
+    $section.Footers.Item(1).PageNumbers.StartingNumber=1;
+    $null=$footer.Fields.Add($footer,33);
+   }
   }
   $doc.Repaginate();
   foreach($toc in $doc.TablesOfContents){$toc.Update()};
   $null=$doc.Fields.Update(); $doc.Save();
+  $doc.ExportAsFixedFormat([IO.Path]::ChangeExtension($doc.FullName,'.pdf'),17);
  } finally {$doc.Close(0)}
 } finally {$word.Quit(); [void][Runtime.InteropServices.Marshal]::ReleaseComObject($word)}
 """
@@ -224,6 +206,7 @@ def selected_files(tracked):
     files.add('docs/10_验收证据/19_后端综合验收/检查脚本/01_代码规模.py')
     files.update('docs/10_验收证据/05_需求基线与首轮设计/图源/' + name for name in ('02_三角色目标总览_v1.0.png', '03_共用与条件关系_v1.0.png', '07_业务上下文_v1.0.png', '08_审批启用状态_v1.0.png', '09_AI建议状态_v1.0.png', '10_告警两维状态_v1.0.png'))
     files.add(Path(__file__).relative_to(ROOT).as_posix())
+    files.add(Path(__file__).with_name('06_课程报告排版.py').relative_to(ROOT).as_posix())
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/检查脚本/03_提交源链接检查.py')
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/07_最终版本本地回归20261116.json')
     return files
@@ -348,6 +331,8 @@ def main():
         if archive.testzip() or 'word/document.xml' not in archive.namelist():
             raise RuntimeError('Invalid integrated Word report')
     entries[target.relative_to(stage).as_posix()] = target.read_bytes()
+    if args.refresh_word_fields:
+        entries[target.with_suffix('.pdf').relative_to(stage).as_posix()] = target.with_suffix('.pdf').read_bytes()
     working_links = check_bundled_markdown_links(entries)
     manifest = {'purpose': 'Review preview' if args.preview else 'Student acceptance candidate',
                 'git_commit': commit, 'branch': branch, 'preview': args.preview,
