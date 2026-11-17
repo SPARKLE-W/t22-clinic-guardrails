@@ -143,12 +143,15 @@ def format_report(path, title, identity):
     add('摘　要',16,True,0,24)
     abstract=anchor.insert_paragraph_before('本项目面向社区宠物医院门诊业务，围绕病历版本、角色权限、规则护栏和访问审计实现单机分层系统。系统采用Django/DRF、MySQL与RabbitMQ，将控制文件校验、人工审批、只追加更正及持久消息补发连接到统一服务端入口。通过功能回归、异常注入和双机活跃会话测试，检验授权、事务与导出的完整性。最终回归275项通过，生产Python语句覆盖率89.97%；在360独立会话、15—25秒操作间隔的600秒窗口内，10778次请求零失败，七类完整响应P95为9.997—50.034毫秒。结果适用于披露的会话模型。报告同时分析AI辅助开发中的需求澄清、规格约束、人工决策与证据核验方法。')
     key=anchor.insert_paragraph_before('关键词：门诊病历；权限隔离；规则护栏；事务审计；AI辅助开发')
-    key.paragraph_format.page_break_after=True
-    add('目　录',16,True,0,24)
+    key.paragraph_format.page_break_after=False
+    toc_title=add('目　录',16,True,0,24)
+    toc_title.paragraph_format.page_break_before=True
     toc=anchor.insert_paragraph_before()
     toc.paragraph_format.first_line_indent=Pt(0)
     toc._p.append(element('fldSimple',instr='TOC \\o "1-2" \\h \\z'))
     section_after(toc)
+    anchor.paragraph_format.page_break_before=False
+    toc.paragraph_format.keep_with_next=False
     for child in list(doc._element.body):
         if child.tag==qn('w:sdt') and list(child.iter(qn('w:instrText'))): child.getparent().remove(child)
     doc.save(path)
