@@ -342,6 +342,8 @@ def main():
     subprocess.run(['pandoc', str(source), '-f', 'gfm', '-t', 'docx', '--standalone', '--toc',
                     '--toc-depth=3', '--resource-path=' + str(source.parent), '-o', str(target)], check=True, cwd=stage)
     add_report_cover(target, 'T22社区宠物医院门诊病历控制文件与护栏规则引擎', identity)
+    if args.refresh_word_fields:
+        refresh_word_fields(target)
     with zipfile.ZipFile(target) as archive:
         if archive.testzip() or 'word/document.xml' not in archive.namelist():
             raise RuntimeError('Invalid integrated Word report')
