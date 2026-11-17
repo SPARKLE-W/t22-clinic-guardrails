@@ -1,0 +1,286 @@
+{
+  "source_commit": "2b3c422d91a8969af47bf0be1452b9dd58b9b0be",
+  "date": "2026-11-17",
+  "protocol": "course-v1.1.3",
+  "scope": "360 independent active login sessions; 15-25s pacing; exports 1-100 targets; complete HTTP response timing",
+  "receiver": {
+    "logical_cpus": 32,
+    "ram_bytes": 66553450496,
+    "processes": 16,
+    "threads_per_process": 24,
+    "outbuf_overflow_bytes": 8388608
+  },
+  "sender": {
+    "logical_cpus": 4,
+    "ram_gib": 8
+  },
+  "summary": {
+    "kind": "course_360_active_sessions",
+    "active_sessions": 360,
+    "distinct_login_sessions": 360,
+    "formal_participating_sessions": 360,
+    "participating_business_accounts": 19,
+    "fixture_business_accounts": 20,
+    "warmup_seconds": 60,
+    "formal_seconds": 600,
+    "formal_requests_started": 10778,
+    "formal_failures": 0,
+    "groups": {
+      "query": {
+        "count": 3690,
+        "failures": 0,
+        "p50_ms": 8.770673999833889,
+        "p95_ms": 9.99727599992184,
+        "p99_ms": 12.850197000034314,
+        "max_ms": 51.457520999974804
+      },
+      "guard": {
+        "count": 1576,
+        "failures": 0,
+        "p50_ms": 15.469675999838728,
+        "p95_ms": 21.24816200011992,
+        "p99_ms": 24.67945300008978,
+        "max_ms": 56.24895500000093
+      },
+      "reception": {
+        "count": 2168,
+        "failures": 0,
+        "p50_ms": 9.693314000060127,
+        "p95_ms": 15.795740999919872,
+        "p99_ms": 18.66849399993953,
+        "max_ms": 30.586273999915647
+      },
+      "write": {
+        "count": 2721,
+        "failures": 0,
+        "p50_ms": 15.451198999926419,
+        "p95_ms": 21.362955000086004,
+        "p99_ms": 25.423401999887574,
+        "max_ms": 55.660375000002205
+      },
+      "clinical_export": {
+        "count": 211,
+        "failures": 0,
+        "p50_ms": 12.353092000012111,
+        "p95_ms": 16.01940399996238,
+        "p99_ms": 17.445511000005354,
+        "max_ms": 26.742317000071125
+      },
+      "detail_export": {
+        "count": 205,
+        "failures": 0,
+        "p50_ms": 8.324098999992202,
+        "p95_ms": 13.659841999924538,
+        "p99_ms": 16.89753200002997,
+        "max_ms": 50.860933999956615
+      },
+      "summary_export": {
+        "count": 207,
+        "failures": 0,
+        "p50_ms": 29.13423499990131,
+        "p95_ms": 50.03395700009605,
+        "p99_ms": 53.83427200013102,
+        "max_ms": 69.1325699999652
+      }
+    },
+    "minutes": [
+      {
+        "minute": 1,
+        "completed": 1063,
+        "success": 1063,
+        "failures": 0
+      },
+      {
+        "minute": 2,
+        "completed": 1091,
+        "success": 1091,
+        "failures": 0
+      },
+      {
+        "minute": 3,
+        "completed": 1074,
+        "success": 1074,
+        "failures": 0
+      },
+      {
+        "minute": 4,
+        "completed": 1091,
+        "success": 1091,
+        "failures": 0
+      },
+      {
+        "minute": 5,
+        "completed": 1067,
+        "success": 1067,
+        "failures": 0
+      },
+      {
+        "minute": 6,
+        "completed": 1092,
+        "success": 1092,
+        "failures": 0
+      },
+      {
+        "minute": 7,
+        "completed": 1087,
+        "success": 1087,
+        "failures": 0
+      },
+      {
+        "minute": 8,
+        "completed": 1079,
+        "success": 1079,
+        "failures": 0
+      },
+      {
+        "minute": 9,
+        "completed": 1078,
+        "success": 1078,
+        "failures": 0
+      },
+      {
+        "minute": 10,
+        "completed": 1056,
+        "success": 1056,
+        "failures": 0
+      }
+    ],
+    "in_flight_min": 0,
+    "in_flight_p50": 0,
+    "in_flight_p95": 1,
+    "in_flight_max": 3,
+    "actual_mix": {
+      "query": 0.34236407496752647,
+      "guard": 0.14622378920022266,
+      "reception": 0.2011504917424383,
+      "write": 0.25245871219150123,
+      "clinical_export": 0.019576915939877527,
+      "detail_export": 0.019020226387084803,
+      "summary_export": 0.019205789571349045
+    },
+    "resource_peaks": {
+      "host_cpu_percent": 11.1,
+      "host_memory_percent": 8.1,
+      "web_rss_bytes": 0,
+      "mysql_rss_bytes": 0,
+      "client_rss_bytes": 79638528
+    },
+    "target_offset": 0,
+    "protocol_version": "course-v1.1.3",
+    "tunnel_count": 16,
+    "tunnel_bases": [
+      "http://172.22.138.131:18930",
+      "http://172.22.138.131:18931",
+      "http://172.22.138.131:18932",
+      "http://172.22.138.131:18933",
+      "http://172.22.138.131:18934",
+      "http://172.22.138.131:18935",
+      "http://172.22.138.131:18936",
+      "http://172.22.138.131:18937",
+      "http://172.22.138.131:18938",
+      "http://172.22.138.131:18939",
+      "http://172.22.138.131:18940",
+      "http://172.22.138.131:18941",
+      "http://172.22.138.131:18942",
+      "http://172.22.138.131:18943",
+      "http://172.22.138.131:18944",
+      "http://172.22.138.131:18945"
+    ]
+  },
+  "independent_verification": {
+    "scope": "course active-session client gates only; exact server audit separately required",
+    "passed": true,
+    "formal_requests": 10778,
+    "groups": {
+      "query": {
+        "count": 3690,
+        "p95_ms": 9.99727599992184
+      },
+      "guard": {
+        "count": 1576,
+        "p95_ms": 21.24816200011992
+      },
+      "reception": {
+        "count": 2168,
+        "p95_ms": 15.795740999919872
+      },
+      "write": {
+        "count": 2721,
+        "p95_ms": 21.362955000086004
+      },
+      "clinical_export": {
+        "count": 211,
+        "p95_ms": 16.01940399996238
+      },
+      "detail_export": {
+        "count": 205,
+        "p95_ms": 13.659841999924538
+      },
+      "summary_export": {
+        "count": 207,
+        "p95_ms": 50.03395700009605
+      }
+    },
+    "minute_successes": [
+      1063,
+      1091,
+      1074,
+      1091,
+      1067,
+      1092,
+      1087,
+      1079,
+      1078,
+      1056
+    ],
+    "exports_including_warmup": 692,
+    "files": {
+      "summary.json": "364f65d348916a600eadd75d64dd6e6bb9d478a7de7eb1a8717bc45a333d9336",
+      "requests.jsonl": "b9e2bc37bab4659d92804c9a3904bfcd0fe1697dd80e3a876b7cdca407353c53",
+      "inflight.jsonl": "0c5e4f81f8d9827066ef47edaa3f99683d5c335743d9bc891d813751bc0a454c",
+      "resources.jsonl": "1a8b7d04c1ef72f124f401a38e4b0337bca09893786d231c6917e2362f261b93"
+    }
+  },
+  "export_audit_verification": {
+    "export_responses_checked": 692,
+    "audit_targets_checked": 5626,
+    "result": "passed",
+    "scope": "all recorded successful export responses including warmup; exact scope targets and persisted counts/bytes/actor/store/action"
+  },
+  "receiver_samples": {
+    "windows_count": 247,
+    "mysql_count": 201,
+    "errors": 0
+  },
+  "cloud_test_stopped": true,
+  "files": [
+    {
+      "path": "2b3c422-final20261117.requests.jsonl",
+      "sha256": "b9e2bc37bab4659d92804c9a3904bfcd0fe1697dd80e3a876b7cdca407353c53"
+    },
+    {
+      "path": "2b3c422-final20261117.summary.json",
+      "sha256": "364f65d348916a600eadd75d64dd6e6bb9d478a7de7eb1a8717bc45a333d9336"
+    },
+    {
+      "path": "2b3c422-final20261117.inflight.jsonl",
+      "sha256": "0c5e4f81f8d9827066ef47edaa3f99683d5c335743d9bc891d813751bc0a454c"
+    },
+    {
+      "path": "2b3c422-final20261117.resources.jsonl",
+      "sha256": "1a8b7d04c1ef72f124f401a38e4b0337bca09893786d231c6917e2362f261b93"
+    },
+    {
+      "path": "2b3c422-final20261117.independent-verification.json",
+      "sha256": "fd668e7a7b4c6f912fcc83f9cb3e30feec161f45ed3634a0b28d0d18a44f47f3"
+    },
+    {
+      "path": "receiver/export-audit-verification.json",
+      "sha256": "1888f02138d88b73f4f78a49848315c767a9f3dc142a92804c64443baf05f252"
+    },
+    {
+      "path": "receiver/shutdown-verification.json",
+      "sha256": "8284ecde7d990118d9f11cef5bb2b4f5ab74a6c7abb00d7f42e63fe99d7675ab"
+    }
+  ]
+}
