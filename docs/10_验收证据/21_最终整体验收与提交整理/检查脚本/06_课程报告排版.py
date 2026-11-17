@@ -1,5 +1,7 @@
 """Reproducible Chinese course-report layout, applied to generated Word only."""
 from copy import deepcopy
+import re
+from docx.text.paragraph import Paragraph
 from docx import Document
 from docx.shared import Cm, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -54,10 +56,15 @@ def format_report(path, title, identity):
     # Remove the redundant assembled document title and explanatory line.
     for para in list(doc.paragraphs)[:2]:
         para._element.getparent().remove(para._element)
+    figure_number = 0
     for para in list(doc.paragraphs):
         if para.text in ('课程名称：软件设计与开发实验','个人身份信息见总报告封面。','指导教师及报告日期见总报告封面。'):
             para._element.getparent().remove(para._element)
             continue
+        for run in para.runs:
+            if '**' in run.text:
+                run.text = run.text.replace('**','')
+                run.bold = True
         if para.style.name.startswith('Heading'):
             if para.text.startswith(('正文：','附录')):
                 para.style=doc.styles['Heading 1']
@@ -80,6 +87,9 @@ def format_report(path, title, identity):
                 if int(node.get('cx')) > max_width:
                     ratio=max_width/int(node.get('cx'))
                     node.set('cx',str(max_width)); node.set('cy',str(int(int(node.get('cy'))*ratio)))
+                if int(node.get('cy')) > int(Cm(17)):
+                    ratio=int(Cm(17))/int(node.get('cy'))
+                    node.set('cy',str(int(Cm(17)))); node.set('cx',str(int(int(node.get('cx'))*ratio)))
     for table in doc.tables:
         table.autofit=True
         borders=element('tblBorders')
@@ -94,6 +104,7 @@ def format_report(path, title, identity):
                     f=para.paragraph_format
                     f.first_line_indent=Pt(0); f.line_spacing=1.15
                     f.space_before=f.space_after=Pt(3)
+                    if ri==0: f.keep_with_next=True
                     for run in para.runs:
                         run.font.size=Pt(10.5)
                         if ri==0: run.bold=True
