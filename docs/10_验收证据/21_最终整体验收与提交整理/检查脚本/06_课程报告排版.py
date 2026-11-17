@@ -45,6 +45,7 @@ def format_report(path, title, identity):
         s = doc.styles['Heading ' + str(level)]
         font(s,size,'黑体')
         s.font.bold = True
+        s.font.italic = False
         f=s.paragraph_format
         f.first_line_indent=Pt(0)
         f.space_before, f.space_after=Pt(18), Pt(9)
@@ -53,9 +54,6 @@ def format_report(path, title, identity):
     for name in ('Source Code','Verbatim Char'):
         if name in doc.styles:
             font(doc.styles[name],9,'宋体','Consolas')
-    # Remove the redundant assembled document title and explanatory line.
-    for para in list(doc.paragraphs)[:2]:
-        para._element.getparent().remove(para._element)
     figure_number = 0
     for para in list(doc.paragraphs):
         if para.text in ('课程名称：软件设计与开发实验','个人身份信息见总报告封面。','指导教师及报告日期见总报告封面。'):
@@ -66,7 +64,7 @@ def format_report(path, title, identity):
                 run.text = run.text.replace('**','')
                 run.bold = True
         if para.style.name.startswith('Heading'):
-            if para.text.startswith(('正文：','附录')):
+            if para.style.name == 'Heading 1':
                 para.style=doc.styles['Heading 1']
                 para.paragraph_format.page_break_before=True
             elif para.style.name == 'Heading 3' and para.text.startswith(('T22 ', 'T22_', '个人研究分析报告', '系统设计报告', '测试与实测报告', '运行与提交说明')):
@@ -81,16 +79,6 @@ def format_report(path, title, identity):
             para.alignment=WD_ALIGN_PARAGRAPH.CENTER
             para.paragraph_format.first_line_indent=Pt(0)
             para.paragraph_format.keep_with_next=True
-            figure_number += 1
-            node=element('p')
-            para._p.addnext(node)
-            caption=Paragraph(node,para._parent)
-            labels=['业务上下文','三角色业务用例总览','共用与条件关系','审批启用状态','AI建议状态','告警状态','系统架构','接诊与病历核心关系','医生提交病历的关键时序']
-            caption.text=('附录B 图 '+str(figure_number-6) if figure_number>6 else '附录A 图 '+str(figure_number))+'　'+labels[figure_number-1]
-            caption.alignment=WD_ALIGN_PARAGRAPH.CENTER
-            caption.paragraph_format.first_line_indent=Pt(0)
-            caption.paragraph_format.space_after=Pt(9)
-            for r in caption.runs: r.font.size=Pt(10.5)
         for run in para.runs:
             for node in run._r.xpath('.//wp:extent'):
                 max_width=int(Cm(15.5))
@@ -118,9 +106,8 @@ def format_report(path, title, identity):
                     for run in para.runs:
                         run.font.size=Pt(10.5)
                         if ri==0: run.bold=True
-    # Insert a dedicated cover and TOC before the first body paragraph.
+    # Front matter is explicit, independent of paragraph positions and image order.
     anchor=doc.paragraphs[0]
-    cover=[]
     def add(text,size,bold=False,before=0,after=12):
         p=anchor.insert_paragraph_before(text)
         p.alignment=WD_ALIGN_PARAGRAPH.CENTER
@@ -130,29 +117,38 @@ def format_report(path, title, identity):
         for r in p.runs:
             r.font.size=Pt(size); r.bold=bold
             r._r.get_or_add_rPr().append(element('rFonts',eastAsia='黑体' if bold else '宋体',ascii='Times New Roman',hAnsi='Times New Roman'))
-        cover.append(p)
         return p
-    add('软件设计与开发实验',18,True,40,32)
-    add('课程实验报告',26,True,20,30)
-    add('T22 社区宠物医院门诊病历',18,True,0,8)
-    add('控制文件与护栏规则引擎',18,True,0,52)
-    for label,key in [('学院班级','class'),('姓　　名','name'),('学　　号','student_id'),('指导教师','teacher')]:
-        add(label+'：'+identity.get(key,'________________'),14,False,0,16)
-    add(identity.get('date','____年__月__日'),14,False,38,0)
-    # Section breaks are attached to final cover/TOC paragraphs.
-    sect=deepcopy(doc.sections[-1]._sectPr)
-    for n in list(sect):
-        if n.tag in (qn('w:headerReference'),qn('w:footerReference'),qn('w:titlePg')): sect.remove(n)
-    sect.append(element('type',val='nextPage'))
-    cover[-1]._p.get_or_add_pPr().append(deepcopy(sect))
-    heading=add('目　录',16,True,0,24)
+    def section_after(p):
+        sect=deepcopy(doc.sections[-1]._sectPr)
+        for n in list(sect):
+            if n.tag in (qn('w:headerReference'),qn('w:footerReference'),qn('w:titlePg')): sect.remove(n)
+        sect.append(element('type',val='nextPage'))
+        p._p.get_or_add_pPr().append(sect)
+    add('课 程 实 验 报 告',26,True,70,42)
+    add('社区宠物医院门诊病历与护栏规则系统',17,True,0,8)
+    add('的设计与实现',17,True,0,55)
+    table=doc.add_table(rows=0, cols=2)
+    anchor._p.addprevious(table._tbl)
+    table.autofit=False
+    table.columns[0].width=Cm(3.2); table.columns[1].width=Cm(10.5)
+    for label,value in [('课程名称','软件设计与开发实验'),('专业班级',identity.get('class','')),('学    号',identity.get('student_id','')),('姓    名',identity.get('name','')),('指导教师',identity.get('teacher','')),('报告日期',identity.get('date',''))]:
+        cells=table.add_row().cells
+        cells[0].text=label+'：'; cells[1].text=value
+        for cell in cells:
+            for p in cell.paragraphs:
+                p.paragraph_format.first_line_indent=Pt(0)
+                p.paragraph_format.space_after=Pt(16)
+                for r in p.runs: r.font.size=Pt(14)
+    end=anchor.insert_paragraph_before(); section_after(end)
+    add('摘　要',16,True,0,24)
+    abstract=anchor.insert_paragraph_before('本项目面向社区宠物医院门诊业务，围绕病历版本、角色权限、规则护栏和访问审计实现单机分层系统。系统采用Django/DRF、MySQL与RabbitMQ，将控制文件校验、人工审批、只追加更正及持久消息补发连接到统一服务端入口。通过功能回归、异常注入和双机活跃会话测试，检验授权、事务与导出的完整性。最终回归275项通过，生产Python语句覆盖率89.97%；在360独立会话、15—25秒操作间隔的600秒窗口内，10778次请求零失败，七类完整响应P95为9.997—50.034毫秒。结果适用于披露的会话模型。报告同时分析AI辅助开发中的需求澄清、规格约束、人工决策与证据核验方法。')
+    key=anchor.insert_paragraph_before('关键词：门诊病历；权限隔离；规则护栏；事务审计；AI辅助开发')
+    key.paragraph_format.page_break_after=True
+    add('目　录',16,True,0,24)
     toc=anchor.insert_paragraph_before()
     toc.paragraph_format.first_line_indent=Pt(0)
-    field=element('fldSimple',instr='TOC \\o "1-3" \\h \\z \\u')
-    toc._p.append(field)
-    toc._p.get_or_add_pPr().append(deepcopy(sect))
-    # Remove any Pandoc TOC to avoid duplication.
+    toc._p.append(element('fldSimple',instr='TOC \\o "1-2" \\h \\z'))
+    section_after(toc)
     for child in list(doc._element.body):
-        if child.tag==qn('w:sdt') and list(child.iter(qn('w:instrText'))):
-            child.getparent().remove(child)
+        if child.tag==qn('w:sdt') and list(child.iter(qn('w:instrText'))): child.getparent().remove(child)
     doc.save(path)

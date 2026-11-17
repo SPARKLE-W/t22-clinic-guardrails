@@ -172,9 +172,10 @@ try {
    $section.Footers.Item(1).LinkToPrevious=$false;
    $footer=$section.Footers.Item(1).Range;
    $footer.Text=''; $footer.ParagraphFormat.Alignment=1;
-   if($i -eq 3){
+   if($i -ge 2){
     $section.Footers.Item(1).PageNumbers.RestartNumberingAtSection=$true;
     $section.Footers.Item(1).PageNumbers.StartingNumber=1;
+    if($i -eq 2){$section.Footers.Item(1).PageNumbers.NumberStyle=1}else{$section.Footers.Item(1).PageNumbers.NumberStyle=0};
     $null=$footer.Fields.Add($footer,33);
    }
   }
@@ -198,6 +199,7 @@ def selected_files(tracked):
     files.update(name for name in tracked if any(name.startswith('docs/' + prefix)
                  for prefix in EXTRA_PREFIXES) and '历史_修正前/' not in name)
     files.add('AGENTS.md')
+    files.add('docs/T22_课程实验报告.md')
     files.update(name for name in tracked if name.startswith('docs/07_AI使用留痕/') and name.endswith('.md'))
     files.update('docs/10_验收证据/19_后端综合验收/' + name for name in ('16_端点专有错误码与拒绝审计增量.md', '18_安全红线负例与凭据持久化修复.md'))
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/09_最终课程活跃会话20261117.json')
@@ -275,57 +277,13 @@ def main():
         target = stage / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
-    # One personal analysis report followed by the required technical materials.
-    sections = [
-        ('正文：AI时代软件开发研究分析', '08_个人研究分析报告'),
-        ('附录A：需求规格说明书', '03_需求规格说明书'),
-        ('附录B：系统设计报告', '04_设计与控制文件/22_系统设计报告'),
-        ('附录C：AI可执行规格说明', '04_设计与控制文件/21_AI可执行规格提交索引与说明'),
-        ('附录D：测试与实测报告', '06_测试与实测报告'),
-        ('附录E：运行与提交说明', '09_运行与提交说明'),
-    ]
-    combined = ['# T22 社区宠物医院门诊病历控制文件与护栏规则引擎\n',
-                '本报告正文为个人研究分析，附录保留需求、设计、AI规格、测试及运行材料。\n']
-    for title, report in sections:
-        source_name = 'docs/' + report + '.md'
-        text = entries[source_name].decode('utf-8')
-        text = re.sub(r'\A# [^\r\n]+\r?\n', '', text, count=1)
-        if report == '03_需求规格说明书':
-            figures = iter(['07_业务上下文_v1.0.png', '08_审批启用状态_v1.0.png',
-                            '09_AI建议状态_v1.0.png', '10_告警两维状态_v1.0.png'])
-            def requirement_figure(match):
-                name = next(figures)
-                return '![' + name.removesuffix('.png') + '](10_验收证据/05_需求基线与首轮设计/图源/' + name + ')\n\n图源保留在随包需求Markdown；本图为原冻结版本的配套示意图。'
-            text, converted = re.subn(r'```mermaid\r?\n.*?\r?\n```', requirement_figure, text, flags=re.S)
-            if converted != 4:
-                raise SystemExit('Expected four frozen requirement diagram blocks.')
-            text = re.sub(r'```plantuml\r?\n.*?\r?\n```', '用例图源见随包冻结需规Markdown，正文使用其配套图像。', text, flags=re.S)
-        def relocate(match):
-            image, label, target = match.groups()
-            path, separator, anchor = target.strip('<>').partition('#')
-            if not path or re.match(r'^[A-Za-z][A-Za-z0-9+.-]*:', path):
-                return match.group(0)
-            resolved = posixpath.normpath(posixpath.join(posixpath.dirname(source_name), unquote(path)))
-            relative = posixpath.relpath(resolved, 'docs')
-            return f'{image}[{label}]({relative}{separator}{anchor})'
-        text = re.sub(r'(!?)\[([^\]]+)\]\(([^)]+)\)', relocate, text)
-        lines = []
-        fenced = False
-        for line in text.splitlines():
-            if line.lstrip().startswith(('```', '~~~')):
-                fenced = not fenced
-            if not fenced and re.match(r'^#{1,5} ', line):
-                line = '#' + line
-            lines.append(line)
-        combined.extend(['\n## ' + title + '\n', '\n'.join(lines), '\n'])
     combined_name = 'docs/T22_课程实验报告.md'
-    entries[combined_name] = '\n'.join(combined).encode('utf-8')
     source = stage / combined_name
     source.write_bytes(entries[combined_name])
     target = source.with_suffix('.docx')
-    subprocess.run(['pandoc', str(source), '-f', 'gfm', '-t', 'docx', '--standalone', '--toc',
-                    '--toc-depth=3', '--resource-path=' + str(source.parent), '-o', str(target)], check=True, cwd=stage)
-    add_report_cover(target, 'T22社区宠物医院门诊病历控制文件与护栏规则引擎', identity)
+    subprocess.run(['pandoc', str(source), '-f', 'gfm', '-t', 'docx', '--standalone',
+                    '--resource-path=' + str(source.parent), '-o', str(target)], check=True, cwd=stage)
+    add_report_cover(target, '社区宠物医院门诊病历与护栏规则系统的设计与实现', identity)
     if args.refresh_word_fields:
         refresh_word_fields(target)
     with zipfile.ZipFile(target) as archive:
@@ -341,7 +299,7 @@ def main():
                 'markdown_portability': changes, 'working_local_links': working_links,
                 'cover_fields_supplied': bool(identity),
                 'word_fields_refreshed': args.refresh_word_fields,
-                'word_source': 'One integrated Word: research analysis body plus technical appendices from bundled Markdown; separately supplied identity cover; no historical Word reused',
+                'word_source': 'Single authored course report with seven chapters and two supporting appendices',
                 'files': [{'path': name, 'bytes': len(data), 'sha256': sha(data)}
                           for name, data in sorted(entries.items())]}
     data = (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
