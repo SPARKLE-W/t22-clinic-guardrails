@@ -66,7 +66,7 @@ def format_report(path, title, identity):
         if para.style.name.startswith('Heading'):
             if para.style.name == 'Heading 1':
                 para.style=doc.styles['Heading 1']
-                para.paragraph_format.page_break_before=True
+                para.paragraph_format.page_break_before=para.text.startswith(('参考文献','附录'))
             elif para.style.name == 'Heading 3' and para.text.startswith(('T22 ', 'T22_', '个人研究分析报告', '系统设计报告', '测试与实测报告', '运行与提交说明')):
                 # Keep content; hide duplicate source-document titles from TOC.
                 para.style=doc.styles['Subtitle']
@@ -130,6 +130,9 @@ def format_report(path, title, identity):
     table=doc.add_table(rows=0, cols=2)
     anchor._p.addprevious(table._tbl)
     table.autofit=False
+    borders=element('tblBorders')
+    for edge in ('top','left','bottom','right','insideH','insideV'): borders.append(element(edge,val='nil'))
+    table._tbl.tblPr.append(borders)
     table.columns[0].width=Cm(3.2); table.columns[1].width=Cm(10.5)
     for label,value in [('课程名称','软件设计与开发实验'),('专业班级',identity.get('class','')),('学    号',identity.get('student_id','')),('姓    名',identity.get('name','')),('指导教师',identity.get('teacher','')),('报告日期',identity.get('date',''))]:
         cells=table.add_row().cells

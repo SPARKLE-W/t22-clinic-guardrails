@@ -200,6 +200,7 @@ def selected_files(tracked):
                  for prefix in EXTRA_PREFIXES) and '历史_修正前/' not in name)
     files.add('AGENTS.md')
     files.add('docs/T22_课程实验报告.md')
+    files.update(name for name in tracked if name.startswith('docs/04_设计与控制文件/23_报告插图/'))
     files.update(name for name in tracked if name.startswith('docs/07_AI使用留痕/') and name.endswith('.md'))
     files.update('docs/10_验收证据/19_后端综合验收/' + name for name in ('16_端点专有错误码与拒绝审计增量.md', '18_安全红线负例与凭据持久化修复.md'))
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/09_最终课程活跃会话20261117.json')
