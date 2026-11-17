@@ -85,8 +85,8 @@ def format_report(path, title, identity):
             node=element('p')
             para._p.addnext(node)
             caption=Paragraph(node,para._parent)
-            labels=['业务上下文','三角色业务用例总览','共用与条件关系','审批启用状态','AI建议状态','告警状态','系统架构','接诊与病历流程','权限与审计流程']
-            caption.text='图 '+str(figure_number)+'　'+labels[figure_number-1]
+            labels=['业务上下文','三角色业务用例总览','共用与条件关系','审批启用状态','AI建议状态','告警状态','系统架构','接诊与病历核心关系','医生提交病历的关键时序']
+            caption.text=('附录B 图 '+str(figure_number-6) if figure_number>6 else '附录A 图 '+str(figure_number))+'　'+labels[figure_number-1]
             caption.alignment=WD_ALIGN_PARAGRAPH.CENTER
             caption.paragraph_format.first_line_indent=Pt(0)
             caption.paragraph_format.space_after=Pt(9)
