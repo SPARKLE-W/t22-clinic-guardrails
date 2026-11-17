@@ -151,35 +151,10 @@ def check_bundled_markdown_links(entries):
 
 
 def add_report_cover(path, title, identity):
-    """Use supplied identity fields or blank placeholders; never invent details."""
-    namespace = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
-    def tag(name):
-        return '{' + namespace + '}' + name
-    with zipfile.ZipFile(path) as old:
-        document = ET.fromstring(old.read('word/document.xml'))
-        body = document.find(tag('body'))
-        lines = ['课程实验报告', title, '课程名称：软件设计与开发实验',
-                 '专业班级：' + identity.get('class', '________________'),
-                 '学号：' + identity.get('student_id', '________________'),
-                 '姓名：' + identity.get('name', '________________'),
-                 '指导教师：' + identity.get('teacher', '________________'),
-                 '报告日期：' + identity.get('date', '____年__月__日')]
-        for index, text in enumerate(lines):
-            paragraph = ET.Element(tag('p'))
-            run = ET.SubElement(paragraph, tag('r'))
-            ET.SubElement(run, tag('t')).text = text
-            body.insert(index, paragraph)
-        paragraph = ET.Element(tag('p'))
-        run = ET.SubElement(paragraph, tag('r'))
-        ET.SubElement(run, tag('br'), {tag('type'): 'page'})
-        body.insert(len(lines), paragraph)
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, 'w') as result:
-            for entry in old.infolist():
-                content = (ET.tostring(document, encoding='utf-8', xml_declaration=True)
-                           if entry.filename == 'word/document.xml' else old.read(entry.filename))
-                result.writestr(entry, content)
-    path.write_bytes(buffer.getvalue())
+    """Apply reusable layout to the generated report."""
+    import runpy
+    runpy.run_path(str(Path(__file__).with_name('06_课程报告排版.py')))['format_report'](path, title, identity)
+
 
 
 def refresh_word_fields(path):
@@ -191,15 +166,23 @@ $word.Visible=$false; $word.DisplayAlerts=0; $word.AutomationSecurity=3;
 try {
  $doc=$word.Documents.Open('""" + target + """',$false,$false);
  try {
-  $doc.Sections.Item(1).PageSetup.DifferentFirstPageHeaderFooter=-1;
-  foreach($section in $doc.Sections) {
+  for($i=1;$i -le $doc.Sections.Count;$i++) {
+   $section=$doc.Sections.Item($i);
+   $section.PageSetup.DifferentFirstPageHeaderFooter=0;
+   $section.Footers.Item(1).LinkToPrevious=$false;
    $footer=$section.Footers.Item(1).Range;
    $footer.Text=''; $footer.ParagraphFormat.Alignment=1;
-   $null=$footer.Fields.Add($footer,33);
+   if($i -ge 2){
+    $section.Footers.Item(1).PageNumbers.RestartNumberingAtSection=$true;
+    $section.Footers.Item(1).PageNumbers.StartingNumber=1;
+    if($i -eq 2){$section.Footers.Item(1).PageNumbers.NumberStyle=1}else{$section.Footers.Item(1).PageNumbers.NumberStyle=0};
+    $null=$footer.Fields.Add($footer,33);
+   }
   }
   $doc.Repaginate();
   foreach($toc in $doc.TablesOfContents){$toc.Update()};
   $null=$doc.Fields.Update(); $doc.Save();
+  $doc.ExportAsFixedFormat([IO.Path]::ChangeExtension($doc.FullName,'.pdf'),17);
  } finally {$doc.Close(0)}
 } finally {$word.Quit(); [void][Runtime.InteropServices.Marshal]::ReleaseComObject($word)}
 """
@@ -216,6 +199,8 @@ def selected_files(tracked):
     files.update(name for name in tracked if any(name.startswith('docs/' + prefix)
                  for prefix in EXTRA_PREFIXES) and '历史_修正前/' not in name)
     files.add('AGENTS.md')
+    files.add('docs/T22_课程实验报告.md')
+    files.update(name for name in tracked if name.startswith('docs/04_设计与控制文件/23_报告插图/'))
     files.update(name for name in tracked if name.startswith('docs/07_AI使用留痕/') and name.endswith('.md'))
     files.update('docs/10_验收证据/19_后端综合验收/' + name for name in ('16_端点专有错误码与拒绝审计增量.md', '18_安全红线负例与凭据持久化修复.md'))
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/09_最终课程活跃会话20261117.json')
@@ -224,6 +209,7 @@ def selected_files(tracked):
     files.add('docs/10_验收证据/19_后端综合验收/检查脚本/01_代码规模.py')
     files.update('docs/10_验收证据/05_需求基线与首轮设计/图源/' + name for name in ('02_三角色目标总览_v1.0.png', '03_共用与条件关系_v1.0.png', '07_业务上下文_v1.0.png', '08_审批启用状态_v1.0.png', '09_AI建议状态_v1.0.png', '10_告警两维状态_v1.0.png'))
     files.add(Path(__file__).relative_to(ROOT).as_posix())
+    files.add(Path(__file__).with_name('06_课程报告排版.py').relative_to(ROOT).as_posix())
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/检查脚本/03_提交源链接检查.py')
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/07_最终版本本地回归20261116.json')
     return files
@@ -292,62 +278,21 @@ def main():
         target = stage / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
-    # One personal analysis report followed by the required technical materials.
-    sections = [
-        ('正文：AI时代软件开发研究分析', '08_个人研究分析报告'),
-        ('附录A：需求规格说明书', '03_需求规格说明书'),
-        ('附录B：系统设计报告', '04_设计与控制文件/22_系统设计报告'),
-        ('附录C：AI可执行规格说明', '04_设计与控制文件/21_AI可执行规格提交索引与说明'),
-        ('附录D：测试与实测报告', '06_测试与实测报告'),
-        ('附录E：运行与提交说明', '09_运行与提交说明'),
-    ]
-    combined = ['# T22 社区宠物医院门诊病历控制文件与护栏规则引擎\n',
-                '本报告正文为个人研究分析，附录保留需求、设计、AI规格、测试及运行材料。\n']
-    for title, report in sections:
-        source_name = 'docs/' + report + '.md'
-        text = entries[source_name].decode('utf-8')
-        if report == '03_需求规格说明书':
-            figures = iter(['07_业务上下文_v1.0.png', '08_审批启用状态_v1.0.png',
-                            '09_AI建议状态_v1.0.png', '10_告警两维状态_v1.0.png'])
-            def requirement_figure(match):
-                name = next(figures)
-                return '![' + name.removesuffix('.png') + '](10_验收证据/05_需求基线与首轮设计/图源/' + name + ')\n\n图源保留在随包需求Markdown；本图为原冻结版本的配套示意图。'
-            text, converted = re.subn(r'```mermaid\r?\n.*?\r?\n```', requirement_figure, text, flags=re.S)
-            if converted != 4:
-                raise SystemExit('Expected four frozen requirement diagram blocks.')
-            text = re.sub(r'```plantuml\r?\n.*?\r?\n```', '用例图源见随包冻结需规Markdown，正文使用其配套图像。', text, flags=re.S)
-        def relocate(match):
-            image, label, target = match.groups()
-            path, separator, anchor = target.strip('<>').partition('#')
-            if not path or re.match(r'^[A-Za-z][A-Za-z0-9+.-]*:', path):
-                return match.group(0)
-            resolved = posixpath.normpath(posixpath.join(posixpath.dirname(source_name), unquote(path)))
-            relative = posixpath.relpath(resolved, 'docs')
-            return f'{image}[{label}]({relative}{separator}{anchor})'
-        text = re.sub(r'(!?)\[([^\]]+)\]\(([^)]+)\)', relocate, text)
-        lines = []
-        fenced = False
-        for line in text.splitlines():
-            if line.lstrip().startswith(('```', '~~~')):
-                fenced = not fenced
-            if not fenced and re.match(r'^#{1,5} ', line):
-                line = '#' + line
-            lines.append(line)
-        combined.extend(['\n## ' + title + '\n', '\n'.join(lines), '\n'])
     combined_name = 'docs/T22_课程实验报告.md'
-    entries[combined_name] = '\n'.join(combined).encode('utf-8')
     source = stage / combined_name
     source.write_bytes(entries[combined_name])
     target = source.with_suffix('.docx')
-    subprocess.run(['pandoc', str(source), '-f', 'gfm', '-t', 'docx', '--standalone', '--toc',
-                    '--toc-depth=3', '--resource-path=' + str(source.parent), '-o', str(target)], check=True, cwd=stage)
-    add_report_cover(target, 'T22社区宠物医院门诊病历控制文件与护栏规则引擎', identity)
+    subprocess.run(['pandoc', str(source), '-f', 'gfm', '-t', 'docx', '--standalone',
+                    '--resource-path=' + str(source.parent), '-o', str(target)], check=True, cwd=stage)
+    add_report_cover(target, '社区宠物医院门诊病历与护栏规则系统的设计与实现', identity)
     if args.refresh_word_fields:
         refresh_word_fields(target)
     with zipfile.ZipFile(target) as archive:
         if archive.testzip() or 'word/document.xml' not in archive.namelist():
             raise RuntimeError('Invalid integrated Word report')
     entries[target.relative_to(stage).as_posix()] = target.read_bytes()
+    if args.refresh_word_fields:
+        entries[target.with_suffix('.pdf').relative_to(stage).as_posix()] = target.with_suffix('.pdf').read_bytes()
     working_links = check_bundled_markdown_links(entries)
     manifest = {'purpose': 'Review preview' if args.preview else 'Student acceptance candidate',
                 'git_commit': commit, 'branch': branch, 'preview': args.preview,
@@ -355,7 +300,7 @@ def main():
                 'markdown_portability': changes, 'working_local_links': working_links,
                 'cover_fields_supplied': bool(identity),
                 'word_fields_refreshed': args.refresh_word_fields,
-                'word_source': 'One integrated Word: research analysis body plus technical appendices from bundled Markdown; separately supplied identity cover; no historical Word reused',
+                'word_source': 'Single authored course report with seven chapters and two supporting appendices',
                 'files': [{'path': name, 'bytes': len(data), 'sha256': sha(data)}
                           for name, data in sorted(entries.items())]}
     data = (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
