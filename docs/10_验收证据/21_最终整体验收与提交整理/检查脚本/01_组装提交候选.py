@@ -187,6 +187,8 @@ def selected_files(tracked):
     files.update(name for name in tracked if any(name.startswith('docs/' + prefix)
                  for prefix in EXTRA_PREFIXES) and '历史_修正前/' not in name)
     files.add('AGENTS.md')
+    files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/09_最终课程活跃会话20261117.json')
+    files.add('docs/10_验收证据/21_最终整体验收与提交整理/检查脚本/05_课程窗口独立复算.py')
     files.add('docs/10_验收证据/21_最终整体验收与提交整理/原始结果/08_最终版本代码规模20261116.json')
     files.add('docs/10_验收证据/19_后端综合验收/检查脚本/01_代码规模.py')
     files.update('docs/10_验收证据/05_需求基线与首轮设计/图源/' + name for name in ('02_三角色目标总览_v1.0.png', '03_共用与条件关系_v1.0.png'))
@@ -201,6 +203,7 @@ def main():
     parser.add_argument('--check', action='store_true', help='Validate selection without generating files')
     parser.add_argument('--preview', action='store_true', help='Build a clearly marked branch preview')
     parser.add_argument('--output-dir', type=Path)
+    parser.add_argument('--evidence-dir', type=Path, help='Verified final course raw evidence directory')
     args = parser.parse_args()
     commit = git('rev-parse', 'HEAD').decode().strip()
     branch = git('branch', '--show-current').decode().strip()
@@ -210,6 +213,19 @@ def main():
     if missing:
         raise SystemExit(f'Missing tracked sources: {missing}')
     entries = {name: (ROOT / name).read_bytes() for name in sorted(files)}
+    evidence_index = json.loads(entries['docs/10_验收证据/21_最终整体验收与提交整理/原始结果/09_最终课程活跃会话20261117.json'])
+    if args.evidence_dir:
+        evidence_root = args.evidence_dir.resolve()
+        for item in evidence_index['files']:
+            path = (evidence_root / item['path']).resolve()
+            if not path.is_relative_to(evidence_root):
+                raise SystemExit('Raw evidence path escapes its directory.')
+            data = path.read_bytes()
+            if sha(data).lower() != item['sha256'].lower():
+                raise SystemExit('Raw evidence hash mismatch: ' + item['path'])
+            entries['docs/10_验收证据/21_最终整体验收与提交整理/负载原始结果/final20261117/' + item['path']] = data
+    elif not args.check:
+        raise SystemExit('Final measured evidence is required: supply --evidence-dir.')
     changes = []
     for name in sorted(entries):
         if name.endswith('.md'):
