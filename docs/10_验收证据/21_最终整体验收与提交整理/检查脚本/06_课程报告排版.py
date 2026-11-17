@@ -81,6 +81,16 @@ def format_report(path, title, identity):
             para.alignment=WD_ALIGN_PARAGRAPH.CENTER
             para.paragraph_format.first_line_indent=Pt(0)
             para.paragraph_format.keep_with_next=True
+            figure_number += 1
+            node=element('p')
+            para._p.addnext(node)
+            caption=Paragraph(node,para._parent)
+            labels=['业务上下文','三角色业务用例总览','共用与条件关系','审批启用状态','AI建议状态','告警状态','系统架构','接诊与病历流程','权限与审计流程']
+            caption.text='图 '+str(figure_number)+'　'+labels[figure_number-1]
+            caption.alignment=WD_ALIGN_PARAGRAPH.CENTER
+            caption.paragraph_format.first_line_indent=Pt(0)
+            caption.paragraph_format.space_after=Pt(9)
+            for r in caption.runs: r.font.size=Pt(10.5)
         for run in para.runs:
             for node in run._r.xpath('.//wp:extent'):
                 max_width=int(Cm(15.5))
